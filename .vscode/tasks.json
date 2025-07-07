@@ -1,0 +1,122 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "npm-install-frontend",
+      "type": "shell",
+      "command": "npm",
+      "args": ["install"],
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "go-mod-tidy",
+      "type": "shell",
+      "command": "go",
+      "args": ["mod", "tidy"],
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "build-frontend",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "build"],
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "dev-frontend",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "dev", "--", "--port", "5173", "--host", "0.0.0.0"],
+      "options": {
+        "cwd": "${workspaceFolder}/frontend",
+        "env": {
+          "VITE_API_BASE_URL": "http://localhost:8080/api",
+          "VITE_DEV_PORT": "5173"
+        }
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "run-backend",
+      "type": "shell",
+      "command": "go",
+      "args": ["run", "main.go"],
+      "options": {
+        "cwd": "${workspaceFolder}/backend",
+        "env": {
+          "APP_ENV": "local",
+          "GIN_MODE": "debug",
+          "SERVER_PORT": "8080",
+          "SERVER_HOST": "127.0.0.1"
+        }
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "migrate-database",
+      "type": "shell",
+      "command": "go",
+      "args": ["run", "cmd/migrate/main.go", "-action=migrate"],
+      "options": {
+        "cwd": "${workspaceFolder}/backend",
+        "env": {
+          "APP_ENV": "local"
+        }
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+} 

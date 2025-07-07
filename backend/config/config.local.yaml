@@ -1,0 +1,86 @@
+server:
+  port: 8080
+  host: "127.0.0.1"
+
+database:
+  type: "postgresql"
+  master:
+    host: "localhost"
+    port: 5432
+    username: "stream_user"
+    password: "stream_password"
+    dbname: "stream_demo"
+    sslmode: "disable"
+  slave:
+    host: "localhost"
+    port: 5432
+    username: "stream_user"
+    password: "stream_password"
+    dbname: "stream_demo"
+    sslmode: "disable"
+  pool:
+    max_open_conns: 25      # 最大打開連接數
+    max_idle_conns: 10      # 最大閒置連接數
+    conn_max_lifetime: 3600 # 連接最大生存時間（1小時）
+    conn_max_idle_time: 900 # 連接最大閒置時間（15分鐘）
+
+# PostgreSQL作為緩存和會話存儲
+cache:
+  type: "postgresql"
+  table_name: "cache_data"
+  default_expiration: 3600  # 默認過期時間（秒）
+  cleanup_interval: 600     # 清理間隔（秒）
+
+# PostgreSQL LISTEN/NOTIFY作為訊息佇列
+messaging:
+  type: "postgresql"
+  channels:
+    - "video_processing"    # 影片處理通知
+    - "live_updates"        # 直播更新通知
+    - "user_notifications"  # 用戶通知
+
+jwt:
+  secret: "local_secret"
+  expires_in: 86400
+
+# S3影片儲存配置
+storage:
+  type: "s3"
+  s3:
+    region: "ap-northeast-1"
+    bucket: "stream-demo-videos"
+    access_key: "YOUR_AWS_ACCESS_KEY"
+    secret_key: "YOUR_AWS_SECRET_KEY"
+    endpoint: ""  # 留空使用標準AWS端點
+    cdn_domain: "https://d1234567890.cloudfront.net"  # CloudFront域名
+
+# AWS MediaConvert配置
+media_convert:
+  region: "ap-northeast-1"
+  endpoint: "https://abcdefg.mediaconvert.ap-northeast-1.amazonaws.com"
+  role_arn: "arn:aws:iam::123456789012:role/MediaConvertRole"
+  output_bucket: "stream-demo-processed"
+
+gin:
+  mode: "debug"
+  host: "0.0.0.0"
+  port: 8080
+
+# 影片處理配置
+video:
+  max_file_size: 1073741824  # 1GB
+  min_file_size: 52428800    # 50MB - 小於此大小的檔案不轉檔
+  allowed_formats: ["mp4", "avi", "mov", "mkv", "webm"]
+  transcode_presets:
+    - name: "720p"
+      width: 1280
+      height: 720
+      bitrate: 2500000
+    - name: "480p" 
+      width: 854
+      height: 480
+      bitrate: 1200000
+    - name: "360p"
+      width: 640
+      height: 360
+      bitrate: 800000

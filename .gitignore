@@ -1,0 +1,7 @@
+node_modules
+
+backend/config/config.dev.yaml
+
+backend/config/config.prod.yaml
+
+backend/logs/
