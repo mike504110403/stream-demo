@@ -1,0 +1,149 @@
+services:
+  # PostgreSQL 資料庫服務
+  postgresql:
+    image: postgres:15-alpine
+    container_name: stream-demo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: stream_demo
+      POSTGRES_USER: stream_user
+      POSTGRES_PASSWORD: stream_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgresql/init:/docker-entrypoint-initdb.d
+    networks:
+      - stream-demo-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stream_user -d stream_demo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MySQL 資料庫服務
+  mysql:
+    image: mysql:8.0
+    container_name: stream-demo-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: stream_demo
+      MYSQL_USER: stream_user
+      MYSQL_PASSWORD: stream_password
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+      - ./docker/mysql/conf:/etc/mysql/conf.d
+    networks:
+      - stream-demo-network
+    command: 
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+      - --innodb-buffer-pool-size=256M
+      - --max-connections=200
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "stream_user", "-pstream_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 緩存和訊息服務
+  redis:
+    image: redis:7-alpine
+    container_name: stream-demo-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - stream-demo-network
+    command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO 對象存儲服務 (S3 兼容)
+  minio:
+    image: minio/minio:latest
+    container_name: stream-demo-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_SERVER_URL: http://localhost:9000
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+      # 啟用 CORS 支持
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+    ports:
+      - "9000:9000"   # MinIO API 端口
+      - "9001:9001"   # MinIO Console 端口
+    volumes:
+      - minio_data:/data
+      - ./docker/minio/policies:/policies
+    networks:
+      - stream-demo-network
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # FFmpeg 影片轉碼服務
+  ffmpeg-transcoder:
+    build:
+      context: ./docker/ffmpeg
+      dockerfile: Dockerfile
+    container_name: stream-demo-transcoder
+    restart: unless-stopped
+    volumes:
+      - ffmpeg_temp:/tmp/transcoding
+    networks:
+      - stream-demo-network
+    environment:
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET=stream-demo-videos
+      - MINIO_PROCESSED_BUCKET=stream-demo-processed
+    depends_on:
+      - minio
+    healthcheck:
+      test: ["CMD", "ffmpeg", "-version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
+
+# 資料卷定義
+volumes:
+  postgres_data:
+    driver: local
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+  ffmpeg_temp:
+    driver: local
+
+# 網路定義
+networks:
+  stream-demo-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16 

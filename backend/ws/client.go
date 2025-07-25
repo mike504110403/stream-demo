@@ -66,11 +66,11 @@ func (c *Client) readPump() {
 		msg.Type = "text" // 用戶訊息類型
 		msg.CreatedAt = time.Now()
 
-		// 發布訊息到PostgreSQL（會廣播到所有實例）
+		// 發布訊息到Redis（會廣播到所有實例）
 		if c.hub.messaging != nil {
 			c.hub.PublishChatMessage(c.room.liveID, c.userID, c.username, msg.Content, "text")
 		} else {
-			// 如果沒有PostgreSQL訊息系統，直接廣播到本地
+			// 如果沒有Redis訊息系統，直接廣播到本地
 			c.room.broadcast <- &msg
 		}
 	}

@@ -15,6 +15,14 @@ var (
 	DebugLogger *log.Logger
 )
 
+// Writer 實現 gorm logger 的 Writer 接口
+type Writer struct{}
+
+// Printf 實現 gorm logger 的輸出方法
+func (w *Writer) Printf(format string, args ...interface{}) {
+	LogInfo(format, args...)
+}
+
 // InitLogger 初始化日誌工具
 func InitLogger() {
 	// 建立日誌目錄
@@ -57,4 +65,17 @@ func LogInfo(format string, v ...interface{}) {
 func LogDebug(format string, v ...interface{}) {
 	_, file, line, _ := runtime.Caller(1)
 	DebugLogger.Printf("%s:%d - %s", filepath.Base(file), line, fmt.Sprintf(format, v...))
+}
+
+// LogFatal 記錄致命錯誤日誌並退出程序
+func LogFatal(format string, v ...interface{}) {
+	_, file, line, _ := runtime.Caller(1)
+	ErrorLogger.Printf("%s:%d - FATAL: %s", filepath.Base(file), line, fmt.Sprintf(format, v...))
+	os.Exit(1)
+}
+
+// LogWarn 記錄警告日誌
+func LogWarn(format string, v ...interface{}) {
+	_, file, line, _ := runtime.Caller(1)
+	InfoLogger.Printf("%s:%d - WARN: %s", filepath.Base(file), line, fmt.Sprintf(format, v...))
 }

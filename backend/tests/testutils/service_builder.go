@@ -10,24 +10,74 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+// DatabaseType 測試支援的資料庫類型
+type DatabaseType string
+
+const (
+	PostgreSQLTest DatabaseType = "postgresql"
+	MySQLTest      DatabaseType = "mysql"
+)
+
 // ServiceBuilder 用於構建測試服務的工具
 type ServiceBuilder struct {
-	t           *testing.T
-	UserRepo    *MockUserRepository
-	VideoRepo   *MockVideoRepository
-	PaymentRepo *MockPaymentRepository
-	LiveRepo    *MockLiveRepository
+	t            *testing.T
+	UserRepo     *MockUserRepository
+	VideoRepo    *MockVideoRepository
+	PaymentRepo  *MockPaymentRepository
+	LiveRepo     *MockLiveRepository
+	databaseType DatabaseType
+	configPath   string
 }
 
-// NewServiceBuilder 創建新的服務構建器
+// NewServiceBuilder 創建新的服務構建器（默認使用 PostgreSQL）
 func NewServiceBuilder(t *testing.T) *ServiceBuilder {
 	return &ServiceBuilder{
-		t:           t,
-		UserRepo:    NewMockUserRepository(),
-		VideoRepo:   NewMockVideoRepository(),
-		PaymentRepo: NewMockPaymentRepository(),
-		LiveRepo:    NewMockLiveRepository(),
+		t:            t,
+		UserRepo:     NewMockUserRepository(),
+		VideoRepo:    NewMockVideoRepository(),
+		PaymentRepo:  NewMockPaymentRepository(),
+		LiveRepo:     NewMockLiveRepository(),
+		databaseType: PostgreSQLTest, // 默認使用 PostgreSQL
+		configPath:   "../config/config.test.yaml",
 	}
+}
+
+// NewServiceBuilderWithDB 創建指定資料庫類型的服務構建器
+func NewServiceBuilderWithDB(t *testing.T, dbType DatabaseType) *ServiceBuilder {
+	return &ServiceBuilder{
+		t:            t,
+		UserRepo:     NewMockUserRepository(),
+		VideoRepo:    NewMockVideoRepository(),
+		PaymentRepo:  NewMockPaymentRepository(),
+		LiveRepo:     NewMockLiveRepository(),
+		databaseType: dbType,
+		configPath:   "../config/config.test.yaml",
+	}
+}
+
+// NewServiceBuilderWithConfig 創建使用自定義配置的服務構建器
+func NewServiceBuilderWithConfig(t *testing.T, configPath string, dbType DatabaseType) *ServiceBuilder {
+	return &ServiceBuilder{
+		t:            t,
+		UserRepo:     NewMockUserRepository(),
+		VideoRepo:    NewMockVideoRepository(),
+		PaymentRepo:  NewMockPaymentRepository(),
+		LiveRepo:     NewMockLiveRepository(),
+		databaseType: dbType,
+		configPath:   configPath,
+	}
+}
+
+// WithDatabase 設定資料庫類型
+func (sb *ServiceBuilder) WithDatabase(dbType DatabaseType) *ServiceBuilder {
+	sb.databaseType = dbType
+	return sb
+}
+
+// WithConfig 設定配置文件路徑
+func (sb *ServiceBuilder) WithConfig(configPath string) *ServiceBuilder {
+	sb.configPath = configPath
+	return sb
 }
 
 // Mock Repository 接口
@@ -262,24 +312,29 @@ func (sb *ServiceBuilder) WithCreateVideoError() *ServiceBuilder {
 	return sb
 }
 
-// 服務創建方法
+// 配置創建輔助方法
+func (sb *ServiceBuilder) createTestConfig() *config.Config {
+	return config.NewConfig(sb.configPath, "test", string(sb.databaseType))
+}
+
+// 服務創建方法（使用新的配置系統）
 func (sb *ServiceBuilder) BuildVideoService() *services.VideoService {
-	cfg := config.NewPostgreSQLConfig("config.yaml", "local")
+	cfg := sb.createTestConfig()
 	return services.NewVideoService(cfg)
 }
 
 func (sb *ServiceBuilder) BuildUserService() *services.UserService {
-	cfg := config.NewPostgreSQLConfig("config.yaml", "local")
+	cfg := sb.createTestConfig()
 	return services.NewUserService(cfg)
 }
 
 func (sb *ServiceBuilder) BuildPaymentService() *services.PaymentService {
-	cfg := config.NewPostgreSQLConfig("config.yaml", "local")
+	cfg := sb.createTestConfig()
 	return services.NewPaymentService(cfg)
 }
 
 func (sb *ServiceBuilder) BuildLiveService() *services.LiveService {
-	cfg := config.NewPostgreSQLConfig("config.yaml", "local")
+	cfg := sb.createTestConfig()
 	return services.NewLiveService(cfg)
 }
 
@@ -289,4 +344,41 @@ func (sb *ServiceBuilder) AssertAllExpectations() {
 	sb.VideoRepo.AssertExpectations(sb.t)
 	sb.PaymentRepo.AssertExpectations(sb.t)
 	sb.LiveRepo.AssertExpectations(sb.t)
+}
+
+// 便利方法：快速創建不同資料庫類型的構建器
+func NewPostgreSQLServiceBuilder(t *testing.T) *ServiceBuilder {
+	return NewServiceBuilderWithDB(t, PostgreSQLTest)
+}
+
+func NewMySQLServiceBuilder(t *testing.T) *ServiceBuilder {
+	return NewServiceBuilderWithDB(t, MySQLTest)
+}
+
+// 測試輔助方法：檢查配置是否正確載入
+func (sb *ServiceBuilder) ValidateConfig() error {
+	cfg := sb.createTestConfig()
+	if cfg == nil {
+		return errors.New("配置創建失敗")
+	}
+	if cfg.ActiveDatabase != string(sb.databaseType) {
+		return errors.New("資料庫類型配置不匹配")
+	}
+	return nil
+}
+
+// 測試輔助方法：獲取當前資料庫類型
+func (sb *ServiceBuilder) GetDatabaseType() DatabaseType {
+	return sb.databaseType
+}
+
+// 測試輔助方法：獲取配置信息
+func (sb *ServiceBuilder) GetConfigInfo() map[string]interface{} {
+	cfg := sb.createTestConfig()
+	return map[string]interface{}{
+		"active_database": cfg.ActiveDatabase,
+		"available":       cfg.GetAvailableDatabases(),
+		"config_path":     sb.configPath,
+		"database_type":   sb.databaseType,
+	}
 }

@@ -9,7 +9,7 @@ type RegisterRequest struct {
 
 // LoginRequest 登入請求
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
+	Username string `json:"username" binding:"required,min=3,max=32"`
 	Password string `json:"password" binding:"required"`
 }
 

@@ -18,6 +18,10 @@ type Video struct {
 	HLSMasterURL string `json:"hls_master_url" gorm:"size:500"`
 	HLSKey       string `json:"hls_key" gorm:"size:500"`
 
+	// MP4轉碼版本（網頁播放）
+	MP4URL string `json:"mp4_url" gorm:"size:500"`
+	MP4Key string `json:"mp4_key" gorm:"size:500"`
+
 	// 影片屬性
 	Duration       int    `json:"duration" gorm:"default:0"`      // 秒數
 	FileSize       int64  `json:"file_size" gorm:"default:0"`     // 位元組

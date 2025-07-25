@@ -13,8 +13,8 @@ type Hub struct {
 	rooms map[uint]*Room
 	// 互斥鎖
 	mu sync.RWMutex
-	// PostgreSQL訊息系統
-	messaging *utils.PostgreSQLMessaging
+	// Redis訊息系統
+	messaging *utils.RedisMessaging
 }
 
 // Room 單一聊天室
@@ -36,7 +36,7 @@ type Room struct {
 }
 
 // NewHub 建立新的 Hub
-func NewHub(messaging *utils.PostgreSQLMessaging) *Hub {
+func NewHub(messaging *utils.RedisMessaging) *Hub {
 	hub := &Hub{
 		rooms:     make(map[uint]*Room),
 		messaging: messaging,
@@ -166,19 +166,13 @@ func (h *Hub) broadcastToRoom(liveID uint, message *dto.ChatMessageDTO) {
 	}
 }
 
-// PublishChatMessage 發布聊天訊息到PostgreSQL
+// PublishChatMessage 發布聊天訊息到Redis
 func (h *Hub) PublishChatMessage(liveID, userID uint, username, content, messageType string) error {
 	if h.messaging == nil {
 		return nil
 	}
 
-	return h.messaging.Publish("chat_messages", "new_message", map[string]interface{}{
-		"live_id":  liveID,
-		"user_id":  userID,
-		"username": username,
-		"content":  content,
-		"type":     messageType,
-	})
+	return h.messaging.PublishChatMessage(liveID, userID, username, content, messageType)
 }
 
 // getSystemMessage 根據事件類型獲取系統訊息
@@ -206,16 +200,22 @@ func (r *Room) run() {
 			r.clients[client] = true
 			r.mu.Unlock()
 
-			// 發布加入訊息到PostgreSQL（會廣播到所有實例）
-			if r.hub.messaging != nil {
-				r.hub.PublishChatMessage(r.liveID, client.userID, client.username, "加入了聊天室", "system")
+			// 發送歡迎訊息
+			welcomeMsg := &dto.ChatMessageDTO{
+				Type:     "system",
+				LiveID:   r.liveID,
+				UserID:   0,
+				Username: "系統",
+				Content:  "歡迎進入直播間！",
 			}
 
-			// 通知直播更新（觀看人數變化）
-			if r.hub.messaging != nil {
-				r.hub.messaging.PublishLiveUpdate(r.liveID, "viewer_joined", map[string]interface{}{
-					"viewer_count": len(r.clients),
-				})
+			select {
+			case client.send <- welcomeMsg:
+			default:
+				close(client.send)
+				r.mu.Lock()
+				delete(r.clients, client)
+				r.mu.Unlock()
 			}
 
 		case client := <-r.unregister:
@@ -224,48 +224,62 @@ func (r *Room) run() {
 				delete(r.clients, client)
 				close(client.send)
 			}
-			clientCount := len(r.clients)
 			r.mu.Unlock()
-
-			// 發布離開訊息到PostgreSQL
-			if r.hub.messaging != nil {
-				r.hub.PublishChatMessage(r.liveID, client.userID, client.username, "離開了聊天室", "system")
-			}
-
-			// 通知直播更新（觀看人數變化）
-			if r.hub.messaging != nil {
-				r.hub.messaging.PublishLiveUpdate(r.liveID, "viewer_left", map[string]interface{}{
-					"viewer_count": clientCount,
-				})
-			}
 
 		case message := <-r.broadcast:
 			r.mu.RLock()
+			clients := make([]*Client, 0, len(r.clients))
 			for client := range r.clients {
+				clients = append(clients, client)
+			}
+			r.mu.RUnlock()
+
+			// 廣播給所有客戶端
+			for _, client := range clients {
 				select {
 				case client.send <- message:
 				default:
 					close(client.send)
+					r.mu.Lock()
 					delete(r.clients, client)
+					r.mu.Unlock()
 				}
 			}
-			r.mu.RUnlock()
 		}
 	}
 }
 
-// GetRoomStats 獲取聊天室統計
+// AddClient 添加客戶端到聊天室
+func (r *Room) AddClient(client *Client) {
+	r.register <- client
+}
+
+// RemoveClient 從聊天室移除客戶端
+func (r *Room) RemoveClient(client *Client) {
+	r.unregister <- client
+}
+
+// BroadcastMessage 廣播訊息到聊天室
+func (r *Room) BroadcastMessage(message *dto.ChatMessageDTO) {
+	r.broadcast <- message
+}
+
+// GetClientCount 獲取聊天室客戶端數量
+func (r *Room) GetClientCount() int {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return len(r.clients)
+}
+
+// GetRoomStats 獲取所有聊天室統計
 func (h *Hub) GetRoomStats() map[uint]int {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
 	stats := make(map[uint]int)
 	for liveID, room := range h.rooms {
-		room.mu.RLock()
-		stats[liveID] = len(room.clients)
-		room.mu.RUnlock()
+		stats[liveID] = room.GetClientCount()
 	}
-
 	return stats
 }
 

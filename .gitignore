@@ -5,3 +5,9 @@ backend/config/config.dev.yaml
 backend/config/config.prod.yaml
 
 backend/logs/
+
+backend/__debug_bin35862400
+
+backend/backend.log
+
+frontend/dist/

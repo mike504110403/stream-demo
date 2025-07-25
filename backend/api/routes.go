@@ -31,6 +31,7 @@ func RegisterRoutes(r *gin.Engine, userHandler *UserHandler, videoHandler *Video
 		auth.POST("/videos/confirm-upload", videoHandler.ConfirmUpload) // 確認上傳完成
 		auth.POST("/videos", videoHandler.UploadVideo)                  // 傳統表單上傳（向下相容）
 		auth.GET("/videos/:id", videoHandler.GetVideo)
+		auth.GET("/videos/:id/transcode-status", videoHandler.GetVideoTranscodeStatus) // 轉碼狀態檢查
 		auth.GET("/users/:id/videos", videoHandler.GetUserVideos)
 		auth.PUT("/videos/:id", videoHandler.UpdateVideo)
 		auth.DELETE("/videos/:id", videoHandler.DeleteVideo)

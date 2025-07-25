@@ -14,6 +14,7 @@ type VideoDTO struct {
 	OriginalURL  string `json:"original_url"`
 	ThumbnailURL string `json:"thumbnail_url"`
 	HLSMasterURL string `json:"hls_master_url"`
+	MP4URL       string `json:"mp4_url"`
 
 	// 影片屬性
 	Duration       int    `json:"duration"`

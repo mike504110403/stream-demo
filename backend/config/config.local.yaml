@@ -2,63 +2,127 @@ server:
   port: 8080
   host: "127.0.0.1"
 
-database:
-  type: "postgresql"
+# 多資料庫配置 - 同時支援 MySQL 和 PostgreSQL
+databases:
+  # PostgreSQL 配置
+  postgresql:
+    type: "postgresql"
+    master:
+      host: "localhost"
+      port: 5432
+      username: "stream_user"
+      password: "stream_password"
+      dbname: "stream_demo"
+      sslmode: "disable"  # PostgreSQL: disable/require/verify-full
+    slave:
+      host: "localhost"
+      port: 5432
+      username: "stream_user"
+      password: "stream_password"
+      dbname: "stream_demo"
+      sslmode: "disable"
+    pool:
+      max_open_conns: 25      # 最大打開連接數
+      max_idle_conns: 10      # 最大閒置連接數
+      conn_max_lifetime: 3600 # 連接最大生存時間（1小時）
+      conn_max_idle_time: 900 # 連接最大閒置時間（15分鐘）
+
+  # MySQL 配置
+  mysql:
+    type: "mysql"
+    master:
+      host: "localhost"
+      port: 3306
+      username: "stream_user"
+      password: "stream_password"
+      dbname: "stream_demo"
+      sslmode: "false"  # MySQL: true/false/skip-verify
+    slave:
+      host: "localhost"
+      port: 3306
+      username: "stream_user"
+      password: "stream_password"
+      dbname: "stream_demo"
+      sslmode: "false"
+    pool:
+      max_open_conns: 25      # 最大打開連接數
+      max_idle_conns: 10      # 最大閒置連接數
+      conn_max_lifetime: 3600 # 連接最大生存時間（1小時）
+      conn_max_idle_time: 900 # 連接最大閒置時間（15分鐘）
+
+# Redis連接配置
+redis:
   master:
     host: "localhost"
-    port: 5432
-    username: "stream_user"
-    password: "stream_password"
-    dbname: "stream_demo"
-    sslmode: "disable"
+    port: 6379
+    password: ""
+    db: 0
   slave:
-    host: "localhost"
-    port: 5432
-    username: "stream_user"
-    password: "stream_password"
-    dbname: "stream_demo"
-    sslmode: "disable"
+    host: "localhost"  
+    port: 6379
+    password: ""
+    db: 0
   pool:
-    max_open_conns: 25      # 最大打開連接數
-    max_idle_conns: 10      # 最大閒置連接數
-    conn_max_lifetime: 3600 # 連接最大生存時間（1小時）
-    conn_max_idle_time: 900 # 連接最大閒置時間（15分鐘）
+    max_active: 100     # 最大活躍連接數
+    max_idle: 20        # 最大閒置連接數
+    idle_timeout: 300   # 閒置超時（秒）
+    connect_timeout: 10 # 連接超時（秒）
+    read_timeout: 30    # 讀取超時（秒）
+    write_timeout: 30   # 寫入超時（秒）
 
-# PostgreSQL作為緩存和會話存儲
+# Redis作為緩存和會話存儲
 cache:
-  type: "postgresql"
-  table_name: "cache_data"
+  type: "redis"
+  db: 1  # 使用Redis DB 1作為緩存
   default_expiration: 3600  # 默認過期時間（秒）
-  cleanup_interval: 600     # 清理間隔（秒）
+  key_prefix: "cache:"      # 緩存鍵前綴
 
-# PostgreSQL LISTEN/NOTIFY作為訊息佇列
+# Redis Pub/Sub作為訊息佇列
 messaging:
-  type: "postgresql"
+  type: "redis"
+  db: 2  # 使用Redis DB 2作為訊息佇列
   channels:
     - "video_processing"    # 影片處理通知
     - "live_updates"        # 直播更新通知
     - "user_notifications"  # 用戶通知
+    - "chat_messages"       # 聊天訊息
 
 jwt:
   secret: "local_secret"
   expires_in: 86400
 
-# S3影片儲存配置
+# S3影片儲存配置 - 使用 MinIO
 storage:
   type: "s3"
   s3:
-    region: "ap-northeast-1"
-    bucket: "stream-demo-videos"
-    access_key: "YOUR_AWS_ACCESS_KEY"
-    secret_key: "YOUR_AWS_SECRET_KEY"
-    endpoint: ""  # 留空使用標準AWS端點
-    cdn_domain: "https://d1234567890.cloudfront.net"  # CloudFront域名
+    region: "us-east-1"                           # MinIO 使用標準區域
+    bucket: "stream-demo-videos"                  # 桶名稱
+    access_key: "minioadmin"                      # MinIO 默認用戶
+    secret_key: "minioadmin"                      # MinIO 默認密碼
+    endpoint: "http://localhost:9000"             # MinIO API 端點
+    # cdn_domain: "http://localhost:9000"           # MinIO CDN 域名 - 註釋掉，避免URL錯誤
+    
+    # 如果要切換回 AWS S3，請註釋上面的配置，啟用下面的配置
+    # region: "ap-northeast-1"
+    # bucket: "stream-demo-videos"
+    # access_key: "AKIA..."
+    # secret_key: "..."
+    # endpoint: ""
+    # cdn_domain: ""
 
-# AWS MediaConvert配置
+# FFmpeg 本地轉碼配置 (推薦用於開發環境)
+transcode:
+  type: "ffmpeg"  # 使用本地 FFmpeg 轉碼
+  ffmpeg:
+    enabled: true
+    container_name: "stream-demo-transcoder"
+
+# AWS MediaConvert配置 (開發環境暫時關閉)
 media_convert:
-  region: "ap-northeast-1"
-  endpoint: "https://abcdefg.mediaconvert.ap-northeast-1.amazonaws.com"
-  role_arn: "arn:aws:iam::123456789012:role/MediaConvertRole"
+  enabled: false                                   # 禁用 AWS MediaConvert
+  region: "us-east-1"
+  endpoint: ""                                    # 留空，開發環境不使用
+  role_arn: ""                                   # 留空，開發環境不使用
   output_bucket: "stream-demo-processed"
 
 gin:
@@ -69,7 +133,7 @@ gin:
 # 影片處理配置
 video:
   max_file_size: 1073741824  # 1GB
-  min_file_size: 52428800    # 50MB - 小於此大小的檔案不轉檔
+  min_file_size: 1048576     # 1MB - 大於1MB的檔案進行轉碼（適合開發測試）
   allowed_formats: ["mp4", "avi", "mov", "mkv", "webm"]
   transcode_presets:
     - name: "720p"

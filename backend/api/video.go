@@ -65,6 +65,7 @@ func (h *VideoHandler) GenerateUploadURL(c *gin.Context) {
 	c.JSON(http.StatusOK, response.NewSuccessResponse(gin.H{
 		"upload_url": uploadURL.UploadURL,
 		"form_data":  uploadURL.FormData,
+		"key":        uploadURL.Key, // 添加 key 字段供前端使用
 		"video":      video,
 	}))
 }
@@ -83,20 +84,51 @@ func (h *VideoHandler) ConfirmUpload(c *gin.Context) {
 		return
 	}
 
-	// 確認上傳並開始處理
-	if err := h.videoService.ConfirmUploadAndStartProcessing(req.VideoID); err != nil {
+	// 只確認上傳，不檢查轉碼狀態
+	if err := h.videoService.ConfirmUploadOnly(req.VideoID, req.S3Key); err != nil {
 		c.JSON(http.StatusInternalServerError, response.NewErrorResponse(500, err.Error()))
 		return
 	}
 
-	// 獲取更新後的影片資訊
-	video, err := h.videoService.GetVideoByID(req.VideoID)
+	// 返回簡單的成功回應，不包含轉碼狀態
+	c.JSON(http.StatusOK, response.NewSuccessResponse(gin.H{
+		"message":  "影片上傳確認成功，轉碼處理已開始",
+		"video_id": req.VideoID,
+		"status":   "uploading",
+	}))
+}
+
+// GetVideoTranscodeStatus 獲取影片轉碼狀態
+func (h *VideoHandler) GetVideoTranscodeStatus(c *gin.Context) {
+	videoIDStr := c.Param("id")
+	videoID, err := strconv.ParseUint(videoIDStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, response.NewErrorResponse(500, err.Error()))
+		c.JSON(http.StatusBadRequest, response.NewErrorResponse(http.StatusBadRequest, "無效的影片ID"))
 		return
 	}
 
-	c.JSON(http.StatusOK, response.NewSuccessResponse(video))
+	video, err := h.videoService.GetVideoByID(uint(videoID))
+	if err != nil {
+		c.JSON(http.StatusNotFound, response.NewErrorResponse(http.StatusNotFound, "影片不存在"))
+		return
+	}
+
+	// 檢查轉碼狀態
+	status := map[string]interface{}{
+		"video_id":            video.ID,
+		"status":              video.Status,
+		"processing_progress": video.ProcessingProgress,
+		"original_url":        video.OriginalURL,
+		"mp4_url":             video.MP4URL,
+		"hls_master_url":      video.HLSMasterURL,
+		"thumbnail_url":       video.ThumbnailURL,
+		"file_size":           video.FileSize,
+		"original_format":     video.OriginalFormat,
+		"created_at":          video.CreatedAt,
+		"updated_at":          video.UpdatedAt,
+	}
+
+	c.JSON(http.StatusOK, response.NewSuccessResponse(status))
 }
 
 // UploadVideo 傳統表單上傳方式（保留相容性）
@@ -139,14 +171,14 @@ func (h *VideoHandler) UploadVideo(c *gin.Context) {
 		return
 	}
 
-	// TODO: 在實際應用中，應該將檔案上傳到S3
-	// 這裡暫時回傳成功狀態，實際上需要前端或後端處理S3上傳
+	// TODO: 在實際應用中，將檔案上傳到S3
+	// 這裡可以實現直接上傳邏輯，或者返回預簽名 URL 讓前端處理
 
 	c.JSON(http.StatusCreated, response.NewSuccessResponse(gin.H{
 		"video":      video,
 		"upload_url": uploadURL.UploadURL,
 		"form_data":  uploadURL.FormData,
-		"message":    "請使用返回的upload_url上傳檔案到S3，然後調用確認上傳API",
+		"message":    "檔案已接收，請使用返回的upload_url完成S3上傳，或調用確認上傳API",
 	}))
 }
 
@@ -164,7 +196,8 @@ func (h *VideoHandler) GetVideo(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, response.NewSuccessResponse(response.NewVideoResponse(video)))
+	// 直接返回 DTO，無需額外包裝
+	c.JSON(http.StatusOK, response.NewSuccessResponse(video))
 }
 
 // UpdateVideo 更新影片

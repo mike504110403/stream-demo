@@ -11,15 +11,16 @@
         :model="loginForm"
         :rules="loginRules"
         class="login-form"
-        @submit.prevent="handleLogin"
+        @submit.prevent
       >
-        <el-form-item prop="email">
+        <el-form-item prop="username">
           <el-input
-            v-model="loginForm.email"
-            type="email"
-            placeholder="請輸入郵箱"
+            v-model="loginForm.username"
+            type="text"
+            placeholder="請輸入用戶名"
             size="large"
-            prefix-icon="Message"
+            prefix-icon="User"
+            @keyup.enter="handleLogin"
           />
         </el-form-item>
         
@@ -31,6 +32,7 @@
             size="large"
             prefix-icon="Lock"
             show-password
+            @keyup.enter="handleLogin"
           />
         </el-form-item>
         
@@ -39,7 +41,7 @@
             type="primary"
             size="large"
             :loading="loading"
-            @click="handleLogin"
+            @click.prevent="handleLogin"
             class="login-button"
           >
             登入
@@ -74,14 +76,14 @@ const loginFormRef = ref<FormInstance>()
 const loading = ref(false)
 
 const loginForm = reactive<LoginRequest>({
-  email: '',
+  username: '',
   password: ''
 })
 
 const loginRules: FormRules = {
-  email: [
-    { required: true, message: '請輸入郵箱', trigger: 'blur' },
-    { type: 'email', message: '請輸入正確的郵箱格式', trigger: 'blur' }
+  username: [
+    { required: true, message: '請輸入帳號', trigger: 'blur' },
+    { min: 6, message: '帳號長度不能少於6位', trigger: 'blur' }
   ],
   password: [
     { required: true, message: '請輸入密碼', trigger: 'blur' },
@@ -92,22 +94,54 @@ const loginRules: FormRules = {
 const handleLogin = async () => {
   if (!loginFormRef.value) return
   
-  await loginFormRef.value.validate(async (valid) => {
-    if (valid) {
-      loading.value = true
-      try {
-        const response = await login(loginForm)
-        const data = response.data || response
-        authStore.setAuth(data.token, data.user)
-        ElMessage.success('登入成功！')
-        router.push('/dashboard')
-      } catch (error) {
-        console.error('登入失敗:', error)
-      } finally {
-        loading.value = false
-      }
+  try {
+    const valid = await loginFormRef.value.validate()
+    if (!valid) {
+      console.log('表單驗證失敗')
+      return
     }
-  })
+    
+    loading.value = true
+    console.log('開始登入請求，數據:', loginForm)
+    
+    try {
+      // 響應攔截器已經處理了統一格式，直接獲取 data 內容
+      const response = await login(loginForm)
+      const data = response as any // 響應攔截器已經提取了 data
+      
+      console.log('登入成功，收到數據:', data)
+      
+      // 檢查必要的字段
+      if (!data || !data.token || !data.user) {
+        console.error('登入響應缺少必要字段:', { data, hasToken: !!data?.token, hasUser: !!data?.user })
+        ElMessage.error('登入響應格式錯誤')
+        return
+      }
+      
+      // 存儲認證信息
+      console.log('存儲認證信息:', { token: !!data.token, user: data.user.username })
+      authStore.setAuth(data.token, data.user)
+      
+      ElMessage.success('登入成功！')
+      
+      // 處理重定向邏輯
+      const redirect = router.currentRoute.value.query.redirect as string
+      const targetRoute = redirect || '/dashboard'
+      
+      console.log('重定向到:', targetRoute)
+      await router.replace(targetRoute)
+      
+    } catch (apiError) {
+      console.error('API 請求錯誤:', apiError)
+      // 錯誤已經由響應攔截器處理，這裡記錄即可
+    }
+    
+  } catch (validateError) {
+    console.error('表單驗證錯誤:', validateError)
+    // 表單驗證錯誤通常由 Element Plus 自動顯示
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 

@@ -42,11 +42,11 @@ func (h *UserHandler) Register(c *gin.Context) {
 func (h *UserHandler) Login(c *gin.Context) {
 	var loginDTO dto.UserLoginDTO
 	if err := c.ShouldBindJSON(&loginDTO); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"err	or": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	token, user, expiresAt, err := h.userService.Login(loginDTO.Email, loginDTO.Password)
+	token, user, expiresAt, err := h.userService.Login(loginDTO.Username, loginDTO.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return

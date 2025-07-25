@@ -3,7 +3,10 @@ import type {
   Video, 
   UploadVideoRequest, 
   UpdateVideoRequest,
-  SearchVideoRequest 
+  SearchVideoRequest,
+  GenerateUploadURLRequest,
+  GenerateUploadURLResponse,
+  ConfirmUploadRequest
 } from '@/types'
 
 // 獲取影片列表
@@ -11,7 +14,17 @@ export const getVideos = (params?: { offset?: number; limit?: number }) => {
   return request.get<Video[]>('/videos', { params })
 }
 
-// 上傳影片
+// 分離式上傳：第一步 - 獲取預簽名上傳 URL
+export const generateUploadURL = (data: GenerateUploadURLRequest) => {
+  return request.post<GenerateUploadURLResponse>('/videos/upload-url', data)
+}
+
+// 分離式上傳：第三步 - 確認上傳完成
+export const confirmUpload = (data: ConfirmUploadRequest) => {
+  return request.post('/videos/confirm-upload', data)
+}
+
+// 傳統上傳影片（保留作為備用）
 export const uploadVideo = (data: UploadVideoRequest) => {
   return request.post<Video>('/videos', data)
 }

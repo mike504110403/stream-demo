@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"stream-demo/backend/config"
 	"stream-demo/backend/database/models"
 	"stream-demo/backend/services"
 	"stream-demo/backend/tests/testutils"
@@ -58,7 +57,7 @@ func (m *MockUserRepository) Delete(id uint) error {
 }
 
 // ================================
-// 🆕 使用測試工具包的改進版測試
+// 🆕 使用新測試工具包的改進版測試
 // ================================
 
 func TestUserService_Register_WithToolkit(t *testing.T) {
@@ -233,201 +232,144 @@ func TestUserService_GetUserByID_WithToolkit(t *testing.T) {
 }
 
 // ================================
-// 🔄 原有測試保留（向後兼容）
+// 🚀 多資料庫測試
 // ================================
 
-func TestUserService_Register(t *testing.T) {
-	mockRepo := new(MockUserRepository)
-	cfg := config.NewPostgreSQLConfig("config.yaml", "local")
-	userService := services.NewUserService(cfg)
-
-	tests := []struct {
-		name          string
-		username      string
-		email         string
-		password      string
-		mockSetup     func()
-		expectedError bool
-	}{
-		{
-			name:     "成功註冊",
-			username: "testuser",
-			email:    "test@example.com",
-			password: "password123",
-			mockSetup: func() {
-				mockRepo.On("FindByUsername", "testuser").Return(nil, assert.AnError)
-				mockRepo.On("FindByEmail", "test@example.com").Return(nil, assert.AnError)
-				mockRepo.On("Create", mock.AnythingOfType("*models.User")).Return(nil)
-			},
-			expectedError: false,
-		},
-		{
-			name:     "使用者名稱已存在",
-			username: "existinguser",
-			email:    "test@example.com",
-			password: "password123",
-			mockSetup: func() {
-				mockRepo.On("FindByUsername", "existinguser").Return(&models.User{Username: "existinguser"}, nil)
-			},
-			expectedError: true,
-		},
-		{
-			name:     "郵箱已存在",
-			username: "testuser",
-			email:    "existing@example.com",
-			password: "password123",
-			mockSetup: func() {
-				mockRepo.On("FindByUsername", "testuser").Return(nil, assert.AnError)
-				mockRepo.On("FindByEmail", "existing@example.com").Return(&models.User{Email: "existing@example.com"}, nil)
-			},
-			expectedError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Reset mock for each test
-			mockRepo.Mock = mock.Mock{}
-			tt.mockSetup()
-
-			user, err := userService.Register(tt.username, tt.email, tt.password)
-			if tt.expectedError {
-				assert.Error(t, err)
-				assert.Nil(t, user)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, user)
-				assert.Equal(t, tt.username, user.Username)
-				assert.Equal(t, tt.email, user.Email)
-			}
-			mockRepo.AssertExpectations(t)
-		})
-	}
-}
-
-func TestUserService_Login(t *testing.T) {
-	mockRepo := new(MockUserRepository)
-	cfg := config.NewPostgreSQLConfig("config.yaml", "local")
-	userService := services.NewUserService(cfg)
-
+func TestUserService_MultiDatabase(t *testing.T) {
+	// 準備測試數據
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
-	validUser := &models.User{
+	testUser := &models.User{
 		ID:       1,
 		Username: "testuser",
 		Email:    "test@example.com",
 		Password: string(hashedPassword),
 	}
 
-	tests := []struct {
-		name          string
-		email         string
-		password      string
-		mockSetup     func()
-		expectedError bool
+	testCases := []struct {
+		name      string
+		dbType    testutils.DatabaseType
+		setupTest func(builder *testutils.ServiceBuilder) *services.UserService
+		runTest   func(service *services.UserService) error
+		wantError bool
 	}{
 		{
-			name:     "成功登入",
-			email:    "test@example.com",
-			password: "password123",
-			mockSetup: func() {
-				mockRepo.On("FindByEmail", "test@example.com").Return(validUser, nil)
+			name:   "PostgreSQL 用戶註冊",
+			dbType: testutils.PostgreSQLTest,
+			setupTest: func(builder *testutils.ServiceBuilder) *services.UserService {
+				builder.UserRepo.On("FindByUsername", "newuser").Return((*models.User)(nil), assert.AnError)
+				builder.UserRepo.On("FindByEmail", "new@example.com").Return((*models.User)(nil), assert.AnError)
+				builder.UserRepo.On("Create", mock.AnythingOfType("*models.User")).Return(nil)
+				return builder.BuildUserService()
 			},
-			expectedError: false,
+			runTest: func(service *services.UserService) error {
+				_, err := service.Register("newuser", "new@example.com", "password123")
+				return err
+			},
+			wantError: false,
 		},
 		{
-			name:     "使用者不存在",
-			email:    "nonexistent@example.com",
-			password: "password123",
-			mockSetup: func() {
-				mockRepo.On("FindByEmail", "nonexistent@example.com").Return(nil, assert.AnError)
+			name:   "MySQL 用戶登入",
+			dbType: testutils.MySQLTest,
+			setupTest: func(builder *testutils.ServiceBuilder) *services.UserService {
+				builder.UserRepo.On("FindByEmail", "test@example.com").Return(testUser, nil)
+				return builder.BuildUserService()
 			},
-			expectedError: true,
+			runTest: func(service *services.UserService) error {
+				_, _, _, err := service.Login("test@example.com", "password123")
+				return err
+			},
+			wantError: false,
 		},
 		{
-			name:     "密碼錯誤",
-			email:    "test@example.com",
-			password: "wrongpassword",
-			mockSetup: func() {
-				mockRepo.On("FindByEmail", "test@example.com").Return(validUser, nil)
+			name:   "PostgreSQL 用戶查詢",
+			dbType: testutils.PostgreSQLTest,
+			setupTest: func(builder *testutils.ServiceBuilder) *services.UserService {
+				return builder.WithUser(testUser).BuildUserService()
 			},
-			expectedError: true,
+			runTest: func(service *services.UserService) error {
+				_, err := service.GetUserByID(1)
+				return err
+			},
+			wantError: false,
+		},
+		{
+			name:   "MySQL 用戶查詢",
+			dbType: testutils.MySQLTest,
+			setupTest: func(builder *testutils.ServiceBuilder) *services.UserService {
+				return builder.WithUser(testUser).BuildUserService()
+			},
+			runTest: func(service *services.UserService) error {
+				_, err := service.GetUserByID(1)
+				return err
+			},
+			wantError: false,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Reset mock for each test
-			mockRepo.Mock = mock.Mock{}
-			tt.mockSetup()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// 創建指定資料庫類型的構建器
+			builder := testutils.NewServiceBuilderWithDB(t, tc.dbType)
 
-			token, user, expiresAt, err := userService.Login(tt.email, tt.password)
-			if tt.expectedError {
+			// 驗證配置
+			assert.NoError(t, builder.ValidateConfig())
+			assert.Equal(t, tc.dbType, builder.GetDatabaseType())
+
+			// 設置測試
+			service := tc.setupTest(builder)
+
+			// 執行測試
+			err := tc.runTest(service)
+
+			// 檢查結果
+			if tc.wantError {
 				assert.Error(t, err)
-				assert.Empty(t, token)
-				assert.Nil(t, user)
-				assert.True(t, expiresAt.IsZero())
 			} else {
 				assert.NoError(t, err)
-				assert.NotEmpty(t, token)
-				assert.NotNil(t, user)
-				assert.False(t, expiresAt.IsZero())
-				assert.True(t, expiresAt.After(time.Now()))
-				assert.Equal(t, tt.email, user.Email)
 			}
-			mockRepo.AssertExpectations(t)
+
+			// 驗證所有期望
+			builder.AssertAllExpectations()
 		})
 	}
 }
 
-func TestUserService_GetUserByID(t *testing.T) {
-	mockRepo := new(MockUserRepository)
-	cfg := config.NewPostgreSQLConfig("config.yaml", "local")
-	userService := services.NewUserService(cfg)
+// ================================
+// 🔧 測試工具配置驗證
+// ================================
 
-	tests := []struct {
-		name          string
-		id            uint
-		mockSetup     func()
-		expectedError bool
-	}{
-		{
-			name: "成功獲取用戶",
-			id:   1,
-			mockSetup: func() {
-				mockRepo.On("FindByID", uint(1)).Return(&models.User{
-					ID:       1,
-					Username: "testuser",
-					Email:    "test@example.com",
-				}, nil)
-			},
-			expectedError: false,
-		},
-		{
-			name: "用戶不存在",
-			id:   999,
-			mockSetup: func() {
-				mockRepo.On("FindByID", uint(999)).Return(nil, assert.AnError)
-			},
-			expectedError: true,
-		},
-	}
+func TestServiceBuilder_Configuration(t *testing.T) {
+	t.Run("預設 PostgreSQL 配置", func(t *testing.T) {
+		builder := testutils.NewServiceBuilder(t)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Reset mock for each test
-			mockRepo.Mock = mock.Mock{}
-			tt.mockSetup()
+		assert.NoError(t, builder.ValidateConfig())
+		assert.Equal(t, testutils.PostgreSQLTest, builder.GetDatabaseType())
 
-			user, err := userService.GetUserByID(tt.id)
-			if tt.expectedError {
-				assert.Error(t, err)
-				assert.Nil(t, user)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, user)
-				assert.Equal(t, tt.id, user.ID)
-			}
-			mockRepo.AssertExpectations(t)
-		})
-	}
+		configInfo := builder.GetConfigInfo()
+		assert.Equal(t, "postgresql", configInfo["active_database"])
+		assert.Contains(t, configInfo["available"], "postgresql")
+		assert.Contains(t, configInfo["available"], "mysql")
+	})
+
+	t.Run("MySQL 配置", func(t *testing.T) {
+		builder := testutils.NewMySQLServiceBuilder(t)
+
+		assert.NoError(t, builder.ValidateConfig())
+		assert.Equal(t, testutils.MySQLTest, builder.GetDatabaseType())
+
+		configInfo := builder.GetConfigInfo()
+		assert.Equal(t, "mysql", configInfo["active_database"])
+	})
+
+	t.Run("動態切換資料庫類型", func(t *testing.T) {
+		builder := testutils.NewServiceBuilder(t)
+
+		// 初始為 PostgreSQL
+		assert.Equal(t, testutils.PostgreSQLTest, builder.GetDatabaseType())
+
+		// 切換到 MySQL
+		builder.WithDatabase(testutils.MySQLTest)
+		assert.Equal(t, testutils.MySQLTest, builder.GetDatabaseType())
+		assert.NoError(t, builder.ValidateConfig())
+	})
 }

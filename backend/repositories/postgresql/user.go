@@ -29,7 +29,7 @@ func (r *PostgreSQLRepo) FindUserByUsername(username string) (*models.User, erro
 	var user models.User
 	if err := r.PostgreSQLDB.Where("username = ?", username).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
+			return nil, err
 		}
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (r *PostgreSQLRepo) FindUserByEmail(email string) (*models.User, error) {
 	var user models.User
 	if err := r.PostgreSQLDB.Where("email = ?", email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
+			return nil, err
 		}
 		return nil, err
 	}

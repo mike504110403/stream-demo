@@ -6,20 +6,19 @@ import (
 	"stream-demo/backend/database/models"
 	dto "stream-demo/backend/dto"
 	postgresqlRepo "stream-demo/backend/repositories/postgresql"
+	"stream-demo/backend/utils"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
-
-// JWT 密鑰 (在生產環境中應該從環境變數讀取)
-var jwtSecret = []byte("your-secret-key")
 
 // UserService 用戶服務
 type UserService struct {
 	Conf      *config.Config
 	Repo      *postgresqlRepo.PostgreSQLRepo
 	RepoSlave *postgresqlRepo.PostgreSQLRepo
+	JWTUtil   *utils.JWTUtil
 }
 
 // NewUserService 創建用戶服務實例
@@ -28,6 +27,7 @@ func NewUserService(conf *config.Config) *UserService {
 		Conf:      conf,
 		Repo:      postgresqlRepo.NewPostgreSQLRepo(conf.DB["master"]),
 		RepoSlave: postgresqlRepo.NewPostgreSQLRepo(conf.DB["slave"]),
+		JWTUtil:   utils.NewJWTUtil(conf.JWT.Secret),
 	}
 }
 
@@ -36,11 +36,15 @@ func (s *UserService) Register(username string, email string, password string) (
 	// 檢查用戶名是否已存在（讀操作 - 使用從庫）
 	if _, err := s.RepoSlave.FindUserByUsername(username); err == nil {
 		return nil, errors.New("用戶名已存在")
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
 	}
 
 	// 檢查郵箱是否已存在（讀操作 - 使用從庫）
 	if _, err := s.RepoSlave.FindUserByEmail(email); err == nil {
 		return nil, errors.New("郵箱已存在")
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
 	}
 
 	// 加密密碼
@@ -75,9 +79,9 @@ func (s *UserService) Register(username string, email string, password string) (
 }
 
 // Login 用戶登入
-func (s *UserService) Login(email string, password string) (string, *dto.UserDTO, time.Time, error) {
+func (s *UserService) Login(username string, password string) (string, *dto.UserDTO, time.Time, error) {
 	// 查找用戶（讀操作 - 使用從庫）
-	user, err := s.RepoSlave.FindUserByEmail(email)
+	user, err := s.RepoSlave.FindUserByUsername(username)
 	if err != nil {
 		return "", nil, time.Time{}, errors.New("用戶不存在")
 	}
@@ -89,13 +93,7 @@ func (s *UserService) Login(email string, password string) (string, *dto.UserDTO
 
 	// 生成 JWT token
 	expiresAt := time.Now().Add(24 * time.Hour)
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": user.ID,
-		"email":   user.Email,
-		"exp":     expiresAt.Unix(),
-	})
-
-	tokenString, err := token.SignedString(jwtSecret)
+	tokenString, err := s.JWTUtil.GenerateToken(user.ID, "user")
 	if err != nil {
 		return "", nil, time.Time{}, errors.New("生成 token 失敗")
 	}

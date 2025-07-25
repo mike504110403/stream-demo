@@ -25,12 +25,28 @@
         <el-col :span="8">
           <el-select v-model="statusFilter" placeholder="篩選狀態" @change="loadVideos">
             <el-option label="全部" value="" />
+            <el-option label="上傳中" value="uploading" />
+            <el-option label="轉碼中" value="transcoding" />
             <el-option label="處理中" value="processing" />
             <el-option label="已完成" value="ready" />
             <el-option label="失敗" value="failed" />
           </el-select>
         </el-col>
       </el-row>
+      
+      <!-- 轉碼狀態提示 -->
+      <el-alert
+        v-if="hasProcessingVideos"
+        title="轉碼提示"
+        type="info"
+        :closable="false"
+        show-icon
+        style="margin-top: 16px;"
+      >
+        <template #default>
+          有影片正在轉碼中，請定期刷新頁面查看最新狀態。轉碼完成後影片將自動出現在列表中。
+        </template>
+      </el-alert>
     </div>
 
     <!-- 影片列表 -->
@@ -109,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { View, Star } from '@element-plus/icons-vue'
@@ -138,12 +154,34 @@ const editRules: FormRules = {
   ]
 }
 
+// 計算是否有正在處理的影片
+const hasProcessingVideos = computed(() => {
+  return videos.value.some(video => 
+    ['uploading', 'transcoding', 'processing'].includes(video.status)
+  )
+})
+
 const loadVideos = async () => {
   loading.value = true
   try {
     const response = await getVideos()
-    const result = response.data || response
-    let filteredVideos = Array.isArray(result) ? result : []
+    console.log('API 響應:', response) // 調試用
+    
+    // 處理後端 ListResponse 結構: {total: number, items: Video[]}
+    // request.ts 攔截器已經提取了 data，所以 response 就是實際數據
+    const result = response
+    let filteredVideos: Video[] = []
+    
+    if (result && typeof result === 'object') {
+      // 如果有 items 字段，說明是 ListResponse 結構
+      if ('items' in result && Array.isArray(result.items)) {
+        filteredVideos = result.items
+      } 
+      // 如果直接是數組
+      else if (Array.isArray(result)) {
+        filteredVideos = result
+      }
+    }
     
     // 狀態篩選
     if (statusFilter.value) {
@@ -151,8 +189,10 @@ const loadVideos = async () => {
     }
     
     videos.value = filteredVideos
+    console.log('處理後的影片列表:', filteredVideos) // 調試用
   } catch (error) {
     console.error('載入影片失敗:', error)
+    ElMessage.error('載入影片失敗')
   } finally {
     loading.value = false
   }
@@ -167,10 +207,28 @@ const handleSearch = async () => {
   loading.value = true
   try {
     const response = await searchVideos({ q: searchQuery.value })
-    const result = response.data || response
-    videos.value = Array.isArray(result) ? result : []
+    console.log('搜尋 API 響應:', response) // 調試用
+    
+    // 處理搜尋結果
+    // request.ts 攔截器已經提取了 data，所以 response 就是實際數據
+    const result = response
+    let searchResults: Video[] = []
+    
+    if (result && typeof result === 'object') {
+      // 如果有 items 字段，說明是 ListResponse 結構
+      if ('items' in result && Array.isArray(result.items)) {
+        searchResults = result.items
+      } 
+      // 如果直接是數組
+      else if (Array.isArray(result)) {
+        searchResults = result
+      }
+    }
+    
+    videos.value = searchResults
   } catch (error) {
     console.error('搜尋影片失敗:', error)
+    ElMessage.error('搜尋影片失敗')
   } finally {
     loading.value = false
   }
@@ -231,6 +289,8 @@ const deleteVideo = async (id: number) => {
 const getStatusType = (status: string) => {
   switch (status) {
     case 'ready': return 'success'
+    case 'uploading': return 'info'
+    case 'transcoding': return 'warning'
     case 'processing': return 'warning'
     case 'failed': return 'danger'
     default: return 'info'
@@ -240,6 +300,8 @@ const getStatusType = (status: string) => {
 const getStatusText = (status: string) => {
   switch (status) {
     case 'ready': return '已完成'
+    case 'uploading': return '上傳中'
+    case 'transcoding': return '轉碼中'
     case 'processing': return '處理中'
     case 'failed': return '失敗'
     default: return status

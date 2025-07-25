@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"stream-demo/backend/config"
+	"fmt"
 	"stream-demo/backend/database/models"
 	"stream-demo/backend/dto"
 	"stream-demo/backend/services"
@@ -109,326 +109,326 @@ func (m *MockUserRepositoryForVideo) Delete(id uint) error {
 	return args.Error(0)
 }
 
-func TestVideoService_UploadVideo(t *testing.T) {
-	tests := []struct {
-		name         string
-		userID       uint
-		title        string
-		description  string
-		videoURL     string
-		thumbnailURL string
-		mockSetup    func(*MockVideoRepository, *MockUserRepositoryForVideo)
-		wantErr      bool
-	}{
-		{
-			name:         "成功上傳影片",
-			userID:       1,
-			title:        "測試影片",
-			description:  "這是一個測試影片",
-			videoURL:     "/path/to/video.mp4",
-			thumbnailURL: "/path/to/thumbnail.jpg",
-			mockSetup: func(mockVideoRepo *MockVideoRepository, mockUserRepo *MockUserRepositoryForVideo) {
-				mockUserRepo.On("FindByID", uint(1)).Return(&models.User{ID: 1, Username: "testuser"}, nil)
-				mockVideoRepo.On("Create", mock.AnythingOfType("*models.Video")).Return(nil)
-			},
-			wantErr: false,
-		},
-		{
-			name:         "用戶不存在",
-			userID:       999,
-			title:        "測試影片",
-			description:  "這是一個測試影片",
-			videoURL:     "/path/to/video.mp4",
-			thumbnailURL: "/path/to/thumbnail.jpg",
-			mockSetup: func(mockVideoRepo *MockVideoRepository, mockUserRepo *MockUserRepositoryForVideo) {
-				mockUserRepo.On("FindByID", uint(999)).Return(nil, assert.AnError)
-			},
-			wantErr: true,
-		},
-		{
-			name:         "儲存庫錯誤",
-			userID:       1,
-			title:        "測試影片",
-			description:  "這是一個測試影片",
-			videoURL:     "/path/to/video.mp4",
-			thumbnailURL: "/path/to/thumbnail.jpg",
-			mockSetup: func(mockVideoRepo *MockVideoRepository, mockUserRepo *MockUserRepositoryForVideo) {
-				mockUserRepo.On("FindByID", uint(1)).Return(&models.User{ID: 1, Username: "testuser"}, nil)
-				mockVideoRepo.On("Create", mock.AnythingOfType("*models.Video")).Return(assert.AnError)
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockVideoRepo := new(MockVideoRepository)
-			mockUserRepo := new(MockUserRepositoryForVideo)
-			cfg := config.NewPostgreSQLConfig("config.yaml", "local")
-			service := services.NewVideoService(cfg)
-			tt.mockSetup(mockVideoRepo, mockUserRepo)
-
-			err := service.UpdateVideo(tt.userID, tt.title, tt.description, &dto.VideoDTO{
-				Title:        tt.title,
-				Description:  tt.description,
-				OriginalURL:  tt.videoURL,
-				ThumbnailURL: tt.thumbnailURL,
-			})
-
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-			mockVideoRepo.AssertExpectations(t)
-			mockUserRepo.AssertExpectations(t)
-		})
-	}
-}
-
-func TestVideoService_GetVideoByID(t *testing.T) {
-	mockVideoRepo := new(MockVideoRepository)
-	mockUserRepo := new(MockUserRepositoryForVideo)
-	cfg := config.NewPostgreSQLConfig("config.yaml", "local")
-	service := services.NewVideoService(cfg)
-
-	tests := []struct {
-		name      string
-		id        uint
-		mockSetup func()
-		wantErr   bool
-	}{
-		{
-			name: "成功獲取影片",
-			id:   1,
-			mockSetup: func() {
-				mockVideoRepo.On("FindByID", uint(1)).Return(&models.Video{
-					ID:          1,
-					Title:       "測試影片",
-					Description: "這是一個測試影片",
-					UserID:      1,
-				}, nil)
-				mockUserRepo.On("FindByID", uint(1)).Return(&models.User{ID: 1, Username: "testuser"}, nil)
-			},
-			wantErr: false,
-		},
-		{
-			name: "影片不存在",
-			id:   999,
-			mockSetup: func() {
-				mockVideoRepo.On("FindByID", uint(999)).Return(nil, assert.AnError)
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Reset mocks for each test
-			mockVideoRepo.Mock = mock.Mock{}
-			mockUserRepo.Mock = mock.Mock{}
-			tt.mockSetup()
-
-			video, err := service.GetVideoByID(tt.id)
-
-			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Nil(t, video)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, video)
-				assert.Equal(t, tt.id, video.ID)
-			}
-			mockVideoRepo.AssertExpectations(t)
-		})
-	}
-}
-
-func TestVideoService_GetVideosByUserID(t *testing.T) {
-	mockVideoRepo := new(MockVideoRepository)
-	mockUserRepo := new(MockUserRepositoryForVideo)
-	cfg := config.NewPostgreSQLConfig("config.yaml", "local")
-	service := services.NewVideoService(cfg)
-
-	tests := []struct {
-		name      string
-		userID    uint
-		mockSetup func()
-		wantErr   bool
-	}{
-		{
-			name:   "成功獲取用戶影片",
-			userID: 1,
-			mockSetup: func() {
-				videos := []models.Video{
-					{ID: 1, Title: "影片1", UserID: 1},
-					{ID: 2, Title: "影片2", UserID: 1},
-				}
-				mockVideoRepo.On("FindByUserID", uint(1)).Return(videos, nil)
-				mockUserRepo.On("FindByID", uint(1)).Return(&models.User{ID: 1, Username: "testuser"}, nil)
-			},
-			wantErr: false,
-		},
-		{
-			name:   "用戶不存在",
-			userID: 999,
-			mockSetup: func() {
-				mockVideoRepo.On("FindByUserID", uint(999)).Return([]models.Video{}, nil)
-				mockUserRepo.On("FindByID", uint(999)).Return(nil, assert.AnError)
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Reset mocks for each test
-			mockVideoRepo.Mock = mock.Mock{}
-			mockUserRepo.Mock = mock.Mock{}
-			tt.mockSetup()
-
-			videos, total, err := service.GetVideosByUserID(tt.userID)
-
-			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Nil(t, videos)
-				assert.Equal(t, int64(0), total)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, videos)
-				assert.Greater(t, total, int64(0))
-			}
-			mockVideoRepo.AssertExpectations(t)
-		})
-	}
-}
-
-func TestVideoService_UpdateVideo(t *testing.T) {
-	tests := []struct {
-		name        string
-		id          uint
-		title       string
-		description string
-		mockSetup   func(*MockVideoRepository, *MockUserRepositoryForVideo)
-		wantErr     bool
-	}{
-		{
-			name:        "成功更新影片",
-			id:          1,
-			title:       "更新後的標題",
-			description: "更新後的描述",
-			mockSetup: func(mockVideoRepo *MockVideoRepository, mockUserRepo *MockUserRepositoryForVideo) {
-				mockVideoRepo.On("FindByID", uint(1)).Return(&models.Video{
-					ID:          1,
-					UserID:      1,
-					Title:       "原始標題",
-					Description: "原始描述",
-				}, nil)
-				mockUserRepo.On("FindByID", uint(1)).Return(&models.User{ID: 1, Username: "testuser"}, nil)
-				mockVideoRepo.On("Update", mock.AnythingOfType("*models.Video")).Return(nil)
-			},
-			wantErr: false,
-		},
-		{
-			name:        "影片不存在",
-			id:          999,
-			title:       "更新後的標題",
-			description: "更新後的描述",
-			mockSetup: func(mockVideoRepo *MockVideoRepository, mockUserRepo *MockUserRepositoryForVideo) {
-				mockVideoRepo.On("FindByID", uint(999)).Return(nil, assert.AnError)
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockVideoRepo := new(MockVideoRepository)
-			mockUserRepo := new(MockUserRepositoryForVideo)
-			cfg := config.NewPostgreSQLConfig("config.yaml", "local")
-			service := services.NewVideoService(cfg)
-			tt.mockSetup(mockVideoRepo, mockUserRepo)
-
-			err := service.UpdateVideo(tt.id, tt.title, tt.description, &dto.VideoDTO{
-				Title:       tt.title,
-				Description: tt.description,
-			})
-
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-			mockVideoRepo.AssertExpectations(t)
-			mockUserRepo.AssertExpectations(t)
-		})
-	}
-}
-
 // ================================
-// 🆕 使用新測試工具包的改進測試
+// 🆕 使用新測試工具包的改進版測試
 // ================================
 
-func TestVideoService_UploadVideo_WithToolkit(t *testing.T) {
-	t.Run("🟢 改進版：成功上傳影片", func(t *testing.T) {
-		// 改進後：只需要 3 行設置
+func TestVideoService_CreateVideoRecord_WithToolkit(t *testing.T) {
+	t.Run("🟢 改進版：成功建立影片記錄", func(t *testing.T) {
+		// 測試用戶和影片資料
 		testUser := &models.User{ID: 1, Username: "testuser"}
+
 		builder := testutils.NewServiceBuilder(t).
 			WithUser(testUser).
 			WithCreateVideoSuccess()
+
 		service := builder.BuildVideoService()
 
 		// Act
-		err := service.UpdateVideo(1, "測試影片", "這是一個測試影片", &dto.VideoDTO{
-			Title:        "測試影片",
-			Description:  "這是一個測試影片",
-			OriginalURL:  "/video.mp4",
-			ThumbnailURL: "/thumb.jpg",
-		})
+		video, err := service.CreateVideoRecord(1, "測試影片", "測試描述", "test-s3-key")
 
 		// Assert
 		assert.NoError(t, err)
+		assert.NotNil(t, video)
+		assert.Equal(t, "測試影片", video.Title)
+		assert.Equal(t, "測試描述", video.Description)
+		assert.Equal(t, uint(1), video.UserID)
 
 		builder.AssertAllExpectations()
 	})
 
 	t.Run("🟢 改進版：用戶不存在", func(t *testing.T) {
-		// 改進後：只需要 2 行設置
 		builder := testutils.NewServiceBuilder(t).
 			WithUserNotFound(999)
+
 		service := builder.BuildVideoService()
 
 		// Act
-		err := service.UpdateVideo(999, "測試影片", "描述", &dto.VideoDTO{
-			Title:        "測試影片",
-			Description:  "描述",
-			OriginalURL:  "/video.mp4",
-			ThumbnailURL: "/thumb.jpg",
-		})
+		video, err := service.CreateVideoRecord(999, "測試影片", "測試描述", "test-s3-key")
 
 		// Assert
 		assert.Error(t, err)
+		assert.Nil(t, video)
+
+		builder.AssertAllExpectations()
+	})
+}
+
+func TestVideoService_GetVideoByID_WithToolkit(t *testing.T) {
+	t.Run("🟢 改進版：成功獲取影片", func(t *testing.T) {
+		testVideo := &models.Video{
+			ID:          1,
+			Title:       "測試影片",
+			Description: "測試描述",
+			UserID:      1,
+		}
+		testUser := &models.User{ID: 1, Username: "testuser"}
+
+		builder := testutils.NewServiceBuilder(t).
+			WithVideo(testVideo).
+			WithUser(testUser)
+
+		service := builder.BuildVideoService()
+
+		// Act
+		video, err := service.GetVideoByID(1)
+
+		// Assert
+		assert.NoError(t, err)
+		assert.NotNil(t, video)
+		assert.Equal(t, uint(1), video.ID)
+		assert.Equal(t, "測試影片", video.Title)
+		assert.Equal(t, "testuser", video.Username)
+
+		builder.AssertAllExpectations()
+	})
+
+	t.Run("🟢 改進版：影片不存在", func(t *testing.T) {
+		builder := testutils.NewServiceBuilder(t).
+			WithVideoNotFound(999)
+
+		service := builder.BuildVideoService()
+
+		// Act
+		video, err := service.GetVideoByID(999)
+
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, video)
+
+		builder.AssertAllExpectations()
+	})
+}
+
+func TestVideoService_GetVideosByUserID_WithToolkit(t *testing.T) {
+	t.Run("🟢 改進版：成功獲取用戶影片", func(t *testing.T) {
+		testUser := &models.User{ID: 1, Username: "testuser"}
+		testVideos := []models.Video{
+			{ID: 1, Title: "影片1", UserID: 1},
+			{ID: 2, Title: "影片2", UserID: 1},
+		}
+
+		builder := testutils.NewServiceBuilder(t).
+			WithUser(testUser)
+
+		builder.VideoRepo.On("FindByUserID", uint(1)).Return(testVideos, nil)
+		service := builder.BuildVideoService()
+
+		// Act
+		videos, total, err := service.GetVideosByUserID(1)
+
+		// Assert
+		assert.NoError(t, err)
+		assert.NotNil(t, videos)
+		assert.Equal(t, int64(2), total)
+		assert.Len(t, videos, 2)
+		assert.Equal(t, "影片1", videos[0].Title)
+		assert.Equal(t, "testuser", videos[0].Username)
+
+		builder.AssertAllExpectations()
+	})
+
+	t.Run("🟢 改進版：用戶不存在", func(t *testing.T) {
+		builder := testutils.NewServiceBuilder(t).
+			WithUserNotFound(999)
+
+		service := builder.BuildVideoService()
+
+		// Act
+		videos, total, err := service.GetVideosByUserID(999)
+
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, videos)
+		assert.Equal(t, int64(0), total)
 
 		builder.AssertAllExpectations()
 	})
 }
 
 // ================================
-// 📊 新舊測試對比展示
+// 🚀 多資料庫測試
 // ================================
 
-/*
-🔴 舊版測試複雜度：
-- Mock 設置：8-12 行代碼
-- 業務邏輯：2-3 行代碼
-- 維護成本：高（每次 Interface 變更都要修改）
+func TestVideoService_MultiDatabase(t *testing.T) {
+	// 準備測試數據
+	testUser := &models.User{ID: 1, Username: "testuser", Email: "test@example.com"}
+	testVideo := &models.Video{
+		ID:          1,
+		Title:       "測試影片",
+		Description: "測試描述",
+		UserID:      1,
+		Status:      "uploading",
+	}
 
-🟢 新版測試複雜度：
-- Mock 設置：2-3 行代碼 (減少 70%)
-- 業務邏輯：2-3 行代碼
-- 維護成本：低（工具包統一管理）
+	testCases := []struct {
+		name      string
+		dbType    testutils.DatabaseType
+		setupTest func(builder *testutils.ServiceBuilder) *services.VideoService
+		runTest   func(service *services.VideoService) error
+		wantError bool
+	}{
+		{
+			name:   "PostgreSQL 影片創建",
+			dbType: testutils.PostgreSQLTest,
+			setupTest: func(builder *testutils.ServiceBuilder) *services.VideoService {
+				return builder.WithUser(testUser).WithCreateVideoSuccess().BuildVideoService()
+			},
+			runTest: func(service *services.VideoService) error {
+				_, err := service.CreateVideoRecord(1, "新影片", "描述", "s3-key")
+				return err
+			},
+			wantError: false,
+		},
+		{
+			name:   "MySQL 影片查詢",
+			dbType: testutils.MySQLTest,
+			setupTest: func(builder *testutils.ServiceBuilder) *services.VideoService {
+				return builder.WithVideo(testVideo).WithUser(testUser).BuildVideoService()
+			},
+			runTest: func(service *services.VideoService) error {
+				_, err := service.GetVideoByID(1)
+				return err
+			},
+			wantError: false,
+		},
+		{
+			name:   "PostgreSQL 影片更新",
+			dbType: testutils.PostgreSQLTest,
+			setupTest: func(builder *testutils.ServiceBuilder) *services.VideoService {
+				builder.VideoRepo.On("FindByID", uint(1)).Return(testVideo, nil)
+				builder.VideoRepo.On("Update", mock.AnythingOfType("*models.Video")).Return(nil)
+				builder.UserRepo.On("FindByID", uint(1)).Return(testUser, nil)
+				return builder.BuildVideoService()
+			},
+			runTest: func(service *services.VideoService) error {
+				return service.UpdateVideo(1, "更新標題", "更新描述", &dto.VideoDTO{})
+			},
+			wantError: false,
+		},
+		{
+			name:   "MySQL 影片刪除",
+			dbType: testutils.MySQLTest,
+			setupTest: func(builder *testutils.ServiceBuilder) *services.VideoService {
+				builder.VideoRepo.On("Delete", uint(1)).Return(nil)
+				return builder.BuildVideoService()
+			},
+			runTest: func(service *services.VideoService) error {
+				return service.DeleteVideo(1)
+			},
+			wantError: false,
+		},
+		{
+			name:   "PostgreSQL 影片搜索",
+			dbType: testutils.PostgreSQLTest,
+			setupTest: func(builder *testutils.ServiceBuilder) *services.VideoService {
+				searchResults := []models.Video{*testVideo}
+				builder.VideoRepo.On("Search", "測試").Return(searchResults, nil)
+				builder.UserRepo.On("FindByID", uint(1)).Return(testUser, nil)
+				return builder.BuildVideoService()
+			},
+			runTest: func(service *services.VideoService) error {
+				_, _, err := service.SearchVideos("測試", 0, 10)
+				return err
+			},
+			wantError: false,
+		},
+		{
+			name:   "MySQL 影片點讚",
+			dbType: testutils.MySQLTest,
+			setupTest: func(builder *testutils.ServiceBuilder) *services.VideoService {
+				builder.VideoRepo.On("IncrementLikes", uint(1)).Return(nil)
+				return builder.BuildVideoService()
+			},
+			runTest: func(service *services.VideoService) error {
+				return service.LikeVideo(1)
+			},
+			wantError: false,
+		},
+	}
 
-💡 TDD 友好度：
-- 舊版：先設計複雜 Mock → 寫測試 → 實現功能
-- 新版：快速寫測試 → 實現功能 → 重構優化
-*/
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// 創建指定資料庫類型的構建器
+			builder := testutils.NewServiceBuilderWithDB(t, tc.dbType)
+
+			// 驗證配置
+			assert.NoError(t, builder.ValidateConfig())
+			assert.Equal(t, tc.dbType, builder.GetDatabaseType())
+
+			// 設置測試
+			service := tc.setupTest(builder)
+
+			// 執行測試
+			err := tc.runTest(service)
+
+			// 檢查結果
+			if tc.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			// 驗證所有期望
+			builder.AssertAllExpectations()
+		})
+	}
+}
+
+// ================================
+// 🔧 影片服務專屬測試工具
+// ================================
+
+func TestVideoService_SpecialCases(t *testing.T) {
+	t.Run("大型影片分頁查詢 - PostgreSQL", func(t *testing.T) {
+		builder := testutils.NewPostgreSQLServiceBuilder(t)
+
+		// 模擬大量影片數據
+		videos := make([]models.Video, 100)
+		for i := 0; i < 100; i++ {
+			videos[i] = models.Video{
+				ID:     uint(i + 1),
+				Title:  fmt.Sprintf("影片 %d", i+1),
+				UserID: 1,
+			}
+		}
+
+		builder.VideoRepo.On("FindVideosWithPagination", 0, 20).Return(videos[:20], int64(100), nil)
+		service := builder.BuildVideoService()
+
+		// Act
+		result, total, err := service.GetVideos(0, 20)
+
+		// Assert
+		assert.NoError(t, err)
+		assert.Len(t, result, 20)
+		assert.Equal(t, int64(100), total)
+
+		builder.AssertAllExpectations()
+	})
+
+	t.Run("影片轉碼狀態檢查 - MySQL", func(t *testing.T) {
+		builder := testutils.NewMySQLServiceBuilder(t)
+
+		testVideo := &models.Video{
+			ID:                 1,
+			Title:              "轉碼測試影片",
+			Status:             "processing",
+			ProcessingProgress: 50,
+		}
+		testUser := &models.User{ID: 1, Username: "testuser"}
+
+		builder.WithVideo(testVideo).WithUser(testUser)
+		service := builder.BuildVideoService()
+
+		// Act
+		video, err := service.GetVideoByID(1)
+
+		// Assert
+		assert.NoError(t, err)
+		assert.Equal(t, "processing", video.Status)
+		assert.Equal(t, 50, video.ProcessingProgress)
+
+		builder.AssertAllExpectations()
+	})
+}

@@ -145,7 +145,7 @@ const handleUpdate = async () => {
         })
         
         // 更新本地用戶資料
-        const userData = updatedUser.data || updatedUser
+        const userData = updatedUser
         authStore.updateUser(userData)
         
         ElMessage.success('更新成功')

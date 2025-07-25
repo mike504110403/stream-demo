@@ -2,25 +2,24 @@ package utils
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
 
-	"github.com/lib/pq"
-	"gorm.io/gorm"
+	"github.com/redis/go-redis/v9"
 )
 
-// PostgreSQLMessaging PostgreSQL訊息佇列管理器
-type PostgreSQLMessaging struct {
-	db          *gorm.DB
-	listener    *pq.Listener
+// RedisMessaging Redis 訊息佇列管理器
+type RedisMessaging struct {
+	client      *redis.Client
+	pubsub      *redis.PubSub
 	channels    map[string][]MessageHandler
 	mu          sync.RWMutex
 	ctx         context.Context
 	cancel      context.CancelFunc
 	isListening bool
+	db          int
 }
 
 // MessageHandler 訊息處理函數類型
@@ -35,43 +34,36 @@ type Message struct {
 	Timestamp time.Time              `json:"timestamp"`
 }
 
-// NewPostgreSQLMessaging 創建PostgreSQL訊息佇列實例
-func NewPostgreSQLMessaging(db *gorm.DB) (*PostgreSQLMessaging, error) {
-	sqlDB, err := db.DB()
-	if err != nil {
-		return nil, fmt.Errorf("獲取底層SQL連接失敗: %w", err)
-	}
-
-	// 獲取連接字符串（這裡需要從配置中讀取）
-	connStr := buildConnectionString(sqlDB)
-
-	listener := pq.NewListener(connStr, 10*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
-		if err != nil {
-			LogError("PostgreSQL Listener錯誤: %v", err)
-		}
+// NewRedisMessaging 創建Redis訊息佇列實例
+func NewRedisMessaging(db int) (*RedisMessaging, error) {
+	// 創建指定DB的Redis客戶端
+	messagingClient := redis.NewClient(&redis.Options{
+		Addr:     RedisClient.Options().Addr,
+		Password: RedisClient.Options().Password,
+		DB:       db,
 	})
+
+	// 測試連接
+	ctx := context.Background()
+	if err := messagingClient.Ping(ctx).Err(); err != nil {
+		return nil, fmt.Errorf("Redis messaging connection failed: %w", err)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	messaging := &PostgreSQLMessaging{
-		db:       db,
-		listener: listener,
+	messaging := &RedisMessaging{
+		client:   messagingClient,
 		channels: make(map[string][]MessageHandler),
 		ctx:      ctx,
 		cancel:   cancel,
+		db:       db,
 	}
 
 	return messaging, nil
 }
 
-// buildConnectionString 構建連接字符串（簡化版本）
-func buildConnectionString(sqlDB *sql.DB) string {
-	// 這裡應該從配置文件讀取，暫時使用預設值
-	return "postgres://stream_user:stream_password@localhost:5432/stream_demo?sslmode=disable"
-}
-
 // Subscribe 訂閱頻道
-func (m *PostgreSQLMessaging) Subscribe(channel string, handler MessageHandler) error {
+func (m *RedisMessaging) Subscribe(channel string, handler MessageHandler) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -80,10 +72,14 @@ func (m *PostgreSQLMessaging) Subscribe(channel string, handler MessageHandler) 
 
 	// 如果是新頻道，開始監聽
 	if len(m.channels[channel]) == 1 {
-		if err := m.listener.Listen(channel); err != nil {
-			return fmt.Errorf("監聽頻道 %s 失敗: %w", channel, err)
+		if m.pubsub == nil {
+			m.pubsub = m.client.Subscribe(m.ctx, channel)
+		} else {
+			if err := m.pubsub.Subscribe(m.ctx, channel); err != nil {
+				return fmt.Errorf("訂閱頻道 %s 失敗: %w", channel, err)
+			}
 		}
-		LogInfo("開始監聽頻道: %s", channel)
+		fmt.Printf("INFO: 開始監聽頻道: %s\n", channel)
 	}
 
 	// 啟動監聽器（如果還沒啟動）
@@ -96,22 +92,24 @@ func (m *PostgreSQLMessaging) Subscribe(channel string, handler MessageHandler) 
 }
 
 // Unsubscribe 取消訂閱頻道
-func (m *PostgreSQLMessaging) Unsubscribe(channel string) error {
+func (m *RedisMessaging) Unsubscribe(channel string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	delete(m.channels, channel)
 
-	if err := m.listener.Unlisten(channel); err != nil {
-		return fmt.Errorf("停止監聽頻道 %s 失敗: %w", channel, err)
+	if m.pubsub != nil {
+		if err := m.pubsub.Unsubscribe(m.ctx, channel); err != nil {
+			return fmt.Errorf("停止監聽頻道 %s 失敗: %w", channel, err)
+		}
 	}
 
-	LogInfo("停止監聽頻道: %s", channel)
+	fmt.Printf("INFO: 停止監聽頻道: %s\n", channel)
 	return nil
 }
 
 // Publish 發布訊息到指定頻道
-func (m *PostgreSQLMessaging) Publish(channel string, messageType string, payload map[string]interface{}) error {
+func (m *RedisMessaging) Publish(channel string, messageType string, payload map[string]interface{}) error {
 	message := Message{
 		ID:        generateMessageID(),
 		Channel:   channel,
@@ -125,17 +123,16 @@ func (m *PostgreSQLMessaging) Publish(channel string, messageType string, payloa
 		return fmt.Errorf("序列化訊息失敗: %w", err)
 	}
 
-	sql := fmt.Sprintf("SELECT pg_notify('%s', $1)", channel)
-	if err := m.db.Exec(sql, string(messageJSON)).Error; err != nil {
+	if err := m.client.Publish(m.ctx, channel, messageJSON).Err(); err != nil {
 		return fmt.Errorf("發送訊息到頻道 %s 失敗: %w", channel, err)
 	}
 
-	LogInfo("訊息已發送到頻道 %s: %s", channel, messageType)
+	fmt.Printf("INFO: 訊息已發送到頻道 %s: %s\n", channel, messageType)
 	return nil
 }
 
 // PublishVideoProcessing 發布影片處理訊息
-func (m *PostgreSQLMessaging) PublishVideoProcessing(videoID uint, status string, progress int) error {
+func (m *RedisMessaging) PublishVideoProcessing(videoID uint, status string, progress int) error {
 	return m.Publish("video_processing", "status_update", map[string]interface{}{
 		"video_id": videoID,
 		"status":   status,
@@ -144,7 +141,7 @@ func (m *PostgreSQLMessaging) PublishVideoProcessing(videoID uint, status string
 }
 
 // PublishLiveUpdate 發布直播更新訊息
-func (m *PostgreSQLMessaging) PublishLiveUpdate(liveID uint, eventType string, data map[string]interface{}) error {
+func (m *RedisMessaging) PublishLiveUpdate(liveID uint, eventType string, data map[string]interface{}) error {
 	payload := map[string]interface{}{
 		"live_id": liveID,
 		"event":   eventType,
@@ -159,7 +156,7 @@ func (m *PostgreSQLMessaging) PublishLiveUpdate(liveID uint, eventType string, d
 }
 
 // PublishUserNotification 發布用戶通知訊息
-func (m *PostgreSQLMessaging) PublishUserNotification(userID uint, notificationType string, title, content string) error {
+func (m *RedisMessaging) PublishUserNotification(userID uint, notificationType string, title, content string) error {
 	return m.Publish("user_notifications", notificationType, map[string]interface{}{
 		"user_id": userID,
 		"title":   title,
@@ -167,75 +164,98 @@ func (m *PostgreSQLMessaging) PublishUserNotification(userID uint, notificationT
 	})
 }
 
+// PublishChatMessage 發布聊天訊息
+func (m *RedisMessaging) PublishChatMessage(liveID, userID uint, username, content, messageType string) error {
+	return m.Publish("chat_messages", "new_message", map[string]interface{}{
+		"live_id":  liveID,
+		"user_id":  userID,
+		"username": username,
+		"content":  content,
+		"type":     messageType,
+	})
+}
+
 // startListening 開始監聽訊息
-func (m *PostgreSQLMessaging) startListening() {
-	LogInfo("PostgreSQL訊息監聽器已啟動")
+func (m *RedisMessaging) startListening() {
+	fmt.Println("INFO: Redis訊息監聽器已啟動")
+
+	if m.pubsub == nil {
+		fmt.Println("ERROR: PubSub未初始化")
+		return
+	}
+
+	// 獲取訊息通道
+	ch := m.pubsub.Channel()
 
 	for {
 		select {
 		case <-m.ctx.Done():
-			LogInfo("PostgreSQL訊息監聽器已停止")
+			fmt.Println("INFO: Redis訊息監聽器已停止")
 			return
 
-		case notification := <-m.listener.Notify:
-			if notification != nil {
-				m.handleNotification(notification)
+		case msg := <-ch:
+			if msg != nil {
+				m.handleMessage(msg)
 			}
 
-		case <-time.After(90 * time.Second):
+		case <-time.After(30 * time.Second):
 			// 定期ping以保持連接
-			go func() {
-				if err := m.listener.Ping(); err != nil {
-					LogError("PostgreSQL Listener ping失敗: %v", err)
-				}
-			}()
+			if err := m.pubsub.Ping(m.ctx); err != nil {
+				fmt.Printf("ERROR: Redis PubSub ping失敗: %v\n", err)
+			}
 		}
 	}
 }
 
-// handleNotification 處理收到的通知
-func (m *PostgreSQLMessaging) handleNotification(notification *pq.Notification) {
+// handleMessage 處理收到的訊息
+func (m *RedisMessaging) handleMessage(msg *redis.Message) {
 	m.mu.RLock()
-	handlers, exists := m.channels[notification.Channel]
+	handlers, exists := m.channels[msg.Channel]
 	m.mu.RUnlock()
 
 	if !exists {
 		return
 	}
 
-	// 解析訊息
-	var message Message
-	if err := json.Unmarshal([]byte(notification.Extra), &message); err != nil {
-		LogError("解析訊息失敗: %v", err)
-		return
-	}
+	payload := []byte(msg.Payload)
 
-	// 調用所有處理器
+	// 並行處理所有處理器
 	for _, handler := range handlers {
 		go func(h MessageHandler) {
-			if err := h(notification.Channel, []byte(notification.Extra)); err != nil {
-				LogError("訊息處理失敗 (頻道: %s): %v", notification.Channel, err)
+			if err := h(msg.Channel, payload); err != nil {
+				fmt.Printf("ERROR: 處理訊息失敗 (頻道: %s): %v\n", msg.Channel, err)
 			}
 		}(handler)
 	}
 }
 
-// Close 關閉訊息佇列
-func (m *PostgreSQLMessaging) Close() error {
+// Close 關閉訊息系統
+func (m *RedisMessaging) Close() error {
 	m.cancel()
 
-	if m.listener != nil {
-		if err := m.listener.Close(); err != nil {
-			return fmt.Errorf("關閉監聽器失敗: %w", err)
+	var errs []error
+
+	if m.pubsub != nil {
+		if err := m.pubsub.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("關閉PubSub失敗: %w", err))
 		}
 	}
 
-	LogInfo("PostgreSQL訊息佇列已關閉")
+	if m.client != nil {
+		if err := m.client.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("關閉Redis客戶端失敗: %w", err))
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("關閉訊息系統時發生錯誤: %v", errs)
+	}
+
 	return nil
 }
 
-// GetChannels 獲取當前訂閱的頻道列表
-func (m *PostgreSQLMessaging) GetChannels() []string {
+// GetChannels 獲取所有訂閱的頻道
+func (m *RedisMessaging) GetChannels() []string {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -243,20 +263,34 @@ func (m *PostgreSQLMessaging) GetChannels() []string {
 	for channel := range m.channels {
 		channels = append(channels, channel)
 	}
-
 	return channels
+}
+
+// GetStats 獲取訊息系統統計信息
+func (m *RedisMessaging) GetStats() map[string]interface{} {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	stats := map[string]interface{}{
+		"db":             m.db,
+		"channels_count": len(m.channels),
+		"channels":       m.GetChannels(),
+		"is_listening":   m.isListening,
+	}
+
+	return stats
 }
 
 // generateMessageID 生成訊息ID
 func generateMessageID() string {
-	return fmt.Sprintf("%d", time.Now().UnixNano())
+	return fmt.Sprintf("%d_%d", time.Now().UnixNano(), time.Now().Unix())
 }
 
 // VideoProcessingHandler 影片處理訊息處理器
 func VideoProcessingHandler(channel string, payload []byte) error {
 	var message Message
-	if err := json.Unmarshal(payload, &message); err != nil {
-		return fmt.Errorf("解析影片處理訊息失敗: %w", err)
+	if err := UnmarshalMessage(payload, &message); err != nil {
+		return err
 	}
 
 	videoID, ok := message.Payload["video_id"].(float64)
@@ -269,10 +303,16 @@ func VideoProcessingHandler(channel string, payload []byte) error {
 		return fmt.Errorf("無效的status")
 	}
 
-	LogInfo("處理影片 %d 狀態更新: %s", uint(videoID), status)
+	progress, ok := message.Payload["progress"].(float64)
+	if !ok {
+		progress = 0
+	}
+
+	fmt.Printf("INFO: 處理影片訊息 - VideoID: %d, Status: %s, Progress: %.0f%%\n",
+		uint(videoID), status, progress)
 
 	// 這裡可以添加具體的業務邏輯
-	// 例如：更新資料庫、通知前端等
+	// 例如更新資料庫、發送通知等
 
 	return nil
 }
@@ -280,8 +320,8 @@ func VideoProcessingHandler(channel string, payload []byte) error {
 // LiveUpdateHandler 直播更新訊息處理器
 func LiveUpdateHandler(channel string, payload []byte) error {
 	var message Message
-	if err := json.Unmarshal(payload, &message); err != nil {
-		return fmt.Errorf("解析直播更新訊息失敗: %w", err)
+	if err := UnmarshalMessage(payload, &message); err != nil {
+		return err
 	}
 
 	liveID, ok := message.Payload["live_id"].(float64)
@@ -294,15 +334,49 @@ func LiveUpdateHandler(channel string, payload []byte) error {
 		return fmt.Errorf("無效的event")
 	}
 
-	LogInfo("處理直播 %d 事件: %s", uint(liveID), event)
+	fmt.Printf("INFO: 處理直播訊息 - LiveID: %d, Event: %s\n", uint(liveID), event)
 
 	// 這裡可以添加具體的業務邏輯
-	// 例如：更新觀看人數、通知其他觀眾等
+	// 例如更新觀看人數、發送系統訊息等
 
 	return nil
 }
 
-// UnmarshalMessage 解析訊息
+// ChatMessageHandler 聊天訊息處理器
+func ChatMessageHandler(channel string, payload []byte) error {
+	var message Message
+	if err := UnmarshalMessage(payload, &message); err != nil {
+		return err
+	}
+
+	liveID, ok := message.Payload["live_id"].(float64)
+	if !ok {
+		return fmt.Errorf("無效的live_id")
+	}
+
+	username, ok := message.Payload["username"].(string)
+	if !ok {
+		return fmt.Errorf("無效的username")
+	}
+
+	content, ok := message.Payload["content"].(string)
+	if !ok {
+		return fmt.Errorf("無效的content")
+	}
+
+	fmt.Printf("INFO: 處理聊天訊息 - LiveID: %d, User: %s, Content: %s\n",
+		uint(liveID), username, content)
+
+	// 這裡可以添加具體的業務邏輯
+	// 例如保存聊天記錄、廣播給WebSocket等
+
+	return nil
+}
+
+// UnmarshalMessage 反序列化訊息
 func UnmarshalMessage(payload []byte, dest *Message) error {
-	return json.Unmarshal(payload, dest)
+	if err := json.Unmarshal(payload, dest); err != nil {
+		return fmt.Errorf("反序列化訊息失敗: %w", err)
+	}
+	return nil
 }

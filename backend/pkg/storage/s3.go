@@ -52,9 +52,11 @@ func NewS3Storage(config S3Config) (*S3Storage, error) {
 		),
 	}
 
-	// 如果有自定義endpoint，設置它
+	// 如果有自定義endpoint，設置它（MinIO 需要特殊配置）
 	if config.Endpoint != "" {
 		awsConfig.Endpoint = aws.String(config.Endpoint)
+		awsConfig.S3ForcePathStyle = aws.Bool(true) // MinIO 需要路徑樣式
+		awsConfig.DisableSSL = aws.Bool(true)       // 本地開發不使用 SSL
 	}
 
 	sess, err := session.NewSession(awsConfig)
@@ -75,13 +77,11 @@ func (s *S3Storage) GeneratePresignedUploadURL(userID uint, fileExt string, file
 	// 生成唯一檔名
 	key := fmt.Sprintf("videos/original/%d/%s%s", userID, uuid.New().String(), fileExt)
 
-	// 創建預簽名請求
+	// 創建預簽名請求（簡化版本，不預設複雜 headers）
 	req, _ := s.client.PutObjectRequest(&s3.PutObjectInput{
-		Bucket:        aws.String(s.bucket),
-		Key:           aws.String(key),
-		ContentType:   aws.String(getContentType(fileExt)),
-		ContentLength: aws.Int64(fileSize),
-		ACL:           aws.String("private"), // 私有，通過CDN訪問
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+		// 不預設 ContentType, ACL 等，避免簽名問題
 	})
 
 	// 生成預簽名URL，15分鐘有效
@@ -89,6 +89,11 @@ func (s *S3Storage) GeneratePresignedUploadURL(userID uint, fileExt string, file
 	if err != nil {
 		return nil, fmt.Errorf("生成預簽名URL失敗: %w", err)
 	}
+
+	// 調試輸出
+	fmt.Printf("🔧 生成預簽名URL - Key: %s\n", key)
+	fmt.Printf("🔧 生成預簽名URL - URL: %s\n", urlStr)
+	fmt.Printf("🔧 生成預簽名URL - ContentType: %s\n", getContentType(fileExt))
 
 	// 生成CDN URL
 	cdnURL := s.GenerateCDNURL(key)
@@ -99,7 +104,6 @@ func (s *S3Storage) GeneratePresignedUploadURL(userID uint, fileExt string, file
 		CDNUrl:    cdnURL,
 		FormData: map[string]string{
 			"Content-Type": getContentType(fileExt),
-			"ACL":          "private",
 		},
 	}, nil
 }
@@ -124,8 +128,18 @@ func (s *S3Storage) GenerateCDNURL(key string) string {
 	if s.cdnDomain != "" {
 		return fmt.Sprintf("%s/%s", s.cdnDomain, key)
 	}
-	// 如果沒有CDN，返回S3 URL
-	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", s.bucket, s.region, key)
+	// 如果沒有CDN，返回 MinIO URL（本地開發）
+	return fmt.Sprintf("http://localhost:9000/%s/%s", s.bucket, key)
+}
+
+// GenerateProcessedCDNURL 生成處理後檔案的 CDN URL
+func (s *S3Storage) GenerateProcessedCDNURL(key string) string {
+	processedBucket := "stream-demo-processed"
+	if s.cdnDomain != "" {
+		return fmt.Sprintf("%s/%s", s.cdnDomain, key)
+	}
+	// 如果沒有CDN，返回處理後桶的 MinIO URL（本地開發）
+	return fmt.Sprintf("http://localhost:9000/%s/%s", processedBucket, key)
 }
 
 // CheckFileExists 檢查檔案是否存在

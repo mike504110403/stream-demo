@@ -10,7 +10,7 @@ export interface User {
 }
 
 export interface LoginRequest {
-  email: string
+  username: string
   password: string
 }
 
@@ -27,25 +27,68 @@ export interface UpdateUserRequest {
   bio?: string
 }
 
+// 影片品質類型
+export interface VideoQuality {
+  id: number
+  video_id: number
+  quality: string
+  width: number
+  height: number
+  bitrate: number
+  file_url: string
+  file_key: string
+  status: string
+  created_at: string
+  updated_at: string
+}
+
 // 影片相關類型
 export interface Video {
   id: number
   title: string
   description?: string
   user_id: number
-  video_url: string
-  thumbnail_url?: string
-  status: 'processing' | 'ready' | 'failed'
+  username?: string
+  original_url?: string        // 原始影片 URL
+  video_url?: string          // 舊字段，保持兼容性
+  thumbnail_url?: string      // 縮圖 URL
+  hls_master_url?: string     // HLS 播放列表 URL
+  mp4_url?: string            // MP4 轉碼版本 URL（網頁播放）
+  status: 'processing' | 'ready' | 'failed' | 'uploading' | 'transcoding'
+  processing_progress?: number
+  duration?: number           // 影片長度（秒）
+  file_size?: number          // 檔案大小（字節）
   views: number
   likes: number
   created_at: string
   updated_at: string
   user?: User
+  qualities?: VideoQuality[]  // 影片品質列表
 }
 
 export interface UploadVideoRequest {
   title: string
   description?: string
+}
+
+// 分離式上傳相關類型
+export interface GenerateUploadURLRequest {
+  title: string
+  description?: string
+  filename: string
+  file_size: number
+}
+
+export interface GenerateUploadURLResponse {
+  upload_url: string
+  form_data: Record<string, string>
+  key: string
+  video: Video
+}
+
+export interface ConfirmUploadRequest {
+  video_id: number
+  s3_key: string
 }
 
 export interface UpdateVideoRequest {

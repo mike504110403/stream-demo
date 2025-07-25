@@ -55,31 +55,31 @@ const router = createRouter({
     {
       path: '/lives/create',
       name: 'CreateLive',
-      component: () => import('@/views/live/CreateLiveView.vue'),
+      component: () => import('@/views/live/LiveCreate.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/lives/:id',
       name: 'LiveDetail',
-      component: () => import('@/views/live/LiveDetailView.vue'),
+      component: () => import('@/views/live/LiveListView.vue'), // 暫時使用 LiveListView
       meta: { requiresAuth: true }
     },
     {
       path: '/lives/:id/stream',
       name: 'LiveStream',
-      component: () => import('@/views/live/LiveStreamView.vue'),
+      component: () => import('@/views/live/LiveRoom.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/payments',
       name: 'Payments',
-      component: () => import('@/views/payment/PaymentListView.vue'),
+      component: () => import('@/views/DashboardView.vue'), // 暫時使用 Dashboard
       meta: { requiresAuth: true }
     },
     {
       path: '/payments/create',
       name: 'CreatePayment',
-      component: () => import('@/views/payment/CreatePaymentView.vue'),
+      component: () => import('@/views/DashboardView.vue'), // 暫時使用 Dashboard
       meta: { requiresAuth: true }
     },
     {
@@ -101,9 +101,16 @@ router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
   
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next('/login')
+    // 保存用戶原本要訪問的路由
+    const redirect = to.fullPath
+    next({
+      path: '/login',
+      query: { redirect }
+    })
   } else if ((to.name === 'Login' || to.name === 'Register') && authStore.isAuthenticated) {
-    next('/dashboard')
+    // 如果已登入，檢查是否有重定向參數
+    const redirect = to.query.redirect as string
+    next(redirect || '/dashboard')
   } else {
     next()
   }

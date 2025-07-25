@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "🚀 啟動後端 (Go)",
+      "name": "🚀 啟動後端 (PostgreSQL)",
       "type": "go",
       "request": "launch",
       "mode": "auto",
@@ -13,6 +13,41 @@
         "GIN_MODE": "debug",
         "SERVER_PORT": "8080",
         "SERVER_HOST": "127.0.0.1"
+      },
+      "args": ["-db", "postgresql"],
+      "showLog": true,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "🚀 啟動後端 (MySQL)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/backend/main.go",
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "APP_ENV": "local",
+        "GIN_MODE": "debug",
+        "SERVER_PORT": "8080",
+        "SERVER_HOST": "127.0.0.1"
+      },
+      "args": ["-db", "mysql"],
+      "showLog": true,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "🚀 啟動後端 (默認配置)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/backend/main.go",
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "APP_ENV": "local",
+        "GIN_MODE": "debug",
+        "SERVER_PORT": "8080",
+        "SERVER_HOST": "127.0.0.1",
+        "DATABASE_TYPE": "postgresql"
       },
       "args": [],
       "showLog": true,
@@ -31,35 +66,7 @@
       }
     },
     {
-      "name": "🗄️ 初始化資料庫",
-      "type": "go",
-      "request": "launch",
-      "mode": "auto",
-      "program": "${workspaceFolder}/backend/scripts/init-db.go",
-      "cwd": "${workspaceFolder}/backend",
-      "env": {
-        "APP_ENV": "local"
-      },
-      "args": [],
-      "showLog": true,
-      "console": "integratedTerminal"
-    },
-    {
-      "name": "🔧 資料庫遷移",
-      "type": "go",
-      "request": "launch",
-      "mode": "auto",
-      "program": "${workspaceFolder}/backend/cmd/migrate/main.go",
-      "cwd": "${workspaceFolder}/backend",
-      "env": {
-        "APP_ENV": "local"
-      },
-      "args": ["-action=migrate"],
-      "showLog": true,
-      "console": "integratedTerminal"
-    },
-    {
-      "name": "🧪 測試配置載入",
+      "name": "🧪 後端除錯模式 (PostgreSQL)",
       "type": "go",
       "request": "launch",
       "mode": "debug",
@@ -71,37 +78,98 @@
         "SERVER_PORT": "8080",
         "SERVER_HOST": "127.0.0.1"
       },
-      "args": [],
+      "args": ["-db", "postgresql"],
       "showLog": true,
       "console": "integratedTerminal",
       "stopOnEntry": false
+    },
+    {
+      "name": "🧪 後端除錯模式 (MySQL)",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/backend/main.go",
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "APP_ENV": "local",
+        "GIN_MODE": "debug",
+        "SERVER_PORT": "8080",
+        "SERVER_HOST": "127.0.0.1"
+      },
+      "args": ["-db", "mysql"],
+      "showLog": true,
+      "console": "integratedTerminal",
+      "stopOnEntry": false
+    },
+    {
+      "name": "🧪 運行測試 (PostgreSQL)",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceFolder}/backend/tests",
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "APP_ENV": "test",
+        "DATABASE_TYPE": "postgresql"
+      },
+      "args": ["-v"],
+      "showLog": true,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "🧪 運行測試 (MySQL)",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceFolder}/backend/tests",
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "APP_ENV": "test",
+        "DATABASE_TYPE": "mysql"
+      },
+      "args": ["-v"],
+      "showLog": true,
+      "console": "integratedTerminal"
     }
   ],
   "compounds": [
     {
-      "name": "🎬 啟動串流平台 (前端+後端)",
+      "name": "🎬 啟動串流平台 (前端 + PostgreSQL 後端)",
       "configurations": [
-        "🚀 啟動後端 (Go)",
+        "🚀 啟動後端 (PostgreSQL)",
         "🎨 啟動前端 (Vite)"
       ],
       "stopAll": true,
       "presentation": {
         "hidden": false,
-        "group": "",
+        "group": "串流平台",
         "order": 1
       }
     },
     {
-      "name": "🔧 完整初始化 (資料庫+遷移+啟動)",
+      "name": "🎬 啟動串流平台 (前端 + MySQL 後端)",
       "configurations": [
-        "🗄️ 初始化資料庫",
-        "🔧 資料庫遷移"
+        "🚀 啟動後端 (MySQL)",
+        "🎨 啟動前端 (Vite)"
+      ],
+      "stopAll": true,
+      "presentation": {
+        "hidden": false,
+        "group": "串流平台",
+        "order": 2
+      }
+    },
+    {
+      "name": "🧪 多資料庫測試",
+      "configurations": [
+        "🧪 運行測試 (PostgreSQL)",
+        "🧪 運行測試 (MySQL)"
       ],
       "stopAll": false,
       "presentation": {
         "hidden": false,
-        "group": "",
-        "order": 2
+        "group": "測試",
+        "order": 3
       }
     }
   ]

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	log "stream-demo/backend/pkg/logging"
+	"stream-demo/backend/utils"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
@@ -15,14 +15,14 @@ import (
 
 // InitPostgreSQL 初始化PostgreSQL連接
 func InitPostgreSQL(dbConfig DatabaseConnectionConfig, isSlave bool) *gorm.DB {
-	log.Info("=== PostgreSQL Connection Info ===")
+	utils.LogInfo("=== PostgreSQL Connection Info ===")
 
 	var ormLogger logger.Interface
 	if gin.Mode() == "debug" {
 		ormLogger = logger.Default.LogMode(logger.Info)
 	} else {
 		ormLogger = logger.New(
-			&log.Writer{},
+			&utils.Writer{},
 			logger.Config{
 				SlowThreshold:             200 * time.Millisecond,
 				LogLevel:                  logger.Warn,
@@ -52,12 +52,12 @@ func InitPostgreSQL(dbConfig DatabaseConnectionConfig, isSlave bool) *gorm.DB {
 	})
 
 	if err != nil {
-		log.Fatal("Failed to connect to PostgreSQL database:", err)
+		utils.LogFatal("Failed to connect to PostgreSQL database:", err)
 	}
 
 	sqlDB, err := db.DB()
 	if err != nil {
-		log.Fatal("Failed to get underlying sql.DB:", err)
+		utils.LogFatal("Failed to get underlying sql.DB:", err)
 	}
 
 	// 設置連接池參數
@@ -68,15 +68,15 @@ func InitPostgreSQL(dbConfig DatabaseConnectionConfig, isSlave bool) *gorm.DB {
 
 	// 測試連接
 	if err := sqlDB.Ping(); err != nil {
-		log.Fatal("Failed to ping PostgreSQL database:", err)
+		utils.LogFatal("Failed to ping PostgreSQL database:", err)
 	}
 
-	log.Info("PostgreSQL connected successfully")
+	utils.LogInfo("PostgreSQL connected successfully")
 
 	if isSlave {
-		log.Info("Connected as slave database")
+		utils.LogInfo("Connected as slave database")
 	} else {
-		log.Info("Connected as master database")
+		utils.LogInfo("Connected as master database")
 	}
 
 	return db
@@ -117,9 +117,9 @@ func InitCacheTable(db *gorm.DB, tableName string) {
 	`, tableName, tableName, tableName, tableName, tableName, tableName, tableName)
 
 	if err := db.Exec(sql).Error; err != nil {
-		log.Error("Failed to create cache table:", err)
+		utils.LogError("Failed to create cache table:", err)
 	} else {
-		log.Info("Cache table initialized successfully")
+		utils.LogInfo("Cache table initialized successfully")
 	}
 }
 

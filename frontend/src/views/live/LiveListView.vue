@@ -83,7 +83,7 @@ const loadLives = async () => {
   loading.value = true
   try {
     const response = await getLives()
-    const result = response.data || response
+    const result = response
     lives.value = Array.isArray(result) ? result : []
   } catch (error) {
     console.error('載入直播失敗:', error)

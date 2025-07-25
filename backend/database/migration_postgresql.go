@@ -4,45 +4,46 @@ import (
 	"fmt"
 	"stream-demo/backend/config"
 	"stream-demo/backend/database/models"
-	log "stream-demo/backend/pkg/logging"
+	"stream-demo/backend/utils"
 
 	"gorm.io/gorm"
 )
 
-// MigratePostgreSQL 執行PostgreSQL資料庫遷移
+// MigratePostgreSQL 執行PostgreSQL相關的資料庫遷移
 func MigratePostgreSQL(conf *config.Config) error {
+	// 獲取主資料庫連接
 	db := conf.DB["master"]
 
-	log.Info("開始PostgreSQL資料庫遷移...")
+	utils.LogInfo("開始PostgreSQL資料庫遷移...")
 
 	// 自動遷移所有模型
 	err := db.AutoMigrate(
 		&models.User{},
 		&models.Video{},
-		&models.VideoQuality{},
-		&models.Live{},
+		&models.VideoQuality{}, // 新增 VideoQuality 模型
 		&models.Payment{},
+		&models.Live{},
 		&models.ChatMessage{},
 	)
 
 	if err != nil {
-		log.Error("資料庫遷移失敗:", err)
+		utils.LogError("資料庫遷移失敗:", err)
 		return err
 	}
 
 	// 創建PostgreSQL特定的索引和優化
 	if err := createPostgreSQLIndexes(db); err != nil {
-		log.Error("創建索引失敗:", err)
+		utils.LogError("創建索引失敗:", err)
 		return err
 	}
 
 	// 創建PostgreSQL擴展
 	if err := createPostgreSQLExtensions(db); err != nil {
-		log.Error("創建擴展失敗:", err)
+		utils.LogError("創建擴展失敗:", err)
 		return err
 	}
 
-	log.Info("PostgreSQL資料庫遷移完成")
+	utils.LogInfo("PostgreSQL資料庫遷移完成")
 	return nil
 }
 
@@ -87,12 +88,12 @@ func createPostgreSQLIndexes(db *gorm.DB) error {
 
 	for _, index := range indexes {
 		if err := db.Exec(index).Error; err != nil {
-			log.Error("創建索引失敗:", index, err)
+			utils.LogError("創建索引失敗:", index, err)
 			return err
 		}
 	}
 
-	log.Info("PostgreSQL索引創建完成")
+	utils.LogInfo("PostgreSQL索引創建完成")
 	return nil
 }
 
@@ -106,12 +107,12 @@ func createPostgreSQLExtensions(db *gorm.DB) error {
 
 	for _, ext := range extensions {
 		if err := db.Exec(ext).Error; err != nil {
-			log.Warn("創建擴展失敗（可能需要超級用戶權限）:", ext, err)
+			utils.LogWarn("創建擴展失敗（可能需要超級用戶權限）:", ext, err)
 			// 擴展創建失敗不應該中斷遷移，只記錄警告
 		}
 	}
 
-	log.Info("PostgreSQL擴展初始化完成")
+	utils.LogInfo("PostgreSQL擴展初始化完成")
 	return nil
 }
 
@@ -129,7 +130,7 @@ func CreateTriggersAndFunctions(db *gorm.DB) error {
 	`
 
 	if err := db.Exec(updateFunction).Error; err != nil {
-		log.Error("創建更新函數失敗:", err)
+		utils.LogError("創建更新函數失敗:", err)
 		return err
 	}
 
@@ -145,11 +146,11 @@ func CreateTriggersAndFunctions(db *gorm.DB) error {
 		`, table, table, table, table)
 
 		if err := db.Exec(trigger).Error; err != nil {
-			log.Error("創建觸發器失敗:", table, err)
+			utils.LogError("創建觸發器失敗:", table, err)
 			return err
 		}
 	}
 
-	log.Info("PostgreSQL觸發器和函數創建完成")
+	utils.LogInfo("PostgreSQL觸發器和函數創建完成")
 	return nil
 }

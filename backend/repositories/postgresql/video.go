@@ -2,8 +2,10 @@ package postgresql
 
 import (
 	"stream-demo/backend/database/models"
+	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // CreateVideo 創建影片
@@ -27,6 +29,53 @@ func (r *PostgreSQLRepo) FindVideoByUserID(userID uint) ([]models.Video, error) 
 		return nil, err
 	}
 	return videos, nil
+}
+
+// FindVideosByStatus 根據狀態查找影片列表
+func (r *PostgreSQLRepo) FindVideosByStatus(statuses []string) ([]models.Video, error) {
+	var videos []models.Video
+	if err := r.PostgreSQLDB.Where("status IN ?", statuses).Order("created_at ASC").Find(&videos).Error; err != nil {
+		return nil, err
+	}
+	return videos, nil
+}
+
+// FindVideosByStatusForUpdate 根據狀態查找影片列表並加鎖（用於轉碼）
+func (r *PostgreSQLRepo) FindVideosByStatusForUpdate(statuses []string, limit int) ([]models.Video, error) {
+	var videos []models.Video
+	if err := r.PostgreSQLDB.Where("status IN ?", statuses).
+		Order("created_at ASC").
+		Limit(limit).
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		Find(&videos).Error; err != nil {
+		return nil, err
+	}
+	return videos, nil
+}
+
+// UpdateVideoStatus 更新影片狀態（用於轉碼進度）
+func (r *PostgreSQLRepo) UpdateVideoStatus(videoID uint, status string, progress int, errorMsg string) error {
+	updates := map[string]interface{}{
+		"status":              status,
+		"processing_progress": progress,
+		"updated_at":          time.Now(),
+	}
+
+	if errorMsg != "" {
+		updates["error_message"] = errorMsg
+	}
+
+	return r.PostgreSQLDB.Model(&models.Video{}).Where("id = ?", videoID).Updates(updates).Error
+}
+
+// GetDB 獲取資料庫連接（用於事務）
+func (r *PostgreSQLRepo) GetDB() *gorm.DB {
+	return r.PostgreSQLDB
+}
+
+// UpdateVideoFields 更新影片欄位
+func (r *PostgreSQLRepo) UpdateVideoFields(videoID uint, updates map[string]interface{}) error {
+	return r.PostgreSQLDB.Model(&models.Video{}).Where("id = ?", videoID).Updates(updates).Error
 }
 
 // FindAllVideo 查找所有已發布的影片
@@ -74,13 +123,13 @@ func (r *PostgreSQLRepo) FindVideosWithPagination(offset, limit int) ([]models.V
 	var videos []models.Video
 	var total int64
 
-	// 使用PostgreSQL的數組語法
-	statuses := []string{"completed", "processing", "transcoding"}
-	if err := r.PostgreSQLDB.Model(&models.Video{}).Where("status = ANY(?)", statuses).Count(&total).Error; err != nil {
+	// 使用 IN 語法替代 ANY，更簡潔且兼容性更好
+	statuses := []string{"ready", "processing", "transcoding"}
+	if err := r.PostgreSQLDB.Model(&models.Video{}).Where("status IN ?", statuses).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	err := r.PostgreSQLDB.Where("status = ANY(?)", statuses).
+	err := r.PostgreSQLDB.Where("status IN ?", statuses).
 		Order("created_at DESC").
 		Offset(offset).
 		Limit(limit).
