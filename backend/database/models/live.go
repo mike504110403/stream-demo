@@ -12,6 +12,8 @@ type Live struct {
 	StartTime   time.Time `json:"start_time" gorm:"index:idx_lives_status_start,priority:2"`
 	EndTime     time.Time `json:"end_time"`
 	StreamKey   string    `json:"stream_key" gorm:"size:100;uniqueIndex"`
+	PushURL     string    `json:"push_url" gorm:"size:500"`
+	StreamURL   string    `json:"stream_url" gorm:"size:500"`
 	ViewerCount int64     `json:"viewer_count" gorm:"default:0"`
 	ChatEnabled bool      `json:"chat_enabled" gorm:"default:true"`
 	CreatedAt   time.Time `json:"created_at"`

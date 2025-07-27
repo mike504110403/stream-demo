@@ -148,3 +148,27 @@ video:
       width: 640
       height: 360
       bitrate: 800000
+
+# 直播配置 - 本地開發模式
+live:
+  enabled: true
+  type: "local"  # local, cloud, hybrid
+  local:
+    enabled: true
+    rtmp_server: "localhost"
+    rtmp_server_port: 1935
+    transcoder_enabled: true
+    hls_output_dir: "/tmp/live"
+    http_port: 8081
+  cloud:
+    provider: "aws"  # aws, aliyun, tencent
+    rtmp_ingest_url: ""
+    hls_playback_url: ""
+    api_key: ""
+    api_secret: ""
+    transcode_enabled: false
+  hybrid:
+    local_enabled: true
+    cloud_enabled: false
+    fallback_to_local: true
+    cloud_provider: "aws"

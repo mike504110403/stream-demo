@@ -71,6 +71,18 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/public-streams',
+      name: 'PublicStreams',
+      component: () => import('@/views/public-stream/PublicStreamListView.vue'),
+      meta: { requiresAuth: false }
+    },
+    {
+      path: '/public-streams/:name',
+      name: 'PublicStreamPlayer',
+      component: () => import('@/views/public-stream/PublicStreamPlayerView.vue'),
+      meta: { requiresAuth: false }
+    },
+    {
       path: '/payments',
       name: 'Payments',
       component: () => import('@/views/DashboardView.vue'), // 暫時使用 Dashboard

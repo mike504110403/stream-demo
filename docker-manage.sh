@@ -49,7 +49,20 @@ show_help() {
     echo "  logs      查看服務日誌"
     echo "  build     重新構建服務"
     echo "  clean     清理容器和映像"
+    echo "  init      初始化 MinIO 桶"
+    echo "  init-live 初始化直播服務"
+    echo "  live-status 查看直播狀態"
+    echo "  stream-puller 管理流拉取服務"
+    echo "  test      運行 Go 測試"
     echo "  help      顯示此幫助信息"
+    echo ""
+    echo "流拉取服務命令:"
+    echo "  stream-puller start    啟動流拉取服務"
+    echo "  stream-puller stop     停止流拉取服務"
+    echo "  stream-puller restart  重啟流拉取服務"
+    echo "  stream-puller status   查看流拉取服務狀態"
+    echo "  stream-puller logs     查看流拉取服務日誌"
+    echo "  stream-puller test     測試流播放"
     echo ""
     echo "範例:"
     echo "  $0 start    # 啟動所有服務"
@@ -97,13 +110,27 @@ check_services_status() {
     # 檢查健康狀態
     echo ""
     echo "🏥 健康檢查:"
-    for service in postgresql redis minio ffmpeg-transcoder; do
+    for service in postgresql redis minio ffmpeg-transcoder nginx-rtmp live-transcoder; do
         if docker-compose ps | grep -q "$service.*Up"; then
             log_success "$service: 運行中"
         else
             log_error "$service: 未運行"
         fi
     done
+    
+    # 檢查流拉取服務
+    echo ""
+    echo "🎬 流拉取服務狀態:"
+    if pgrep -f "stream-puller" > /dev/null; then
+        log_success "stream-puller: 運行中"
+        if curl -s "http://localhost:8083" > /dev/null 2>&1; then
+            log_success "HLS 服務器: 正常"
+        else
+            log_error "HLS 服務器: 異常"
+        fi
+    else
+        log_error "stream-puller: 未運行"
+    fi
 }
 
 # 查看日誌
@@ -153,6 +180,78 @@ init_minio() {
     fi
 }
 
+# 初始化直播服務
+init_live() {
+    log_info "初始化直播服務..."
+    
+    # 創建直播桶
+    if command -v mc &> /dev/null; then
+        mc alias set s3 http://localhost:9000 minioadmin minioadmin
+        mc mb s3/stream-demo-live --ignore-existing
+        mc policy set download s3/stream-demo-live
+        log_success "直播桶初始化完成"
+    else
+        log_warning "MinIO Client (mc) 未安裝，請手動創建 stream-demo-live 桶"
+    fi
+}
+
+# 查看直播狀態
+show_live_status() {
+    log_info "查看直播狀態..."
+    
+    echo ""
+    echo "📡 RTMP 服務狀態:"
+    if curl -s http://localhost:8082/health > /dev/null 2>&1; then
+        log_success "Nginx-RTMP: 運行中"
+        echo "RTMP 推流地址: rtmp://localhost:1935/live/[stream_key]"
+        echo "RTMP 狀態頁面: http://localhost:8082/stat"
+    else
+        log_error "Nginx-RTMP: 未運行"
+    fi
+    
+    echo ""
+    echo "🎬 直播轉碼服務狀態:"
+    if curl -s http://localhost:8081/health > /dev/null 2>&1; then
+        log_success "直播轉碼器: 運行中"
+        echo "HLS 播放地址: http://localhost:8081/[stream_name]/index.m3u8"
+    else
+        log_error "直播轉碼器: 未運行"
+    fi
+    
+    echo ""
+    echo "🎬 當前直播流:"
+    if docker exec stream-demo-live-transcoder ls /tmp/live/ > /dev/null 2>&1; then
+        streams=$(docker exec stream-demo-live-transcoder ls /tmp/live/ 2>/dev/null || true)
+        if [ -n "$streams" ]; then
+            for stream in $streams; do
+                if docker exec stream-demo-live-transcoder test -f "/tmp/live/$stream/index.m3u8"; then
+                    log_success "直播中: $stream"
+                    echo "  HLS: http://localhost:8081/$stream/index.m3u8"
+                fi
+            done
+        else
+            log_info "目前沒有直播流"
+        fi
+    else
+        log_error "直播目錄不存在"
+    fi
+    
+    echo ""
+    echo "📊 RTMP 推流狀態:"
+    if curl -s http://localhost:8082/stat > /dev/null 2>&1; then
+        rtmp_streams=$(curl -s http://localhost:8082/stat | grep -o 'name="[^"]*"' | cut -d'"' -f2 | grep -v "live_transcoded" || true)
+        if [ -n "$rtmp_streams" ]; then
+            for stream in $rtmp_streams; do
+                log_success "RTMP 推流中: $stream"
+            done
+        else
+            log_info "目前沒有 RTMP 推流"
+        fi
+    else
+        log_error "無法獲取 RTMP 狀態"
+    fi
+}
+
 # 運行測試
 run_tests() {
     log_info "運行 Go 測試..."
@@ -160,6 +259,170 @@ run_tests() {
     go test ./services -v
     cd ..
     log_success "測試完成"
+}
+
+# 管理流拉取服務
+manage_stream_puller() {
+    local action=${1:-help}
+    
+    case "$action" in
+        start)
+            log_info "啟動流拉取服務..."
+            
+            # 檢查可執行文件
+            if [ ! -f "./backend/cmd/stream_puller/stream-puller" ]; then
+                log_error "找不到 stream-puller 可執行文件"
+                log_info "請先編譯: cd backend/cmd/stream_puller && go build -o stream-puller main.go"
+                return 1
+            fi
+            
+            # 創建輸出目錄
+            mkdir -p "/tmp/public_streams"
+            
+            # 啟動服務
+            cd "./backend/cmd/stream_puller"
+            nohup ./stream-puller -output "/tmp/public_streams" -port "8083" > stream-puller.log 2>&1 &
+            
+            # 等待服務啟動
+            sleep 3
+            
+            if pgrep -f "stream-puller" > /dev/null; then
+                log_success "流拉取服務啟動成功"
+                log_info "HTTP 服務器: http://localhost:8083"
+                log_info "輸出目錄: /tmp/public_streams"
+            else
+                log_error "服務啟動失敗"
+                return 1
+            fi
+            ;;
+        stop)
+            log_info "停止流拉取服務..."
+            
+            # 停止 FFmpeg 進程
+            pkill -f "ffmpeg.*/tmp/public_streams" 2>/dev/null || true
+            
+            # 停止 stream-puller 進程
+            pkill -f "stream-puller" 2>/dev/null || true
+            
+            sleep 2
+            
+            if ! pgrep -f "stream-puller" > /dev/null; then
+                log_success "服務已停止"
+            else
+                log_error "停止服務失敗"
+                return 1
+            fi
+            ;;
+        restart)
+            log_info "重啟流拉取服務..."
+            manage_stream_puller stop
+            sleep 2
+            manage_stream_puller start
+            ;;
+        status)
+            log_info "流拉取服務狀態:"
+            echo "=================="
+            
+            if pgrep -f "stream-puller" > /dev/null; then
+                echo -e "狀態: ${GREEN}運行中${NC}"
+                
+                # 顯示進程信息
+                echo "進程信息:"
+                ps aux | grep "stream-puller" | grep -v grep | while read line; do
+                    echo "  $line"
+                done
+                
+                # 顯示 FFmpeg 進程
+                echo "FFmpeg 進程:"
+                ps aux | grep "ffmpeg.*/tmp/public_streams" | grep -v grep | while read line; do
+                    echo "  $line"
+                done
+                
+                # 檢查 HTTP 服務
+                if curl -s "http://localhost:8083" > /dev/null 2>&1; then
+                    echo -e "HTTP 服務: ${GREEN}正常${NC}"
+                else
+                    echo -e "HTTP 服務: ${RED}異常${NC}"
+                fi
+                
+                # 顯示 HLS 文件
+                echo "HLS 文件:"
+                if [ -d "/tmp/public_streams" ]; then
+                    for stream_dir in "/tmp/public_streams"/*; do
+                        if [ -d "$stream_dir" ]; then
+                            stream_name=$(basename "$stream_dir")
+                            if [ -f "$stream_dir/index.m3u8" ]; then
+                                echo -e "  ${GREEN}✓${NC} $stream_name"
+                            else
+                                echo -e "  ${RED}✗${NC} $stream_name"
+                            fi
+                        fi
+                    done
+                fi
+                
+            else
+                echo -e "狀態: ${RED}未運行${NC}"
+            fi
+            ;;
+        logs)
+            log_file="./backend/cmd/stream_puller/stream-puller.log"
+            
+            if [ ! -f "$log_file" ]; then
+                log_error "日誌文件不存在: $log_file"
+                return 1
+            fi
+            
+            log_info "顯示服務日誌 (按 Ctrl+C 退出):"
+            echo "=================="
+            tail -f "$log_file"
+            ;;
+        test)
+            log_info "測試流播放..."
+            echo "=================="
+            
+            if [ ! -d "/tmp/public_streams" ]; then
+                log_error "輸出目錄不存在: /tmp/public_streams"
+                return 1
+            fi
+            
+            for stream_dir in "/tmp/public_streams"/*; do
+                if [ -d "$stream_dir" ]; then
+                    stream_name=$(basename "$stream_dir")
+                    hls_url="http://localhost:8083/$stream_name/index.m3u8"
+                    
+                    echo "測試流: $stream_name"
+                    if curl -s -I "$hls_url" | grep -q "200 OK"; then
+                        echo -e "  ${GREEN}✓${NC} HLS 播放列表可訪問"
+                    else
+                        echo -e "  ${RED}✗${NC} HLS 播放列表無法訪問"
+                    fi
+                    
+                    # 檢查片段文件
+                    ts_count=$(find "$stream_dir" -name "*.ts" | wc -l)
+                    echo "  片段文件: $ts_count 個"
+                fi
+            done
+            ;;
+        help|--help|-h)
+            echo "🎬 流拉取服務管理"
+            echo ""
+            echo "用法: $0 stream-puller [命令]"
+            echo ""
+            echo "命令:"
+            echo "  start     啟動服務"
+            echo "  stop      停止服務"
+            echo "  restart   重啟服務"
+            echo "  status    顯示狀態"
+            echo "  logs      顯示日誌"
+            echo "  test      測試流播放"
+            echo "  help      顯示幫助"
+            ;;
+        *)
+            log_error "未知命令: $action"
+            manage_stream_puller help
+            return 1
+            ;;
+    esac
 }
 
 # 主函數
@@ -190,6 +453,15 @@ main() {
             ;;
         init)
             init_minio
+            ;;
+        init-live)
+            init_live
+            ;;
+        live-status)
+            show_live_status
+            ;;
+        stream-puller)
+            manage_stream_puller "$2"
             ;;
         test)
             run_tests

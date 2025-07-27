@@ -335,7 +335,11 @@ func (sb *ServiceBuilder) BuildPaymentService() *services.PaymentService {
 
 func (sb *ServiceBuilder) BuildLiveService() *services.LiveService {
 	cfg := sb.createTestConfig()
-	return services.NewLiveService(cfg)
+	liveService, err := services.NewLiveService(cfg)
+	if err != nil {
+		sb.t.Fatalf("Failed to create LiveService: %v", err)
+	}
+	return liveService
 }
 
 // 斷言輔助方法

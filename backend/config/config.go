@@ -29,6 +29,8 @@ type Configurations struct {
 	MediaConvert MediaConvertConfiguration `mapstructure:"media_convert"`
 	Transcode    TranscodeConfiguration    `mapstructure:"transcode"` // 新增轉碼配置
 	Video        VideoConfiguration        `mapstructure:"video"`
+	// 直播配置
+	Live LiveConfiguration `mapstructure:"live"`
 }
 
 type SwaggerConfigurations struct {
@@ -195,6 +197,43 @@ type MessagingConfiguration struct {
 	Channels []string `mapstructure:"channels"`
 	// Redis 特定配置
 	DB int `mapstructure:"db"`
+}
+
+// LiveConfiguration 直播配置
+type LiveConfiguration struct {
+	Enabled bool                    `mapstructure:"enabled"`
+	Type    string                  `mapstructure:"type"` // "local", "cloud", "hybrid"
+	Local   LocalLiveConfiguration  `mapstructure:"local"`
+	Cloud   CloudLiveConfiguration  `mapstructure:"cloud"`
+	Hybrid  HybridLiveConfiguration `mapstructure:"hybrid"`
+}
+
+// LocalLiveConfiguration 本地直播配置
+type LocalLiveConfiguration struct {
+	Enabled           bool   `mapstructure:"enabled"`
+	RTMPServer        string `mapstructure:"rtmp_server"`
+	RTMPServerPort    int    `mapstructure:"rtmp_server_port"`
+	TranscoderEnabled bool   `mapstructure:"transcoder_enabled"`
+	HLSOutputDir      string `mapstructure:"hls_output_dir"`
+	HTTPPort          int    `mapstructure:"http_port"`
+}
+
+// CloudLiveConfiguration 雲端直播配置
+type CloudLiveConfiguration struct {
+	Provider         string `mapstructure:"provider"` // "aws", "aliyun", "tencent"
+	RTMPIngestURL    string `mapstructure:"rtmp_ingest_url"`
+	HLSPlaybackURL   string `mapstructure:"hls_playback_url"`
+	APIKey           string `mapstructure:"api_key"`
+	APISecret        string `mapstructure:"api_secret"`
+	TranscodeEnabled bool   `mapstructure:"transcode_enabled"`
+}
+
+// HybridLiveConfiguration 混合直播配置
+type HybridLiveConfiguration struct {
+	LocalEnabled    bool   `mapstructure:"local_enabled"`
+	CloudEnabled    bool   `mapstructure:"cloud_enabled"`
+	FallbackToLocal bool   `mapstructure:"fallback_to_local"`
+	CloudProvider   string `mapstructure:"cloud_provider"`
 }
 
 type Config struct {

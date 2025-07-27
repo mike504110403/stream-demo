@@ -8,12 +8,17 @@ import (
 )
 
 // RegisterRoutes 註冊所有路由
-func RegisterRoutes(r *gin.Engine, userHandler *UserHandler, videoHandler *VideoHandler, liveHandler *LiveHandler, paymentHandler *PaymentHandler, jwtUtil *utils.JWTUtil) {
+func RegisterRoutes(r *gin.Engine, userHandler *UserHandler, videoHandler *VideoHandler, liveHandler *LiveHandler, paymentHandler *PaymentHandler, jwtUtil *utils.JWTUtil, publicStreamHandler *PublicStreamHandler) {
 	// 公開路由
 	public := r.Group("/api")
 	{
 		public.POST("/users/register", userHandler.Register)
 		public.POST("/users/login", userHandler.Login)
+
+		// 公開流路由（不需要認證）
+		if publicStreamHandler != nil {
+			RegisterPublicStreamRoutes(public, publicStreamHandler)
+		}
 	}
 
 	// 需要認證的路由

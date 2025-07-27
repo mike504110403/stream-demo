@@ -11,11 +11,15 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@types/hls.js": "^0.13.3",
+    "@videojs/themes": "^1.0.1",
     "@vueuse/core": "^10.7.2",
     "axios": "^1.6.7",
     "element-plus": "^2.5.3",
+    "flv.js": "^1.6.2",
     "hls.js": "^1.6.7",
     "pinia": "^2.1.7",
+    "video.js": "^8.23.3",
     "vue": "^3.4.15",
     "vue-router": "^4.2.5"
   },

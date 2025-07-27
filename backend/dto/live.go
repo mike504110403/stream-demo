@@ -14,6 +14,8 @@ type LiveDTO struct {
 	EndTime     time.Time `json:"end_time"`
 	ViewerCount int64     `json:"viewer_count"`
 	StreamKey   string    `json:"stream_key"`
+	PushURL     string    `json:"push_url"`
+	StreamURL   string    `json:"stream_url"`
 	ChatEnabled bool      `json:"chat_enabled"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`

@@ -8,6 +8,7 @@ import (
 	"stream-demo/backend/config"
 	"stream-demo/backend/database"
 	"stream-demo/backend/middleware"
+	postgresqlRepo "stream-demo/backend/repositories/postgresql"
 	"stream-demo/backend/services"
 	"stream-demo/backend/utils"
 	"stream-demo/backend/ws"
@@ -114,7 +115,32 @@ func main() {
 	// 初始化服務層
 	userService := services.NewUserService(cfg)
 	videoService := services.NewVideoService(cfg)
-	liveService := services.NewLiveService(cfg)
+	liveService, err := services.NewLiveService(cfg)
+	if err != nil {
+		utils.LogError("初始化直播服務失敗: %v", err)
+		// 如果直播服務初始化失敗，創建一個基本的服務實例
+		liveService = &services.LiveService{
+			Conf:      cfg,
+			Repo:      postgresqlRepo.NewPostgreSQLRepo(cfg.DB["master"]),
+			RepoSlave: postgresqlRepo.NewPostgreSQLRepo(cfg.DB["slave"]),
+		}
+	}
+
+	// 初始化公開流服務
+	var publicStreamService *services.PublicStreamService
+	var publicStreamHandler *api.PublicStreamHandler
+	if redisCache, ok := cache.(*utils.RedisCache); ok {
+		publicStreamService, err = services.NewPublicStreamService(cfg, redisCache)
+		if err != nil {
+			utils.LogError("初始化公開流服務失敗: %v", err)
+		} else {
+			utils.LogInfo("公開流服務初始化成功")
+			publicStreamHandler = api.NewPublicStreamHandler(publicStreamService)
+		}
+	} else {
+		utils.LogError("Redis 緩存未初始化，跳過公開流服務")
+	}
+
 	paymentService := services.NewPaymentService(cfg)
 
 	// 初始化背景轉碼工作服務
@@ -215,7 +241,16 @@ func main() {
 			// 重新初始化服務（使用新的資料庫連接）
 			userService = services.NewUserService(cfg)
 			videoService = services.NewVideoService(cfg)
-			liveService = services.NewLiveService(cfg)
+			liveService, err = services.NewLiveService(cfg)
+			if err != nil {
+				utils.LogError("重新初始化直播服務失敗: %v", err)
+				// 如果直播服務初始化失敗，創建一個基本的服務實例
+				liveService = &services.LiveService{
+					Conf:      cfg,
+					Repo:      postgresqlRepo.NewPostgreSQLRepo(cfg.DB["master"]),
+					RepoSlave: postgresqlRepo.NewPostgreSQLRepo(cfg.DB["slave"]),
+				}
+			}
 			paymentService = services.NewPaymentService(cfg)
 
 			// 重新初始化Handler
@@ -244,7 +279,7 @@ func main() {
 	}
 
 	// 註冊路由
-	api.RegisterRoutes(r, userHandler, videoHandler, liveHandler, paymentHandler, jwtUtil)
+	api.RegisterRoutes(r, userHandler, videoHandler, liveHandler, paymentHandler, jwtUtil, publicStreamHandler)
 
 	// 註冊WebSocket路由
 	r.GET("/ws/:liveID", middleware.AuthMiddleware(jwtUtil), wsHandler.ServeWS)
