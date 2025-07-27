@@ -13,3 +13,5 @@ backend/backend.log
 frontend/dist/
 
 logs/
+
+backend/cmd/stream_puller/stream-puller.log
