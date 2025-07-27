@@ -195,7 +195,7 @@ const setupHLSPlayer = () => {
       }
     })
 
-    hls.value.on(Hls.Events.ERROR, (event, data) => {
+    hls.value.on(Hls.Events.ERROR, (_event, data) => {
       console.error('HLS 錯誤:', data)
       handleHlsError(data)
     })

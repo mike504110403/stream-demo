@@ -142,10 +142,9 @@ func (s *PublicStreamService) GetStreamURLs(streamName string) (map[string]strin
 	// 更新觀看者數量
 	s.incrementViewerCount(streamName)
 
-	// 返回所有播放 URL
+	// 返回播放 URL
 	urls := map[string]string{
-		"hls":  fmt.Sprintf("http://localhost:8083/%s/index.m3u8", streamName),
-		"rtmp": fmt.Sprintf("rtmp://localhost:1935/live/%s", streamName),
+		"hls": fmt.Sprintf("http://localhost:8083/%s/index.m3u8", streamName),
 	}
 
 	return urls, nil

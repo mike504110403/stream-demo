@@ -1,178 +1,108 @@
 <template>
   <div class="public-stream-list">
-    <div class="container mx-auto px-4 py-8">
-      <!-- 頁面標題 -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">公開直播</h1>
-        <p class="text-gray-600">觀看免費的公開直播流</p>
-      </div>
+    <!-- 頁面標題 -->
+    <div class="page-header">
+      <h1 class="page-title">公開直播</h1>
+      <p class="page-subtitle">觀看來自全球的精彩直播內容</p>
+    </div>
 
-      <!-- 分類篩選 -->
-      <div class="mb-6">
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="category in categories"
-            :key="category.value"
-            @click="selectedCategory = category.value"
-            :class="[
-              'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-              selectedCategory === category.value
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            ]"
+    <!-- 載入狀態 -->
+    <div v-if="loading" class="loading-container">
+      <el-loading-component />
+      <p>正在載入直播列表...</p>
+    </div>
+
+    <!-- 錯誤狀態 -->
+    <div v-else-if="error" class="error-container">
+      <el-alert
+        :title="error"
+        type="error"
+        :closable="false"
+        show-icon
+      />
+      <el-button @click="loadStreams" type="primary" class="retry-button">
+        重新載入
+      </el-button>
+    </div>
+
+    <!-- 流列表 -->
+    <div v-else-if="streams.length > 0" class="stream-grid">
+      <div
+        v-for="stream in filteredStreams"
+        :key="stream.name"
+        class="stream-card"
+        @click="watchStream(stream)"
+      >
+        <!-- 預覽圖 -->
+        <div class="preview-container">
+          <div class="preview-image">
+            <div class="preview-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 002 2z"></path>
+              </svg>
+            </div>
+            <p class="preview-text">直播中</p>
+          </div>
+          
+          <!-- 播放按鈕覆蓋層 -->
+          <div class="play-overlay">
+            <div class="play-button">
+              <svg fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- 狀態標籤 -->
+          <div class="status-badge" :class="stream.status === 'active' ? 'active' : 'inactive'">
+            <span class="status-dot" :class="{ 'pulse': stream.status === 'active' }">●</span>
+            {{ stream.status === 'active' ? '直播中' : '離線' }}
+          </div>
+
+          <!-- 觀看者數量 -->
+          <div class="viewer-count">
+            👥 {{ stream.viewer_count }}
+          </div>
+        </div>
+
+        <!-- 流資訊 -->
+        <div class="stream-info">
+          <h3 class="stream-title">{{ stream.title }}</h3>
+          <p class="stream-description">{{ stream.description }}</p>
+          
+          <!-- 分類標籤 -->
+          <div class="category-tag">
+            {{ getCategoryLabel(stream.category) }}
+          </div>
+
+          <!-- 最後更新時間 -->
+          <p class="update-time">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            {{ formatTime(stream.last_update) }}
+          </p>
+
+          <!-- 操作按鈕 -->
+          <el-button
+            @click.stop="watchStream(stream)"
+            :disabled="stream.status !== 'active'"
+            :type="stream.status === 'active' ? 'primary' : 'info'"
+            class="watch-button"
           >
-            {{ category.label }}
-          </button>
-        </div>
-      </div>
-
-      <!-- 載入狀態 -->
-      <div v-if="loading" class="flex justify-center items-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-
-      <!-- 錯誤狀態 -->
-      <div v-else-if="error" class="text-center py-12">
-        <div class="text-red-600 mb-4">
-          <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-          </svg>
-          <p class="text-lg font-medium">{{ error }}</p>
-        </div>
-        <button
-          @click="loadStreams"
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          重新載入
-        </button>
-      </div>
-
-      <!-- 流列表 -->
-      <div v-else-if="streams.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div
-          v-for="stream in filteredStreams"
-          :key="stream.name"
-          class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-        >
-          <!-- 流卡片 -->
-          <div class="relative">
-            <!-- 預覽圖 -->
-            <div class="aspect-video bg-gray-200 flex items-center justify-center">
-              <div class="text-center">
-                <svg class="w-16 h-16 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                </svg>
-                <p class="text-sm text-gray-500">直播預覽</p>
-              </div>
-            </div>
-
-            <!-- 狀態標籤 -->
-            <div class="absolute top-2 right-2">
-              <span
-                :class="[
-                  'px-2 py-1 text-xs font-medium rounded-full',
-                  stream.status === 'active'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
-                ]"
-              >
-                {{ stream.status === 'active' ? '直播中' : '離線' }}
-              </span>
-            </div>
-
-            <!-- 觀看者數量 -->
-            <div class="absolute bottom-2 left-2">
-              <span class="px-2 py-1 bg-black bg-opacity-50 text-white text-xs rounded-full">
-                👥 {{ stream.viewer_count }}
-              </span>
-            </div>
-          </div>
-
-          <!-- 流資訊 -->
-          <div class="p-4">
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ stream.title }}</h3>
-            <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ stream.description }}</p>
-            
-            <!-- 分類標籤 -->
-            <div class="mb-4">
-              <span class="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                {{ getCategoryLabel(stream.category) }}
-              </span>
-            </div>
-
-            <!-- 最後更新時間 -->
-            <p class="text-xs text-gray-500 mb-4">
-              最後更新: {{ formatTime(stream.last_update) }}
-            </p>
-
-            <!-- 操作按鈕 -->
-            <div class="flex gap-2">
-              <button
-                @click="watchStream(stream)"
-                :disabled="stream.status !== 'active'"
-                :class="[
-                  'flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-                  stream.status === 'active'
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                ]"
-              >
-                {{ stream.status === 'active' ? '觀看直播' : '離線' }}
-              </button>
-              
-              <button
-                @click="viewStreamInfo(stream)"
-                class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-              >
-                詳情
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 空狀態 -->
-      <div v-else class="text-center py-12">
-        <div class="text-gray-400 mb-4">
-          <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-          </svg>
-          <p class="text-lg font-medium">暫無可用的直播流</p>
-          <p class="text-sm">請稍後再試</p>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            {{ stream.status === 'active' ? '立即觀看' : '離線' }}
+          </el-button>
         </div>
       </div>
     </div>
 
-    <!-- 流詳情模態框 -->
-    <Modal v-model:show="showStreamModal" title="流詳情">
-      <div v-if="selectedStream" class="space-y-4">
-        <div>
-          <h3 class="text-lg font-semibold">{{ selectedStream.title }}</h3>
-          <p class="text-gray-600">{{ selectedStream.description }}</p>
-        </div>
-        
-        <div class="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span class="font-medium">狀態:</span>
-            <span :class="selectedStream.status === 'active' ? 'text-green-600' : 'text-red-600'">
-              {{ selectedStream.status === 'active' ? '直播中' : '離線' }}
-            </span>
-          </div>
-          <div>
-            <span class="font-medium">觀看者:</span>
-            <span>{{ selectedStream.viewer_count }}</span>
-          </div>
-          <div>
-            <span class="font-medium">分類:</span>
-            <span>{{ getCategoryLabel(selectedStream.category) }}</span>
-          </div>
-          <div>
-            <span class="font-medium">最後更新:</span>
-            <span>{{ formatTime(selectedStream.last_update) }}</span>
-          </div>
-        </div>
-      </div>
-    </Modal>
+    <!-- 空狀態 -->
+    <div v-else class="empty-container">
+      <el-empty description="暫無可用的直播流" />
+    </div>
   </div>
 </template>
 
@@ -181,7 +111,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { publicStreamApi } from '@/api/public-stream'
 import type { PublicStreamInfo } from '@/types/public-stream'
-import Modal from '@/components/common/Modal.vue'
 
 const router = useRouter()
 
@@ -189,25 +118,19 @@ const router = useRouter()
 const streams = ref<PublicStreamInfo[]>([])
 const loading = ref(false)
 const error = ref('')
-const selectedCategory = ref('all')
-const showStreamModal = ref(false)
-const selectedStream = ref<PublicStreamInfo | null>(null)
 
 // 分類選項
 const categories = [
-  { value: 'all', label: '全部' },
-  { value: 'test', label: '測試' },
-  { value: 'space', label: '太空' },
-  { value: 'news', label: '新聞' },
-  { value: 'sports', label: '體育' }
+  { value: 'all', label: '全部', icon: '🌐' },
+  { value: 'test', label: '測試', icon: '🧪' },
+  { value: 'space', label: '太空', icon: '🚀' },
+  { value: 'news', label: '新聞', icon: '📰' },
+  { value: 'sports', label: '體育', icon: '⚽' }
 ]
 
 // 計算屬性
 const filteredStreams = computed(() => {
-  if (selectedCategory.value === 'all') {
-    return streams.value
-  }
-  return streams.value.filter(stream => stream.category === selectedCategory.value)
+  return streams.value
 })
 
 // 方法
@@ -217,7 +140,7 @@ const loadStreams = async () => {
   
   try {
     const response = await publicStreamApi.getAvailableStreams()
-    streams.value = response.data.streams
+    streams.value = response.streams
   } catch (err) {
     console.error('載入流列表失敗:', err)
     error.value = '載入流列表失敗，請稍後再試'
@@ -230,11 +153,6 @@ const watchStream = (stream: PublicStreamInfo) => {
   if (stream.status === 'active') {
     router.push(`/public-streams/${stream.name}`)
   }
-}
-
-const viewStreamInfo = (stream: PublicStreamInfo) => {
-  selectedStream.value = stream
-  showStreamModal.value = true
 }
 
 const getCategoryLabel = (category: string) => {
@@ -254,10 +172,276 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.line-clamp-2 {
+.public-stream-list {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.page-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.page-subtitle {
+  font-size: 1.1rem;
+  color: #7f8c8d;
+}
+
+.loading-container,
+.error-container,
+.empty-container {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.retry-button {
+  margin-top: 20px;
+}
+
+.stream-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.stream-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid #e1e8ed;
+}
+
+.stream-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.preview-container {
+  position: relative;
+  height: 200px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.preview-image {
+  text-align: center;
+  color: white;
+  z-index: 2;
+}
+
+.preview-icon {
+  width: 64px;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  backdrop-filter: blur(10px);
+}
+
+.preview-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.preview-text {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.play-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.stream-card:hover .play-overlay {
+  opacity: 1;
+}
+
+.play-button {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.play-button svg {
+  width: 24px;
+  height: 24px;
+  color: #667eea;
+}
+
+.status-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  backdrop-filter: blur(10px);
+}
+
+.status-badge.active {
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+}
+
+.status-badge.inactive {
+  background: linear-gradient(135deg, #f87171, #ef4444);
+}
+
+.status-dot {
+  font-size: 8px;
+}
+
+.status-dot.pulse {
+  animation: pulse 2s infinite;
+}
+
+.viewer-count {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+}
+
+.stream-info {
+  padding: 24px;
+}
+
+.stream-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #2c3e50;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.stream-description {
+  font-size: 14px;
+  color: #7f8c8d;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.category-tag {
+  display: inline-block;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #e0f2fe, #b3e5fc);
+  color: #0277bd;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.update-time {
+  font-size: 12px;
+  color: #95a5a6;
+  margin: 0 0 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.update-time svg {
+  width: 14px;
+  height: 14px;
+}
+
+.watch-button {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.watch-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .stream-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  
+  .page-title {
+    font-size: 2rem;
+  }
+  
+  .public-stream-list {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stream-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .page-title {
+    font-size: 1.8rem;
+  }
 }
 </style> 

@@ -76,23 +76,22 @@ func (sp *StreamPuller) startStream(name string, config *StreamConfig) {
 		return
 	}
 
-	// 同時生成 HLS 和 RTMP 流
+	// 生成 HLS 流
 	args := []string{
 		"-i", config.URL,
 		"-c:v", "libx264",
 		"-preset", "ultrafast",
 		"-c:a", "aac",
 		"-b:a", "128k",
-		// HLS 輸出
+		// HLS 輸出 (超低延遲版本)
 		"-f", "hls",
-		"-hls_time", "2", // 減少到 2 秒，降低延遲
-		"-hls_list_size", "5", // 減少片段數量
-		"-hls_flags", "delete_segments",
+		"-hls_time", "0.5", // 0.5秒片段，進一步降低延遲
+		"-hls_list_size", "6", // 保留6個片段 (3秒緩衝)
+		"-hls_flags", "delete_segments+independent_segments+discont_start", // LL-HLS 標誌
+		"-hls_segment_type", "mpegts",
 		"-hls_segment_filename", fmt.Sprintf("%s/segment_%%03d.ts", streamDir),
+		"-hls_playlist_type", "event", // 事件播放列表，不循環
 		fmt.Sprintf("%s/index.m3u8", streamDir),
-		// RTMP 輸出
-		"-f", "flv",
-		fmt.Sprintf("rtmp://localhost:1935/live/%s", name),
 	}
 
 	// 啟動 FFmpeg 進程

@@ -108,7 +108,7 @@
           <label>串流金鑰：</label>
           <div class="key-display">
             <el-input
-              v-model="liveInfo?.stream_key"
+                                :model-value="liveInfo?.stream_key || ''"
               readonly
               size="small"
             />

@@ -42,16 +42,26 @@ axiosInstance.interceptors.response.use(
     const res = response.data
     console.log('API 成功響應:', response.status, res) // 調試用
     
-    // 檢查是否為統一的響應格式 {code, message, data}
-    if (res && typeof res === 'object' && 'code' in res) {
-      if (res.code === 200) {
-        // 成功響應，返回 data 字段的內容
-        return res.data || {}
-      } else {
-        // 業務錯誤響應，顯示錯誤信息
-        const message = res.message || '請求失敗'
-        ElMessage.error(message)
-        return Promise.reject(new Error(message))
+    // 檢查是否為統一的響應格式 {code, message, data} 或 {success, data}
+    if (res && typeof res === 'object') {
+      if ('code' in res) {
+        // 格式: {code, message, data}
+        if (res.code === 200) {
+          return res.data || {}
+        } else {
+          const message = res.message || '請求失敗'
+          ElMessage.error(message)
+          return Promise.reject(new Error(message))
+        }
+      } else if ('success' in res) {
+        // 格式: {success, data}
+        if (res.success) {
+          return res.data
+        } else {
+          const message = res.message || '請求失敗'
+          ElMessage.error(message)
+          return Promise.reject(new Error(message))
+        }
       }
     }
     

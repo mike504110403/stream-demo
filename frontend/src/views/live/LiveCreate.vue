@@ -148,7 +148,7 @@
                 <label>串流金鑰：</label>
                 <div class="key-display">
                   <el-input
-                    v-model="createdLive?.stream_key"
+                    :model-value="createdLive?.stream_key || ''"
                     readonly
                     size="small"
                   />

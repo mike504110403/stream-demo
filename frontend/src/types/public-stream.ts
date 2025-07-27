@@ -19,6 +19,12 @@ export interface PublicStreamResponse {
   };
 }
 
+// 響應攔截器處理後的格式
+export interface PublicStreamData {
+  streams: PublicStreamInfo[];
+  total: number;
+}
+
 export interface PublicStreamDetailResponse {
   success: boolean;
   data: PublicStreamInfo;
@@ -28,7 +34,9 @@ export interface PublicStreamURLResponse {
   success: boolean;
   data: {
     stream_name: string;
-    url: string;
+    urls: {
+      hls: string;
+    };
   };
 }
 

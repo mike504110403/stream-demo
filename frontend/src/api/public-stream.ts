@@ -1,20 +1,21 @@
 import request from '@/utils/request';
 import type {
   PublicStreamResponse,
-  PublicStreamDetailResponse,
+  PublicStreamData,
   PublicStreamURLResponse,
-  PublicStreamStats
+  PublicStreamStats,
+  PublicStreamInfo
 } from '@/types/public-stream';
 
 // 公開流 API 服務
 export const publicStreamApi = {
   // 獲取所有可用的公開流
-  getAvailableStreams(): Promise<PublicStreamResponse> {
+  getAvailableStreams(): Promise<PublicStreamData> {
     return request.get('/public-streams');
   },
 
   // 獲取特定流的詳細資訊
-  getStreamInfo(streamName: string): Promise<PublicStreamDetailResponse> {
+  getStreamInfo(streamName: string): Promise<PublicStreamInfo> {
     return request.get(`/public-streams/${streamName}`);
   },
 
@@ -23,8 +24,8 @@ export const publicStreamApi = {
     return request.get(`/public-streams/${streamName}/url`);
   },
 
-  // 獲取所有播放 URL (HLS + RTMP)
-  getStreamURLs(streamName: string): Promise<{ success: boolean; data: { stream_name: string; urls: { hls: string; rtmp: string } } }> {
+  // 獲取播放 URL (HLS)
+  getStreamURLs(streamName: string): Promise<{ stream_name: string; urls: { hls: string } }> {
     return request.get(`/public-streams/${streamName}/urls`);
   },
 

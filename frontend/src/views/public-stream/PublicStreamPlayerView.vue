@@ -1,196 +1,1338 @@
 <template>
-  <div class="public-stream-player">
-    <div class="container mx-auto px-4 py-8">
-      <!-- 載入狀態 -->
-      <div v-if="loading" class="flex justify-center items-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-
-      <!-- 錯誤狀態 -->
-      <div v-else-if="error" class="text-center py-12">
-        <div class="text-red-600 mb-4">
-          <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+  <div class="live-stream-page">
+    <!-- 頂部導航 -->
+    <div class="top-nav">
+      <div class="nav-left">
+        <el-button @click="goBack" class="back-btn">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
           </svg>
-          <p class="text-lg font-medium">{{ error }}</p>
+          返回
+        </el-button>
+      </div>
+      <div class="stream-info">
+        <h1 class="stream-title">{{ streamInfo?.title }}</h1>
+      </div>
+      <div class="nav-right">
+        <div class="viewer-count">
+          👥 {{ streamInfo?.viewer_count || 0 }}
         </div>
-        <button
-          @click="loadStreamInfo"
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          重新載入
-        </button>
+      </div>
+    </div>
+
+    <!-- 載入狀態 -->
+    <div v-if="loading" class="loading-overlay">
+      <div class="loading-content">
+        <div class="loading-spinner">
+          <div class="spinner-ring blue"></div>
+          <div class="spinner-ring purple"></div>
+        </div>
+        <p>正在載入直播...</p>
+      </div>
+    </div>
+
+    <!-- 錯誤狀態 -->
+    <div v-else-if="error" class="error-overlay">
+      <div class="error-content">
+        <div class="error-icon">⚠️</div>
+        <h3>載入失敗</h3>
+        <p>{{ error }}</p>
+        <el-button @click="loadStreamInfo" type="primary">重新載入</el-button>
+      </div>
+    </div>
+
+    <!-- 主要內容區域 -->
+    <div v-else-if="streamInfo" class="main-content">
+      <!-- 左側播放器區域 -->
+      <div class="player-section">
+        <!-- 播放器容器 -->
+        <div class="player-container" :class="{ 'fullscreen': isFullscreen }">
+          <!-- 視頻播放器 -->
+          <video
+            v-if="streamInfo.status === 'active'"
+            ref="videoPlayer"
+            class="video-player"
+            autoplay
+            :muted="isMuted"
+            crossorigin="anonymous"
+            @click="toggleFullscreen"
+          >
+            您的瀏覽器不支援 HLS 播放。
+          </video>
+
+          <!-- 播放器控制層 -->
+          <div class="player-controls" v-show="showControls">
+                         <!-- 頂部控制 -->
+             <div class="top-controls">
+               <div class="live-badge">
+                 <span class="live-dot"></span>
+                 LIVE
+               </div>
+             </div>
+
+            <!-- 底部控制 -->
+            <div class="bottom-controls">
+              <div class="control-left">
+                <button @click="toggleMute" class="control-btn">
+                  <svg v-if="isMuted" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                  </svg>
+                  <svg v-else fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                  </svg>
+                </button>
+                <div class="volume-slider">
+                  <el-slider v-model="volume" :min="0" :max="100" @change="changeVolume" />
+                </div>
+              </div>
+              <div class="control-right">
+                <button @click="toggleFullscreen" class="control-btn">
+                  <svg fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                  </svg>
+                </button>
+                <button @click="rotateScreen" class="control-btn">
+                  <svg fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-6.25-.77c-.59-.59-1.54-.59-2.12 0L1.75 8.11c-.59.59-.59 1.54 0 2.12l12.02 12.02c.59.59 1.54.59 2.12 0l6.36-6.36c.59-.59.59-1.54 0-2.12L10.23 1.75zm4.6 19.44L2.81 9.17l6.36-6.36 12.02 12.02-6.36 6.36z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 載入狀態 -->
+          <div v-if="loadingPlaybackUrl" class="loading-overlay">
+            <div class="loading-content">
+              <div class="loading-spinner">
+                <div class="spinner-ring blue"></div>
+                <div class="spinner-ring purple"></div>
+              </div>
+              <p>正在載入直播流...</p>
+            </div>
+          </div>
+          
+          <!-- 緩衝提示 - 更柔和的顯示 -->
+          <div v-if="hlsLoading" class="buffering-indicator">
+            <div class="buffering-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <p class="buffering-text">正在緩衝...</p>
+          </div>
+          
+          <!-- 直播狀態指示器 - 顯示正在載入新內容 -->
+          <div v-if="isLiveStreaming && !hlsLoading && !loadingPlaybackUrl" class="live-status-indicator">
+            <div class="live-dot"></div>
+            <p class="live-text">直播中 - 正在更新內容</p>
+          </div>
+          
+          <!-- 播放按鈕 - 當影片暫停時顯示 -->
+          <div v-if="videoPlayer?.paused && !loadingPlaybackUrl" class="play-button-overlay">
+            <button @click="playVideo" class="play-button">
+              <svg fill="currentColor" viewBox="0 0 24 24" width="48" height="48">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </button>
+            <p class="play-text">點擊播放直播</p>
+          </div>
+          
+          <!-- 調試信息 -->
+          <div v-if="true" class="debug-info" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; font-size: 12px; z-index: 1000;">
+            <div>loadingPlaybackUrl: {{ loadingPlaybackUrl }}</div>
+            <div>hlsLoading: {{ hlsLoading }}</div>
+            <div>isLiveStreaming: {{ isLiveStreaming }}</div>
+            <div>videoReadyState: {{ videoPlayer?.readyState }}</div>
+            <div>videoPaused: {{ videoPlayer?.paused }}</div>
+            <div>videoCurrentTime: {{ videoPlayer?.currentTime }}</div>
+            <button @click="hlsLoading = !hlsLoading" style="margin-top: 5px; padding: 5px; background: #3b82f6; color: white; border: none; border-radius: 3px; cursor: pointer;">
+              切換 Loading
+            </button>
+            <button @click="isLiveStreaming = !isLiveStreaming" style="margin-top: 5px; margin-left: 5px; padding: 5px; background: #ef4444; color: white; border: none; border-radius: 3px; cursor: pointer;">
+              切換 Live
+            </button>
+          </div>
+        </div>
+
+        <!-- 流資訊卡片 -->
+        <div class="stream-card">
+          <div class="stream-details">
+            <h3>{{ streamInfo.title }}</h3>
+            <p>{{ streamInfo.description }}</p>
+            <div class="stream-meta">
+              <span class="category">{{ getCategoryLabel(streamInfo.category) }}</span>
+              <span class="update-time">{{ formatTime(streamInfo.last_update) }}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- 播放器 -->
-      <div v-else-if="streamInfo" class="space-y-6">
-        <!-- 返回按鈕 -->
-        <div class="flex items-center gap-4">
-          <button
-            @click="goBack"
-            class="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+            <!-- 聊天室浮動按鈕 -->
+      <div class="chat-toggle" @click="toggleChat">
+        <svg fill="currentColor" viewBox="0 0 24 24">
+          <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+        </svg>
+        <span class="chat-badge" v-if="unreadCount > 0">{{ unreadCount }}</span>
+      </div>
+
+      <!-- 浮動聊天室面板 -->
+      <div class="chat-panel" :class="{ 'chat-open': isChatOpen }">
+        <div class="chat-header">
+          <h3>聊天室</h3>
+          <div class="chat-controls">
+            <span class="online-count">在線 {{ streamInfo.viewer_count || 0 }}</span>
+            <button @click="toggleChat" class="close-btn">
+              <svg fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div class="chat-messages" ref="chatMessagesRef">
+          <div v-for="(message, index) in chatMessages" :key="index" class="message">
+            <div class="message-avatar">
+              <span>{{ message.username.charAt(0) }}</span>
+            </div>
+            <div class="message-content">
+              <div class="message-header">
+                <span class="username">{{ message.username }}</span>
+                <span class="time">{{ formatTime(message.timestamp) }}</span>
+              </div>
+              <p class="message-text">{{ message.text }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-input">
+          <el-input
+            v-model="newMessage"
+            placeholder="輸入訊息..."
+            @keyup.enter="sendMessage"
+            :disabled="!isLoggedIn"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-            </svg>
-            返回列表
-          </button>
-        </div>
-
-        <!-- 流資訊 -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <div class="flex items-start justify-between mb-4">
-            <div>
-              <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ streamInfo.title }}</h1>
-              <p class="text-gray-600">{{ streamInfo.description }}</p>
-            </div>
-            <div class="flex items-center gap-4">
-              <!-- 狀態標籤 -->
-              <span
-                :class="[
-                  'px-3 py-1 text-sm font-medium rounded-full',
-                  streamInfo.status === 'active'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
-                ]"
-              >
-                {{ streamInfo.status === 'active' ? '直播中' : '離線' }}
-              </span>
-              
-              <!-- 觀看者數量 -->
-              <span class="flex items-center gap-1 text-sm text-gray-600">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                </svg>
-                {{ streamInfo.viewer_count }}
-              </span>
-            </div>
-          </div>
-
-          <!-- 分類和時間 -->
-          <div class="flex items-center gap-4 text-sm text-gray-500">
-            <span class="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-              {{ getCategoryLabel(streamInfo.category) }}
-            </span>
-            <span>最後更新: {{ formatTime(streamInfo.last_update) }}</span>
-          </div>
-        </div>
-
-        <!-- 視頻播放器 -->
-        <div class="bg-black rounded-lg overflow-hidden">
-          <div class="aspect-video relative">
-            <!-- HLS 播放器 -->
-            <video
-              v-if="streamInfo && streamInfo.status === 'active'"
-              ref="videoPlayer"
-              class="w-full h-full"
-              controls
-              autoplay
-              muted
-              crossorigin="anonymous"
-            >
-              您的瀏覽器不支援 HLS 播放。
-            </video>
-            
-            <!-- 調試信息 -->
-            <div v-if="streamInfo" class="text-sm text-gray-500 mt-2">
-              <p>流狀態: {{ streamInfo.status }}</p>
-              <p>播放 URL: {{ playbackUrl || '未載入' }}</p>
-              <p>videoPlayer 元素: {{ videoPlayer ? '已準備' : '未準備' }}</p>
-            </div>
-
-            <!-- 離線狀態 -->
-            <div v-else class="w-full h-full flex items-center justify-center bg-gray-900">
-              <div class="text-center text-white">
-                <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                </svg>
-                <p class="text-lg font-medium mb-2">直播已離線</p>
-                <p class="text-sm text-gray-400">此直播目前無法觀看</p>
-              </div>
-            </div>
-
-            <!-- 載入狀態 -->
-            <div v-if="loadingPlaybackUrl" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-              <div class="text-center text-white">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                <p class="text-sm">載入播放器...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 播放模式選擇 -->
-        <div class="bg-white rounded-lg shadow-md p-4">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-medium text-gray-900">播放模式</h3>
-            <div class="flex items-center gap-2 text-sm text-gray-500">
-              <span>品質: 自動</span>
-            </div>
-          </div>
-          
-          <div class="flex items-center gap-4">
-            <button
-              @click="switchToHLS"
-              :class="[
-                'flex items-center gap-2 px-4 py-2 rounded-lg transition-colors',
-                playbackMode === 'hls' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              ]"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-              </svg>
-              HLS (相容性好，延遲 2-5 秒)
-            </button>
-            
-            <button
-              @click="switchToRTMP"
-              :class="[
-                'flex items-center gap-2 px-4 py-2 rounded-lg transition-colors',
-                playbackMode === 'rtmp' 
-                  ? 'bg-green-600 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              ]"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-              </svg>
-              RTMP (低延遲，需要外部播放器)
-            </button>
-          </div>
-          
-          <div class="mt-4 flex items-center gap-4">
-            <button
-              @click="toggleMute"
-              class="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              <svg v-if="!isMuted" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
-              </svg>
-              <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path>
-              </svg>
-              {{ isMuted ? '取消靜音' : '靜音' }}
-            </button>
-
-            <button
-              @click="toggleFullscreen"
-              class="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
-              </svg>
-              全螢幕
-            </button>
-          </div>
+            <template #append>
+              <el-button @click="sendMessage" :disabled="!newMessage.trim() || !isLoggedIn">
+                發送
+              </el-button>
+            </template>
+          </el-input>
         </div>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.live-stream-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #0f0f0f;
+  overflow: hidden;
+}
+
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 100;
+}
+
+.nav-left {
+  flex-shrink: 0;
+  width: 120px;
+}
+
+.nav-right {
+  flex-shrink: 0;
+  width: 120px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.back-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  z-index: 101;
+  position: relative;
+  min-width: 70px;
+}
+
+.stream-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  justify-content: center;
+  padding: 0 20px;
+}
+
+.stream-title {
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+
+
+.viewer-count {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.player-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.player-container {
+  position: relative;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  width: 100%;
+  height: 0;
+  padding-bottom: 56.25%; /* 16:9 比例 */
+  margin-bottom: 16px;
+}
+
+.player-container.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  border-radius: 0;
+  padding-bottom: 0;
+}
+
+.video-player {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  cursor: pointer;
+}
+
+.video-player {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  cursor: pointer;
+}
+
+.player-controls {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, 
+    rgba(0, 0, 0, 0.7) 0%, 
+    transparent 20%, 
+    transparent 80%, 
+    rgba(0, 0, 0, 0.7) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.player-container:hover .player-controls {
+  opacity: 1;
+}
+
+.top-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.quality-selector {
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 8px;
+}
+
+.bottom-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.control-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.control-btn {
+  background: rgba(0, 0, 0, 0.8);
+  border: none;
+  color: white;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.control-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.volume-slider {
+  width: 100px;
+}
+
+.control-right {
+  display: flex;
+  gap: 8px;
+}
+
+.stream-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stream-details h3 {
+  color: white;
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+}
+
+.stream-details p {
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 12px 0;
+  font-size: 14px;
+}
+
+.stream-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.category {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.update-time {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.chat-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.chat-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.chat-toggle svg {
+  width: 24px;
+  height: 24px;
+}
+
+.chat-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #dc2626;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.chat-panel {
+  position: fixed;
+  top: 50%;
+  right: -400px;
+  transform: translateY(-50%);
+  width: 350px;
+  height: 500px;
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  z-index: 1001;
+  transition: right 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.chat-panel.chat-open {
+  right: 20px;
+}
+
+.chat-header {
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-header h3 {
+  color: white;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.chat-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.online-count {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.close-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message {
+  display: flex;
+  gap: 8px;
+}
+
+.message-avatar {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.message-content {
+  flex: 1;
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.username {
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.time {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 10px;
+}
+
+.message-text {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.chat-input {
+  padding: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.loading-overlay,
+.error-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.loading-content,
+.error-content {
+  text-align: center;
+}
+
+.loading-spinner {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.spinner-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 4px solid transparent;
+  animation: spin 1s linear infinite;
+}
+
+.spinner-ring.blue {
+  border-top-color: #3b82f6;
+}
+
+.spinner-ring.purple {
+  border-top-color: #8b5cf6;
+  animation-delay: -0.5s;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 緩衝指示器樣式 */
+.buffering-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  z-index: 10;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.buffering-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.buffering-dots span {
+  width: 8px;
+  height: 8px;
+  background: #3b82f6;
+  border-radius: 50%;
+  animation: buffering-pulse 1.4s ease-in-out infinite both;
+}
+
+.buffering-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.buffering-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.buffering-dots span:nth-child(3) {
+  animation-delay: 0s;
+}
+
+.buffering-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+
+@keyframes buffering-pulse {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 直播狀態指示器樣式 */
+.live-status-indicator {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+.live-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+  font-weight: 500;
+  margin: 0;
+}
+
+@keyframes live-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+  }
+}
+
+/* 播放按鈕樣式 */
+.play-button-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  z-index: 20;
+}
+
+.play-button {
+  width: 80px;
+  height: 80px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+
+.play-button:hover {
+  background: rgba(0, 0, 0, 0.9);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.1);
+}
+
+.play-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .main-content {
+    flex-direction: column;
+  }
+  
+  .player-section {
+    padding: 12px;
+  }
+  
+  .top-nav {
+    padding: 12px 16px;
+  }
+  
+  .nav-left,
+  .nav-right {
+    width: 80px;
+  }
+  
+  .stream-info {
+    padding: 0 10px;
+  }
+  
+  .stream-title {
+    font-size: 1rem;
+  }
+  
+  .chat-panel {
+    width: calc(100vw - 40px);
+    height: 400px;
+    right: -100vw;
+  }
+  
+  .chat-panel.chat-open {
+    right: 20px;
+  }
+  
+  .chat-toggle {
+    bottom: 16px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+  }
+  
+  .chat-toggle svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* 超寬螢幕適配 */
+@media (min-width: 1920px) {
+  .player-container {
+    max-width: 1600px;
+    margin: 0 auto 16px auto;
+  }
+}
+
+/* 高螢幕適配 */
+@media (min-height: 1080px) {
+  .player-section {
+    padding: 24px;
+  }
+  
+  .stream-card {
+    padding: 20px;
+  }
+}
+
+/* 低螢幕適配 */
+@media (max-height: 600px) {
+  .top-nav {
+    padding: 8px 16px;
+  }
+  
+  .stream-title {
+    font-size: 0.9rem;
+  }
+  
+  .player-section {
+    padding: 8px;
+  }
+  
+  .stream-card {
+    padding: 12px;
+  }
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.page-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 8px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.page-subtitle {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.player-section {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.back-button {
+  margin-bottom: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  backdrop-filter: blur(10px);
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.stream-info-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stream-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.stream-details {
+  flex: 1;
+}
+
+.stream-title {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.stream-description {
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+}
+
+.stream-status {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  backdrop-filter: blur(10px);
+}
+
+.status-badge.active {
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+}
+
+.status-badge.inactive {
+  background: linear-gradient(135deg, #f87171, #ef4444);
+}
+
+.status-dot {
+  font-size: 8px;
+}
+
+.status-dot.pulse {
+  animation: pulse 2s infinite;
+}
+
+.viewer-count {
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+}
+
+.stream-meta {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.category-tag {
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #e0f2fe, #b3e5fc);
+  color: #0277bd;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.update-time {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.update-time svg {
+  width: 14px;
+  height: 14px;
+}
+
+.player-container {
+  max-width: 90vw;
+  margin: 0 auto;
+}
+
+.player-frame {
+  background: #000;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+}
+
+.player-decoration {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1), rgba(236, 72, 153, 0.1));
+  border-radius: 16px;
+  pointer-events: none;
+}
+
+.player-title-bar {
+  background: linear-gradient(135deg, #374151, #1f2937);
+  padding: 12px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.title-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.traffic-lights {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.traffic-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.traffic-light.red { background: #ef4444; }
+.traffic-light.yellow { background: #f59e0b; }
+.traffic-light.green { background: #10b981; }
+
+.stream-title {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.stream-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stream-type {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.video-container {
+  aspect-ratio: 16/9;
+  position: relative;
+  background: #000;
+}
+
+.live-indicator {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+}
+
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #dc2626;
+  color: white;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: white;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.video-player {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.loading-overlay,
+.error-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-content,
+.error-content {
+  text-align: center;
+}
+
+.loading-spinner {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.spinner-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 4px solid transparent;
+  animation: spin 1s linear infinite;
+}
+
+.spinner-ring.blue {
+  border-top-color: #3b82f6;
+}
+
+.spinner-ring.purple {
+  border-top-color: #8b5cf6;
+  animation-delay: -0.5s;
+}
+
+.loading-text {
+  color: white;
+  font-size: 14px;
+}
+
+.error-icon {
+  color: #f87171;
+  margin-bottom: 16px;
+}
+
+.error-icon svg {
+  width: 64px;
+  height: 64px;
+}
+
+.error-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.error-message {
+  color: #d1d5db;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.retry-button {
+  margin-top: 16px;
+}
+
+.player-control-bar {
+  background: linear-gradient(135deg, #374151, #1f2937);
+  padding: 12px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.control-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.control-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.info-item {
+  color: #9ca3af;
+}
+
+.control-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  color: #10b981;
+  font-size: 8px;
+}
+
+.status-dot.pulse {
+  animation: pulse 2s infinite;
+}
+
+.status-text {
+  color: #9ca3af;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .player-container {
+    max-width: 95vw;
+  }
+  
+  .page-title {
+    font-size: 1.5rem;
+  }
+  
+  .public-stream-player {
+    padding: 16px;
+  }
+  
+  .control-info {
+    gap: 8px;
+  }
+  
+  .info-item {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .player-container {
+    max-width: 100vw;
+  }
+  
+  .page-title {
+    font-size: 1.3rem;
+  }
+  
+  .traffic-lights {
+    gap: 8px;
+  }
+  
+  .traffic-light {
+    width: 10px;
+    height: 10px;
+  }
+}
+</style>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
@@ -208,13 +1350,32 @@ const streamInfo = ref<PublicStreamInfo | null>(null)
 const playbackUrl = ref('')
 const loading = ref(false)
 const loadingPlaybackUrl = ref(false)
+const hlsLoading = ref(false)
 const error = ref('')
-const isMuted = ref(false)
 const videoPlayer = ref<HTMLVideoElement>()
 const hls = ref<Hls | null>(null)
 const flvPlayer = ref<flvjs.Player | null>(null)
-const playbackMode = ref<'hls' | 'rtmp'>('hls')
-const streamURLs = ref<{ hls: string; rtmp: string } | null>(null)
+const streamURLs = ref<{ hls: string } | null>(null)
+
+// 播放器控制
+const isFullscreen = ref(false)
+const isMuted = ref(false)
+const volume = ref(50)
+const showControls = ref(true)
+
+// 聊天室
+const chatMessages = ref<Array<{
+  username: string
+  text: string
+  timestamp: string
+}>>([])
+const newMessage = ref('')
+const chatMessagesRef = ref<HTMLElement | null>(null)
+const isLoggedIn = ref(true) // 簡化，實際應該從 auth store 獲取
+const streamMonitorInterval = ref<number | null>(null)
+const isChatOpen = ref(false)
+const unreadCount = ref(0)
+const isLiveStreaming = ref(false)
 
 // 分類標籤映射
 const categoryLabels: Record<string, string> = {
@@ -237,19 +1398,26 @@ const loadStreamInfo = async () => {
   
   try {
     const response = await publicStreamApi.getStreamInfo(streamName)
-    streamInfo.value = response.data
     
-    console.log('流資訊載入成功:', response.data)
+    // 添加防護性檢查
+    if (!response) {
+      console.error('API 響應為空')
+      error.value = '載入流資訊失敗：API 響應為空'
+      return
+    }
+    
+    console.log('流資訊載入成功:', response)
+    streamInfo.value = response
     
     // 如果流是活躍的，獲取播放 URL
-    if (response.data.status === 'active') {
+    if (response.status === 'active') {
       console.log('流狀態為 active，開始載入播放 URL')
       // 延遲一下再載入播放 URL，確保 DOM 已更新
       setTimeout(() => {
         loadPlaybackUrl(streamName)
       }, 500)
     } else {
-      console.log('流狀態不是 active:', response.data.status)
+      console.log('流狀態不是 active:', response.status)
     }
   } catch (err) {
     console.error('載入流資訊失敗:', err)
@@ -259,14 +1427,16 @@ const loadStreamInfo = async () => {
   }
 }
 
-const loadPlaybackUrl = async (streamName: string, mode: 'hls' | 'rtmp' = 'hls') => {
+const loadPlaybackUrl = async (streamName: string, mode: 'hls' = 'hls') => {
   loadingPlaybackUrl.value = true
   
   try {
-    // 獲取所有播放 URL
+    // 獲取播放 URL
     if (!streamURLs.value) {
       const response = await publicStreamApi.getStreamURLs(streamName)
-      streamURLs.value = response.data.urls
+      streamURLs.value = {
+        hls: response.urls.hls || ''
+      }
     }
     
     // 根據模式選擇 URL
@@ -313,36 +1483,63 @@ const loadPlaybackUrl = async (streamName: string, mode: 'hls' | 'rtmp' = 'hls')
           videoPlayer.value.removeAttribute('data-no-play')
         }
         
+        // 顯示 HLS 載入狀態
+        hlsLoading.value = true
+        
         // 創建新的 HLS 實例
         hls.value = new Hls({
           debug: true, // 開啟調試模式
           enableWorker: true,
           lowLatencyMode: true,
+          // 增加緩衝配置 - 目標 30 秒緩衝
+          maxBufferLength: 30, // 最大緩衝長度 30 秒
+          maxMaxBufferLength: 60, // 最大緩衝長度上限 60 秒
+          maxBufferSize: 100 * 1000 * 1000, // 最大緩衝大小 100MB
+          maxBufferHole: 0.5, // 最大緩衝空洞 0.5 秒
+          highBufferWatchdogPeriod: 2, // 高緩衝監控週期 2 秒
+          nudgeOffset: 0.2, // 推動偏移 0.2 秒
+          nudgeMaxRetry: 5, // 最大重試次數 5 次
+          maxFragLookUpTolerance: 0.25, // 最大片段查找容差 0.25 秒
+          liveSyncDurationCount: 6, // 直播同步片段數量 6 個 (約 30 秒)
+          liveMaxLatencyDurationCount: 12, // 最大延遲片段數量 12 個
+          // 片段載入配置
+          fragLoadingMaxRetry: 4, // 片段載入最大重試次數
+          fragLoadingRetryDelay: 1000, // 片段載入重試延遲 1 秒
+          fragLoadingMaxRetryTimeout: 64000, // 片段載入最大重試超時 64 秒
+          // 播放列表配置
+          manifestLoadingMaxRetry: 4, // 播放列表載入最大重試次數
+          manifestLoadingRetryDelay: 1000, // 播放列表載入重試延遲 1 秒
+          manifestLoadingMaxRetryTimeout: 64000, // 播放列表載入最大重試超時 64 秒
         })
         
-        // 載入流
+        // 立即顯示載入狀態
+        hlsLoading.value = true
+        
+                // 載入流
         hls.value.loadSource(playbackUrl.value)
         hls.value.attachMedia(videoPlayer.value)
         
         // 監聽事件
         hls.value.on(Hls.Events.MANIFEST_PARSED, () => {
           console.log('HLS 流載入成功')
-          // 只有在 HLS 模式下才嘗試播放
-          if (videoPlayer.value && playbackMode.value === 'hls' && !videoPlayer.value.hasAttribute('data-no-play')) {
-            console.log('嘗試 HLS 自動播放')
-            videoPlayer.value.play().catch(err => {
-              // 只有在 HLS 模式下才記錄錯誤
-              if (playbackMode.value === 'hls') {
+          // 不要立即隱藏載入狀態，等待片段載入
+          
+          // 等待足夠的緩衝後再播放
+          setTimeout(() => {
+            if (videoPlayer.value && !videoPlayer.value.hasAttribute('data-no-play')) {
+              console.log('嘗試 HLS 自動播放')
+              videoPlayer.value.play().catch(err => {
                 console.error('自動播放失敗:', err)
-              }
-            })
-          } else {
-            console.log('跳過 HLS 自動播放，當前模式:', playbackMode.value, '禁止播放:', videoPlayer.value?.hasAttribute('data-no-play'))
-          }
+              })
+            } else {
+              console.log('跳過 HLS 自動播放，禁止播放:', videoPlayer.value?.hasAttribute('data-no-play'))
+            }
+          }, 4000) // 等待 4 秒確保有足夠緩衝
         })
         
-        hls.value.on(Hls.Events.ERROR, (event, data) => {
+        hls.value.on(Hls.Events.ERROR, (_event, data) => {
           console.error('HLS 錯誤:', data)
+          hlsLoading.value = false // 隱藏載入狀態
           if (data.fatal) {
             error.value = '播放器載入失敗，請重新整理頁面'
           }
@@ -352,48 +1549,164 @@ const loadPlaybackUrl = async (streamName: string, mode: 'hls' | 'rtmp' = 'hls')
           console.log('媒體元素已附加')
         })
         
+        // 監聽片段載入狀態
+        hls.value.on(Hls.Events.BUFFER_APPENDING, () => {
+          console.log('正在追加緩衝')
+          hlsLoading.value = true
+        })
+        
+        hls.value.on(Hls.Events.BUFFER_APPENDED, () => {
+          console.log('緩衝追加完成')
+          hlsLoading.value = false
+        })
+        
+
+        
+        // 監聽播放列表更新
+        hls.value.on(Hls.Events.MANIFEST_LOADING, () => {
+          console.log('正在載入播放列表')
+          hlsLoading.value = true
+        })
+        
+        // 添加定時器監控流狀態
+        let lastFragmentTime = Date.now()
+        let fragmentCount = 0
+        let manifestCount = 0
+        let isBuffering = false
+        
+        // 監聽播放列表載入
+        hls.value.on(Hls.Events.MANIFEST_LOADED, () => {
+          manifestCount++
+          console.log('m3u8 載入完成，計數:', manifestCount)
+          // 不要立即隱藏 loading，等待片段載入
+        })
+        
+        // 監聽片段載入開始
+        hls.value.on(Hls.Events.FRAG_LOADING, () => {
+          console.log('正在載入片段')
+          isBuffering = true
+          hlsLoading.value = true
+        })
+        
+        // 監聽片段載入完成
+        hls.value.on(Hls.Events.FRAG_LOADED, () => {
+          console.log('片段載入完成')
+          lastFragmentTime = Date.now()
+          fragmentCount++
+          console.log('片段載入完成，計數:', fragmentCount)
+          
+          // 延遲隱藏 loading，確保有足夠緩衝
+          setTimeout(() => {
+            if (!isBuffering) {
+              hlsLoading.value = false
+            }
+          }, 2000) // 增加到 2 秒，確保有足夠緩衝
+        })
+        
+        // 監控流是否卡住
+        streamMonitorInterval.value = window.setInterval(() => {
+          if (videoPlayer.value && hls.value) {
+            const currentTime = Date.now()
+            const timeSinceLastFragment = currentTime - lastFragmentTime
+            
+            // 如果超過 5 秒沒有新片段，但一直在載入 m3u8，顯示 loading
+            if (timeSinceLastFragment > 5000 && manifestCount > fragmentCount) {
+              console.log('有 m3u8 但沒有 .ts 片段，顯示載入狀態')
+              hlsLoading.value = true
+            }
+            
+            // 如果超過 8 秒沒有新片段，且影片正在等待，顯示 loading
+            if (timeSinceLastFragment > 8000 && videoPlayer.value.readyState < 3) {
+              console.log('流可能卡住，顯示載入狀態')
+              hlsLoading.value = true
+            }
+            
+            // 檢查是否正在直播（有持續的片段載入）
+            if (fragmentCount > 0 && timeSinceLastFragment < 10000) {
+              isLiveStreaming.value = true
+            } else {
+              isLiveStreaming.value = false
+            }
+            
+            // 重置緩衝狀態
+            isBuffering = false
+          }
+        }, 2000) // 每 2 秒檢查一次
+        
+        // 監聽影片播放狀態
+        if (videoPlayer.value) {
+          videoPlayer.value.addEventListener('waiting', () => {
+            console.log('影片等待中，顯示載入狀態')
+            hlsLoading.value = true
+          })
+          
+          videoPlayer.value.addEventListener('canplay', () => {
+            console.log('影片可以播放，隱藏載入狀態')
+            setTimeout(() => {
+              hlsLoading.value = false
+            }, 1000)
+          })
+          
+          videoPlayer.value.addEventListener('stalled', () => {
+            console.log('影片停滯，顯示載入狀態')
+            hlsLoading.value = true
+          })
+          
+          videoPlayer.value.addEventListener('suspend', () => {
+            console.log('影片暫停載入，顯示載入狀態')
+            hlsLoading.value = true
+          })
+          
+          videoPlayer.value.addEventListener('loadstart', () => {
+            console.log('影片開始載入')
+            hlsLoading.value = true
+          })
+          
+          videoPlayer.value.addEventListener('loadeddata', () => {
+            console.log('影片數據載入完成')
+            setTimeout(() => {
+              hlsLoading.value = false
+            }, 1000)
+          })
+        }
+        
+        // 監聽播放狀態
+        if (videoPlayer.value) {
+          videoPlayer.value.addEventListener('waiting', () => {
+            console.log('影片等待數據，顯示載入狀態')
+            hlsLoading.value = true
+          })
+          
+          videoPlayer.value.addEventListener('canplay', () => {
+            console.log('影片可以播放，隱藏載入狀態')
+            hlsLoading.value = false
+          })
+          
+          videoPlayer.value.addEventListener('stalled', () => {
+            console.log('影片停滯，顯示載入狀態')
+            hlsLoading.value = true
+          })
+        }
+        
       } else if (videoPlayer.value.canPlayType('application/vnd.apple.mpegurl')) {
         console.log('使用瀏覽器原生 HLS 支援')
         // Safari 原生支援 HLS
         videoPlayer.value.src = playbackUrl.value
         videoPlayer.value.addEventListener('loadedmetadata', () => {
-          if (playbackMode.value === 'hls' && !videoPlayer.value?.hasAttribute('data-no-play')) {
+          if (!videoPlayer.value?.hasAttribute('data-no-play')) {
             console.log('嘗試 Safari 原生 HLS 自動播放')
             videoPlayer.value?.play().catch(err => {
-              // 只有在 HLS 模式下才記錄錯誤
-              if (playbackMode.value === 'hls') {
-                console.error('自動播放失敗:', err)
-              }
+              console.error('自動播放失敗:', err)
             })
           } else {
-            console.log('跳過 Safari 原生 HLS 自動播放，當前模式:', playbackMode.value, '禁止播放:', videoPlayer.value?.hasAttribute('data-no-play'))
+            console.log('跳過 Safari 原生 HLS 自動播放，禁止播放:', videoPlayer.value?.hasAttribute('data-no-play'))
           }
         })
       } else {
         console.error('瀏覽器不支援 HLS')
         error.value = '您的瀏覽器不支援 HLS 播放'
       }
-    } else {
-      // RTMP 模式 - 直接返回，不執行任何播放相關代碼
-      playbackUrl.value = streamURLs.value!.rtmp
-      console.log('RTMP URL:', playbackUrl.value)
-      console.log('提示：RTMP 流需要使用外部播放器，如 VLC')
-      
-      // 清理所有播放器
-      if (hls.value) {
-        hls.value.destroy()
-        hls.value = null
-      }
-      if (flvPlayer.value) {
-        flvPlayer.value.destroy()
-        flvPlayer.value = null
-      }
-      
-      // 顯示 RTMP URL 供用戶複製
-      error.value = `RTMP 播放需要外部播放器。請使用 VLC 或其他支援 RTMP 的播放器打開：${playbackUrl.value}`
-      
-      // 直接返回，不執行任何播放相關代碼
-      return
+
     }
   } catch (err) {
     console.error('獲取播放 URL 失敗:', err)
@@ -403,19 +1716,32 @@ const loadPlaybackUrl = async (streamName: string, mode: 'hls' | 'rtmp' = 'hls')
   }
 }
 
-const toggleMute = () => {
-  if (videoPlayer.value) {
-    videoPlayer.value.muted = !videoPlayer.value.muted
-    isMuted.value = videoPlayer.value.muted
-  }
-}
+// 這些功能暫時未使用，保留以備將來擴展
+// const toggleMute = () => {
+//   if (videoPlayer.value) {
+//     videoPlayer.value.muted = !videoPlayer.value.muted
+//     isMuted.value = videoPlayer.value.muted
+//   }
+// }
 
-const toggleFullscreen = () => {
+// const toggleFullscreen = () => {
+//   if (videoPlayer.value) {
+//     if (document.fullscreenElement) {
+//       document.exitFullscreen()
+//     } else {
+//       videoPlayer.value.requestFullscreen()
+//     }
+//   }
+// }
+
+const playVideo = async () => {
   if (videoPlayer.value) {
-    if (document.fullscreenElement) {
-      document.exitFullscreen()
-    } else {
-      videoPlayer.value.requestFullscreen()
+    try {
+      console.log('手動播放影片')
+      await videoPlayer.value.play()
+    } catch (err) {
+      console.error('播放失敗:', err)
+      error.value = '播放失敗，請檢查瀏覽器設定'
     }
   }
 }
@@ -433,23 +1759,105 @@ const formatTime = (timeString: string) => {
   return date.toLocaleString('zh-TW')
 }
 
-const switchToHLS = () => {
-  playbackMode.value = 'hls'
-  if (streamURLs.value) {
-    loadPlaybackUrl(route.params.name as string, 'hls')
+// 播放器控制方法
+const toggleMute = () => {
+  if (videoPlayer.value) {
+    videoPlayer.value.muted = !videoPlayer.value.muted
+    isMuted.value = videoPlayer.value.muted
   }
 }
 
-const switchToRTMP = () => {
-  playbackMode.value = 'rtmp'
-  if (streamURLs.value) {
-    loadPlaybackUrl(route.params.name as string, 'rtmp')
+const changeVolume = (value: number | number[]) => {
+  const volumeValue = Array.isArray(value) ? value[0] : value
+  if (videoPlayer.value) {
+    videoPlayer.value.volume = volumeValue / 100
   }
 }
+
+const toggleFullscreen = () => {
+  if (videoPlayer.value) {
+    if (document.fullscreenElement) {
+      document.exitFullscreen()
+      isFullscreen.value = false
+    } else {
+      videoPlayer.value.requestFullscreen()
+      isFullscreen.value = true
+    }
+  }
+}
+
+// 監聽全螢幕狀態變化
+const handleFullscreenChange = () => {
+  isFullscreen.value = !!document.fullscreenElement
+}
+
+const rotateScreen = () => {
+  if (videoPlayer.value) {
+    const currentRotation = videoPlayer.value.style.transform
+    const newRotation = currentRotation.includes('rotate(90deg)') ? '' : 'rotate(90deg)'
+    videoPlayer.value.style.transform = newRotation
+  }
+}
+
+// 聊天室方法
+const toggleChat = () => {
+  isChatOpen.value = !isChatOpen.value
+  if (isChatOpen.value) {
+    unreadCount.value = 0 // 打開聊天室時清除未讀數
+  }
+}
+
+const sendMessage = () => {
+  if (newMessage.value.trim() && isLoggedIn.value) {
+    chatMessages.value.push({
+      username: '用戶',
+      text: newMessage.value,
+      timestamp: new Date().toISOString()
+    })
+    newMessage.value = ''
+    
+    // 滾動到底部
+    nextTick(() => {
+      if (chatMessagesRef.value) {
+        chatMessagesRef.value.scrollTop = chatMessagesRef.value.scrollHeight
+      }
+    })
+  }
+}
+
+
+
+
 
 // 生命週期
 onMounted(async () => {
   await loadStreamInfo()
+  
+  // 添加全螢幕事件監聽器
+  document.addEventListener('fullscreenchange', handleFullscreenChange)
+  document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
+  document.addEventListener('mozfullscreenchange', handleFullscreenChange)
+  document.addEventListener('MSFullscreenChange', handleFullscreenChange)
+})
+
+onUnmounted(() => {
+  // 清理事件監聽器
+  document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
+  document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
+  document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
+  
+  // 清理 HLS 實例
+  if (hls.value) {
+    hls.value.destroy()
+    hls.value = null
+  }
+  
+  // 清理定時器
+  if (streamMonitorInterval.value) {
+    clearInterval(streamMonitorInterval.value)
+    streamMonitorInterval.value = null
+  }
 })
 
 onUnmounted(() => {
@@ -481,5 +1889,60 @@ video::-webkit-media-controls {
 
 video::-webkit-media-controls-panel {
   background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* 自定義動畫 */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* 玻璃擬態效果 */
+.backdrop-blur-sm {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* 漸變文字效果 */
+.bg-clip-text {
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* 自定義滾動條 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #3b82f6, #8b5cf6);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #2563eb, #7c3aed);
+}
+
+/* 卡片懸停效果 */
+.hover\:shadow-2xl:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* 按鈕點擊效果 */
+.transform:active {
+  transform: scale(0.95);
 }
 </style> 

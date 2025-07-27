@@ -114,8 +114,8 @@ let statsTimer: number | null = null
 const fetchStreamInfo = async () => {
   try {
     const response = await publicStreamApi.getStreamInfo(props.streamName)
-    streamInfo.value = response.data
-    streamStatus.value = response.data.status
+    streamInfo.value = response
+    streamStatus.value = response.status
   } catch (err) {
     console.error('獲取流資訊失敗:', err)
   }
@@ -127,8 +127,8 @@ const fetchStreamURL = async () => {
     loading.value = true
     error.value = false
     
-    const response = await publicStreamApi.getStreamURL(props.streamName)
-    streamUrl.value = response.data.url
+    const response = await publicStreamApi.getStreamURLs(props.streamName)
+    streamUrl.value = response.urls.hls
     
     // 更新觀眾數（從流資訊中獲取）
     viewerCount.value = streamInfo.value.viewer_count || 0
