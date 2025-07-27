@@ -13,7 +13,7 @@
 - ✅ **現代化前端**：Vue 3 + TypeScript + Element Plus + hls.js
 - ✅ **智能播放體驗**：自動品質切換、垂直影片比例保持、即時載入
 - ✅ **完整 Docker 化**：包含 FFmpeg 轉碼容器的完整開發環境
-- ✅ **公開直播流系統**：支援外部 HLS 流拉取和雙模式播放（HLS + RTMP）
+- ✅ **公開直播流系統**：支援外部 HLS 流拉取和多模式播放（HLS + WebRTC 模擬）
 
 ## 🏗️ 系統架構
 
@@ -1044,9 +1044,9 @@ graph LR
 
 #### ✅ **已實現功能**
 - **獨立流拉取服務**: `stream-puller` 獨立 Go 服務，持續拉取外部 HLS 流
-- **雙模式播放支援**: HLS（2-5秒延遲）+ RTMP（1-3秒延遲）
-- **Nginx-RTMP 整合**: 支援 RTMP 推流和 HTTP-FLV 播放
-- **前端播放器優化**: 支援 hls.js 和 flv.js，智能模式切換
+- **多模式播放支援**: HLS（2-5秒延遲）和 WebRTC（模擬，目標 <1秒延遲）
+- **Nginx-RTMP 整合**: 支援 RTMP 推流 (後端拉流用)
+- **前端播放器優化**: 支援 hls.js，並預留 WebRTC 支援
 - **持久化配置**: Redis 持久化流配置和狀態
 - **Docker 管理整合**: 統一管理腳本，一鍵啟動/停止
 
@@ -1055,45 +1055,49 @@ graph LR
 graph TB
     subgraph "外部流源"
         EXT_HLS[外部 HLS 流]
-        EXT_RTMP[外部 RTMP 流]
+        EXT_RTMP[外部 RTMP 流<br/>(後端拉流用)]
     end
     
     subgraph "流拉取服務"
-        SP[stream-puller]
-        SP --> |FFmpeg| DUAL[雙輸出]
-        DUAL --> HLS_OUT[HLS 輸出]
-        DUAL --> RTMP_OUT[RTMP 輸出]
+        SP[stream-puller<br/>(FFmpeg)]
+        SP --> HLS_OUT[HLS 輸出]
+        SP --> WEBRTC_OUT[WebRTC 輸出<br/>(模擬)]
     end
     
     subgraph "播放服務"
         HLS_SERVER[HLS 服務器<br/>端口 8083]
-        NGINX_RTMP[Nginx-RTMP<br/>端口 1935]
+        NGINX_RTMP[Nginx-RTMP<br/>端口 1935<br/>(後端拉流用)]
     end
     
     subgraph "前端播放"
         HLS_PLAYER[HLS 播放器<br/>hls.js]
-        RTMP_PLAYER[RTMP 播放器<br/>flv.js]
+        WEBRTC_PLAYER[WebRTC 播放器<br/>(模擬)]
     end
     
     EXT_HLS --> SP
     EXT_RTMP --> SP
     HLS_OUT --> HLS_SERVER
-    RTMP_OUT --> NGINX_RTMP
+    WEBRTC_OUT --> NGINX_RTMP
     HLS_SERVER --> HLS_PLAYER
-    NGINX_RTMP --> RTMP_PLAYER
+    NGINX_RTMP --> WEBRTC_PLAYER
 ```
 
 #### 📡 **API 端點**
 - `GET /api/public-streams` - 獲取所有公開流列表
 - `GET /api/public-streams/:name` - 獲取流詳細資訊
 - `GET /api/public-streams/:name/url` - 獲取 HLS 播放 URL
-- `GET /api/public-streams/:name/urls` - 獲取所有播放 URL（HLS + RTMP）
+- `GET /api/public-streams/:name/urls` - 獲取所有播放 URL（目前僅 HLS）
 
 #### 🎮 **前端功能**
 - **流列表頁面**: `/public-streams` - 顯示所有可用流
-- **播放器頁面**: `/public-streams/:name` - 雙模式播放器
-- **智能切換**: HLS 模式（相容性好）+ RTMP 模式（低延遲）
+- **播放器頁面**: `/public-streams/:name` - HLS 播放器，預留 WebRTC 支援
+- **智能切換**: HLS 模式（相容性好）+ WebRTC 模式（模擬，目標超低延遲）
 - **實時狀態**: 顯示流狀態、觀看人數、最後更新時間
+- **優化 UI/UX**: 列表頁面卡片式佈局，播放頁面響應式寬度限制，無進度條
+- **增強播放控制**: 音量、全螢幕、螢幕旋轉
+- **預留聊天室區域**
+- **精確載入與緩衝提示**: 包含初始載入、緩衝中、直播更新狀態、播放按鈕
+- **直播狀態指示器**: 顯示直播中及內容更新狀態
 
 ---
 
@@ -1109,34 +1113,36 @@ docker-compose up -d
 ### ✅ **已完成功能**
 
 #### 第一階段：基礎直播架構
-- ✅ **RTMP 接收器**: Nginx-RTMP 服務器（端口 1935）
-- ✅ **直播轉碼服務**: FFmpeg 實時轉碼（HLS + RTMP 雙輸出）
-- ✅ **前端播放器**: hls.js + flv.js 雙模式播放
+- ✅ **RTMP 接收器**: Nginx-RTMP 服務器（端口 1935，用於後端拉流）
+- ✅ **直播轉碼服務**: FFmpeg 實時轉碼（HLS 輸出，支援低延遲配置）
+- ✅ **前端播放器**: hls.js 播放，並預留 WebRTC 支援
 - ✅ **獨立流拉取服務**: `stream-puller` 背景服務
 - ✅ **持久化配置**: Redis 持久化流配置和狀態
 
 #### 第二階段：訊號源整合
 - ✅ **外部 HLS 流拉取**: 支援公開 m3u8 流源
-- ✅ **RTMP 推流支援**: 推流到 Nginx-RTMP 服務器
+- ✅ **RTMP 推流支援**: 推流到 Nginx-RTMP 服務器 (後端拉流用)
 - ✅ **直播狀態管理**: 後端/前端顯示直播狀態
 - ✅ **觀看人數統計**: 實時觀看人數追蹤
 
 #### 第三階段：進階功能
 - ✅ **多品質直播流**: 720p/480p/360p 實時轉碼
-- ✅ **雙模式播放**: HLS（相容性好）+ RTMP（低延遲）
+- ✅ **HLS 播放優化**: HLS 延遲從 30 秒降低到 2-5 秒，並優化緩衝策略
 - ✅ **智能延遲優化**: HLS 延遲從 30 秒降低到 2-5 秒
+- ✅ **前端 UI/UX 大幅優化**: 列表卡片化、播放頁面響應式佈局、無進度條、增強控制項、預留聊天室
+- ✅ **精細化載入與緩衝提示**: 包含初始載入、緩衝中、直播更新狀態、播放按鈕
+- ✅ **直播狀態指示器**
 
 ### 🔄 **進行中功能**
-- 🔄 **前端 RTMP 播放**: flv.js 整合優化
-- 🔄 **HTTP-FLV 支援**: Nginx 配置優化
+ - 🔄 **WebRTC 真實播放**: 需要後端信令服務器整合
 
 ### 📋 **待開發功能**
 
 #### 直播互動功能
-- [ ] **WebSocket 聊天室**: 實時聊天功能
+- [ ] **WebSocket 聊天室**: 實時聊天功能 (基礎架構已預留)
 - [ ] **彈幕系統**: 即時彈幕顯示
 - [ ] **禮物系統**: 虛擬禮物和打賞
-- [ ] **觀眾互動**: 點讚、分享、關注
+ - [ ] **觀眾互動**: 點讚、分享、關注
 
 #### 直播管理功能
 - [ ] **直播錄製**: 自動錄製直播內容
@@ -1147,8 +1153,8 @@ docker-compose up -d
 #### 推流功能
 - [ ] **OBS 推流**: 專業推流軟體支援
 - [ ] **手機推流**: 移動端推流 App
-- [ ] **瀏覽器推流**: WebRTC 推流支援
-- [ ] **多平台推流**: 同時推流到多個平台
+- [ ] **瀏覽器推流**: WebRTC 推流支援 (前端 WebRTC 基礎已預留)
+ - [ ] **多平台推流**: 同時推流到多個平台
 
 #### 系統優化
 - [ ] **CDN 加速**: 全球內容分發
@@ -1166,7 +1172,7 @@ docker-compose up -d
 
 #### 下一步開發建議
 1. **優先完成聊天室**: 利用現有 WebSocket 架構
-2. **優化 RTMP 播放**: 解決前端 RTMP 播放問題
+2. **實現 WebRTC 真實播放**: 整合後端信令服務器
 3. **添加錄製功能**: 將直播流存檔為 VOD
 4. **實現推流功能**: 支援 OBS 和手機推流
 
@@ -1252,21 +1258,21 @@ docker exec stream-demo-minio mc anonymous set public local/stream-demo-processe
 ### 核心功能完成度
 - ✅ **用戶認證系統**: 100% (註冊、登入、JWT)
 - ✅ **影片上傳系統**: 100% (上傳、轉碼、播放)
-- ✅ **直播流系統**: 85% (拉流、播放、狀態管理)
-- 🔄 **直播互動系統**: 30% (基礎架構完成)
+- ✅ **直播流系統**: 95% (拉流、播放、狀態管理、UI/UX、載入提示)
+- 🔄 **直播互動系統**: 50% (基礎架構完成，聊天室 UI 預留)
 - ⏳ **支付系統**: 0% (待開發)
 - ⏳ **管理後台**: 0% (待開發)
 
 ### 技術架構完成度
 - ✅ **後端 API**: 90% (核心功能完成)
-- ✅ **前端界面**: 80% (主要頁面完成)
+- ✅ **前端界面**: 90% (主要頁面完成，直播播放器大幅優化)
 - ✅ **資料庫設計**: 100% (完整架構)
 - ✅ **Docker 部署**: 100% (完整環境)
 - ✅ **監控日誌**: 70% (基礎監控完成)
 
 ### 下一步開發重點
 1. **完成直播互動功能** (聊天室、彈幕)
-2. **優化 RTMP 播放體驗**
+2. **實現 WebRTC 真實播放**
 3. **實現直播錄製功能**
 4. **開發支付系統**
 5. **添加管理後台**
@@ -1277,7 +1283,7 @@ docker exec stream-demo-minio mc anonymous set public local/stream-demo-processe
 
 ### 1. **WebRTC (超低延遲) - 主要播放方式**
 - **延遲**：0.1-1秒 ⚡
-- **相容性**：Chrome、Firefox、Safari、Edge ✅
+- **相容性**：Chrome、Firefox、Safari、Edge ✅ (目前為模擬實現，需後端信令服務器)
 - **優點**：瀏覽器原生支援，無需插件，延遲極低
 - **狀態**：已設為預設播放模式，需要後端信令服務器
 
@@ -1295,24 +1301,24 @@ docker exec stream-demo-minio mc anonymous set public local/stream-demo-processe
 ## 🎨 技術架構
 
 ```
-外部流 (HLS) → FFmpeg → 同時輸出:
+外部流 (HLS/RTMP) → FFmpeg (stream-puller) → 同時輸出:
 ├── LL-HLS (.m3u8 + .ts) → 瀏覽器播放 (hls.js) - 2-5秒延遲
-└── WebRTC (webrtc://localhost:1935/webrtc/stream) → 瀏覽器播放 - <1秒延遲
+└── WebRTC (模擬) → 瀏覽器播放 - <1秒延遲
 ```
 
 ## 📊 播放模式對比
 
 | 模式 | 延遲 | 相容性 | 使用場景 |
 |------|------|--------|----------|
-| **WebRTC** | <1秒 | 現代瀏覽器 | 超低延遲需求 (預設) |
+| **WebRTC** | <1秒 | 現代瀏覽器 | 超低延遲需求 (目前為模擬) |
 | **LL-HLS** | 2-5秒 | 所有瀏覽器 | 相容性備用方案 |
 
 ## 🎨 用戶體驗
 
 現在用戶可以選擇兩種播放模式：
 
-1. **WebRTC 播放** - 超低延遲，現代瀏覽器支援 (預設)
-2. **HLS 播放** - 相容性最好，延遲適中 (備用)
+1. **WebRTC 播放** - 超低延遲，現代瀏覽器支援 (目前為模擬，預設)
+2. **HLS 播放** - 相容性最好，延遲適中 (備用，已優化)
 
 這個解決方案提供了：
 - ✅ **超低延遲**：WebRTC 提供 <1秒延遲
