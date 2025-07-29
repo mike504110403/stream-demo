@@ -55,7 +55,7 @@ const router = createRouter({
     {
       path: '/lives/create',
       name: 'CreateLive',
-      component: () => import('@/views/live/LiveCreate.vue'),
+      component: () => import('@/views/live/LiveRoomCreate.vue'),
       meta: { requiresAuth: true }
     },
     {
@@ -70,10 +70,35 @@ const router = createRouter({
       component: () => import('@/views/live/LiveRoom.vue'),
       meta: { requiresAuth: true }
     },
+    // 直播間路由
+    {
+      path: '/live-rooms',
+      name: 'LiveRooms',
+      component: () => import('@/views/live/LiveRoomListView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/live-rooms/create',
+      name: 'CreateLiveRoom',
+      component: () => import('@/views/live/LiveRoomCreate.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/live-rooms/:id',
+      name: 'LiveRoomDetail',
+      component: () => import('@/views/live/LiveRoom.vue'),
+      meta: { requiresAuth: true }
+    },
     {
       path: '/public-streams',
       name: 'PublicStreams',
       component: () => import('@/views/public-stream/PublicStreamListView.vue'),
+      meta: { requiresAuth: false }
+    },
+    {
+      path: '/debug',
+      name: 'Debug',
+      component: () => import('@/views/DebugView.vue'),
       meta: { requiresAuth: false }
     },
     {
@@ -99,6 +124,12 @@ const router = createRouter({
       name: 'Dashboard',
       component: () => import('@/views/DashboardView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/debug',
+      name: 'Debug',
+      component: () => import('@/views/DebugView.vue'),
+      meta: { requiresAuth: false }
     },
     {
       path: '/:pathMatch(.*)*',

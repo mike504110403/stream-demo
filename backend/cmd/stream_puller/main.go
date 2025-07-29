@@ -115,6 +115,55 @@ func (sp *StreamPuller) startStream(name string, config *StreamConfig) {
 	}()
 }
 
+// startRTMPStream 啟動 RTMP 到 HLS 轉換
+func (sp *StreamPuller) startRTMPStream(streamName string) {
+	utils.LogInfo("🔄 啟動 RTMP 到 HLS 轉換: %s", streamName)
+
+	streamDir := fmt.Sprintf("%s/%s", sp.outputDir, streamName)
+	if err := os.MkdirAll(streamDir, 0755); err != nil {
+		utils.LogError("創建流目錄失敗: %v", err)
+		return
+	}
+
+	// RTMP 輸入 URL
+	rtmpURL := fmt.Sprintf("rtmp://nginx-rtmp:1935/live/%s", streamName)
+
+	// 生成 HLS 流
+	args := []string{
+		"-i", rtmpURL,
+		"-c:v", "libx264",
+		"-preset", "ultrafast",
+		"-c:a", "aac",
+		"-b:a", "128k",
+		// HLS 輸出 (超低延遲版本)
+		"-f", "hls",
+		"-hls_time", "2", // 2秒片段
+		"-hls_list_size", "6", // 保留6個片段
+		"-hls_flags", "delete_segments+independent_segments",
+		"-hls_segment_type", "mpegts",
+		"-hls_segment_filename", fmt.Sprintf("%s/segment_%%03d.ts", streamDir),
+		"-hls_playlist_type", "event",
+		fmt.Sprintf("%s/index.m3u8", streamDir),
+	}
+
+	// 啟動 FFmpeg 進程
+	cmd := exec.Command("ffmpeg", args...)
+	cmd.Dir = streamDir
+
+	if err := cmd.Start(); err != nil {
+		utils.LogError("啟動 FFmpeg RTMP 轉換失敗: %v", err)
+		return
+	}
+
+	utils.LogInfo("✅ RTMP 到 HLS 轉換啟動成功: %s", streamName)
+
+	// 監控進程
+	go func() {
+		cmd.Wait()
+		utils.LogInfo("RTMP 轉換 %s 已停止", streamName)
+	}()
+}
+
 // startHTTPServer 啟動 HTTP 服務器
 func (sp *StreamPuller) startHTTPServer() {
 	// 創建新的 mux
@@ -125,6 +174,57 @@ func (sp *StreamPuller) startHTTPServer() {
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("healthy"))
+	})
+
+	// RTMP 事件處理端點
+	mux.HandleFunc("/rtmp/publish", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// 解析 RTMP 推流參數
+		if err := r.ParseForm(); err != nil {
+			utils.LogError("解析 RTMP 推流參數失敗: %v", err)
+			http.Error(w, "Bad request", http.StatusBadRequest)
+			return
+		}
+
+		streamName := r.FormValue("name")
+		utils.LogInfo("🎬 RTMP 推流開始: %s", streamName)
+
+		// 啟動 RTMP 到 HLS 轉換
+		go sp.startRTMPStream(streamName)
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+
+	mux.HandleFunc("/rtmp/publish_done", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		streamName := r.FormValue("name")
+		utils.LogInfo("🛑 RTMP 推流結束: %s", streamName)
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+
+	mux.HandleFunc("/rtmp/error", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		streamName := r.FormValue("name")
+		errorMsg := r.FormValue("error")
+		utils.LogError("❌ RTMP 推流錯誤 [%s]: %s", streamName, errorMsg)
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
 	})
 
 	// 主要服務端點

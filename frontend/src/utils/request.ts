@@ -42,7 +42,7 @@ axiosInstance.interceptors.response.use(
     const res = response.data
     console.log('API 成功響應:', response.status, res) // 調試用
     
-    // 檢查是否為統一的響應格式 {code, message, data} 或 {success, data}
+    // 檢查是否為統一的響應格式 {code, message, data} 或 {success, data} 或 {message, data}
     if (res && typeof res === 'object') {
       if ('code' in res) {
         // 格式: {code, message, data}
@@ -62,6 +62,17 @@ axiosInstance.interceptors.response.use(
           ElMessage.error(message)
           return Promise.reject(new Error(message))
         }
+      } else if ('data' in res && 'message' in res) {
+        // 格式: {message, data} - 直播間 API 使用的格式
+        return res.data
+      } else if ('data' in res && 'code' in res) {
+        // 格式: {code, message, data} - 用戶 API 使用的格式
+        return res.data
+      } else if ('message' in res && Object.keys(res).length === 2) {
+        // 格式: {message, xxx} - 其他 API 使用的格式（如 {message, room_id}）
+        // 返回除了 message 之外的其他字段
+        const { message, ...otherFields } = res
+        return otherFields
       }
     }
     

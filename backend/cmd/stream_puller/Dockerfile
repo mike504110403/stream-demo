@@ -6,17 +6,14 @@ RUN apk add --no-cache git
 # 設置工作目錄
 WORKDIR /app
 
-# 複製 go mod 文件
-COPY go.mod go.sum ./
+# 複製整個後端目錄
+COPY . .
 
 # 下載依賴
 RUN go mod download
 
-# 複製源代碼
-COPY . .
-
-# 編譯應用
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o stream-puller .
+# 編譯 stream-puller
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o stream-puller ./cmd/stream_puller
 
 # 運行階段
 FROM alpine:latest

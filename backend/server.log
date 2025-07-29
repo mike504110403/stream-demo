@@ -1,0 +1,630 @@
+2025/07/29 12:53:30 log.go:23: 📝 日誌系統初始化完成（控制台輸出模式）
+ℹ️  [INFO] config.go:331 - 使用命令行指定的資料庫類型: postgresql
+ℹ️  [INFO] config.go:286 - 初始化資料庫連接，使用配置: postgresql (類型: postgresql)
+ℹ️  [INFO] database_factory.go:42 - 初始化主資料庫連接...
+ℹ️  [INFO] database_factory.go:110 - === PostgreSQL Connection Info ===
+ℹ️  [INFO] database_factory.go:111 - Host: localhost:5432
+ℹ️  [INFO] database_factory.go:112 - Database: stream_demo
+ℹ️  [INFO] database_factory.go:113 - User: stream_user
+ℹ️  [INFO] database_factory.go:192 - 資料庫連接池配置完成
+ℹ️  [INFO] database_factory.go:143 - PostgreSQL 連接成功
+ℹ️  [INFO] database_factory.go:147 - PostgreSQL 主資料庫已連接
+ℹ️  [INFO] config.go:316 - 資料庫配置完成，使用: postgresql (類型: postgresql)
+INFO: Redis clients initialized successfully
+ℹ️  [INFO] config.go:321 - Redis configuration completed successfully
+ℹ️  [INFO] main.go:37 - 🚀 串流平台後端服務啟動
+ℹ️  [INFO] main.go:38 - 📂 配置文件: config/config.local.yaml
+ℹ️  [INFO] main.go:39 - 🌍 運行環境: local
+ℹ️  [INFO] main.go:40 - 🗄️  當前資料庫: postgresql
+ℹ️  [INFO] migration_postgresql.go:17 - 開始PostgreSQL資料庫遷移...
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[7.241ms] [rows:1] SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND table_type = 'BASE TABLE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[1.249ms] [rows:1] SELECT CURRENT_DATABASE()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[8.943ms] [rows:-] SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'stream_demo' AND table_schema = CURRENT_SCHEMA() AND table_name = 'users'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[1.057ms] [rows:-] SELECT * FROM "users" LIMIT 5
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[9.396ms] [rows:-] SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'users' AND constraint_type = 'UNIQUE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[8.830ms] [rows:-] SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'users'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[8.515ms] [rows:-] SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'users'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[8.456ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'users' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[2.186ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND column_name = 'username') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'users' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[2.302ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND column_name = 'email') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'users' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[3.680ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND column_name = 'password') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'users' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[3.052ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND column_name = 'avatar') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'users' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[4.082ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND column_name = 'bio') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'users' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[1.571ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'users' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[1.426ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND column_name = 'updated_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'users' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[3.600ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'users' AND indexname = 'idx_users_username' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[1.882ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'users' AND indexname = 'idx_users_email' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[1.736ms] [rows:1] SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND table_type = 'BASE TABLE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.432ms] [rows:1] SELECT CURRENT_DATABASE()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[3.251ms] [rows:-] SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'stream_demo' AND table_schema = CURRENT_SCHEMA() AND table_name = 'videos'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.681ms] [rows:-] SELECT * FROM "videos" LIMIT 5
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[4.259ms] [rows:-] SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'videos' AND constraint_type = 'UNIQUE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[3.934ms] [rows:-] SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'videos'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.318ms] [rows:-] SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'videos'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.334ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.287ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'title') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.304ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'description') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.264ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'user_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.268ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'original_url') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.292ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'original_key') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.263ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'thumbnail_url') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.299ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'hls_master_url') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.310ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'hls_key') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.265ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'mp4_url') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.288ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'mp4_key') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.268ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'duration') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.263ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'file_size') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.277ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'original_format') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.264ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'status') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.260ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'processing_progress') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.272ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'error_message') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.250ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'views') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.291ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'likes') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.281ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.315ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND column_name = 'updated_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'videos' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[1.123ms] [rows:1] SELECT count(*) FROM INFORMATION_SCHEMA.table_constraints WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'videos' AND constraint_name = 'fk_users_videos'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.531ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'videos' AND indexname = 'idx_videos_user_status' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.436ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'videos' AND indexname = 'idx_videos_user_created' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.474ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'videos' AND indexname = 'idx_videos_status_created' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.403ms] [rows:1] SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'video_qualities' AND table_type = 'BASE TABLE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.203ms] [rows:1] SELECT CURRENT_DATABASE()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[2.814ms] [rows:-] SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'stream_demo' AND table_schema = CURRENT_SCHEMA() AND table_name = 'video_qualities'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.409ms] [rows:-] SELECT * FROM "video_qualities" LIMIT 5
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[3.316ms] [rows:-] SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'video_qualities' AND constraint_type = 'UNIQUE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[3.119ms] [rows:-] SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'video_qualities'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.299ms] [rows:-] SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'video_qualities'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.294ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'video_qualities' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'video_qualities' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.267ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'video_qualities' AND column_name = 'video_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'video_qualities' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.272ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'video_qualities' AND column_name = 'quality') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'video_qualities' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.265ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'video_qualities' AND column_name = 'width') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'video_qualities' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.268ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'video_qualities' AND column_name = 'height') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'video_qualities' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.266ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'video_qualities' AND column_name = 'bitrate') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'video_qualities' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.262ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'video_qualities' AND column_name = 'file_url') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'video_qualities' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.268ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'video_qualities' AND column_name = 'file_key') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'video_qualities' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.287ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'video_qualities' AND column_name = 'file_size') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'video_qualities' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.267ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'video_qualities' AND column_name = 'status') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'video_qualities' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.271ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'video_qualities' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'video_qualities' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.252ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'video_qualities' AND column_name = 'updated_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'video_qualities' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.738ms] [rows:1] SELECT count(*) FROM INFORMATION_SCHEMA.table_constraints WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'video_qualities' AND constraint_name = 'fk_videos_video_qualities'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.454ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'video_qualities' AND indexname = 'idx_video_qualities_video_id' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.367ms] [rows:1] SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'payments' AND table_type = 'BASE TABLE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.167ms] [rows:1] SELECT CURRENT_DATABASE()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[2.453ms] [rows:-] SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'stream_demo' AND table_schema = CURRENT_SCHEMA() AND table_name = 'payments'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.497ms] [rows:-] SELECT * FROM "payments" LIMIT 5
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[3.180ms] [rows:-] SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'payments' AND constraint_type = 'UNIQUE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[3.115ms] [rows:-] SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'payments'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.353ms] [rows:-] SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'payments'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.284ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'payments' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'payments' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.272ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'payments' AND column_name = 'user_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'payments' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.246ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'payments' AND column_name = 'amount') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'payments' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.288ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'payments' AND column_name = 'currency') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'payments' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.267ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'payments' AND column_name = 'status') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'payments' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.246ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'payments' AND column_name = 'payment_method') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'payments' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.266ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'payments' AND column_name = 'transaction_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'payments' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.299ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'payments' AND column_name = 'description') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'payments' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.263ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'payments' AND column_name = 'refund_reason') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'payments' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.275ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'payments' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'payments' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.283ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'payments' AND column_name = 'updated_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'payments' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.757ms] [rows:1] SELECT count(*) FROM INFORMATION_SCHEMA.table_constraints WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'payments' AND constraint_name = 'fk_users_payments'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.231ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'payments' AND indexname = 'idx_payments_user_status' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.216ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'payments' AND indexname = 'idx_payments_status_created' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.225ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'payments' AND indexname = 'idx_payments_transaction_id' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.405ms] [rows:1] SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'lives' AND table_type = 'BASE TABLE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.180ms] [rows:1] SELECT CURRENT_DATABASE()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[2.561ms] [rows:-] SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'stream_demo' AND table_schema = CURRENT_SCHEMA() AND table_name = 'lives'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.479ms] [rows:-] SELECT * FROM "lives" LIMIT 5
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[3.170ms] [rows:-] SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'lives' AND constraint_type = 'UNIQUE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[3.019ms] [rows:-] SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'lives'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.307ms] [rows:-] SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'lives'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.273ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'lives' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'lives' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.267ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'lives' AND column_name = 'title') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'lives' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.268ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'lives' AND column_name = 'description') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'lives' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.256ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'lives' AND column_name = 'user_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'lives' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.234ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'lives' AND column_name = 'status') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'lives' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.252ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'lives' AND column_name = 'start_time') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'lives' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.267ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'lives' AND column_name = 'end_time') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'lives' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.303ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'lives' AND column_name = 'stream_key') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'lives' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.327ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'lives' AND column_name = 'push_url') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'lives' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.465ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'lives' AND column_name = 'stream_url') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'lives' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.512ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'lives' AND column_name = 'viewer_count') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'lives' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.283ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'lives' AND column_name = 'chat_enabled') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'lives' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.649ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'lives' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'lives' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.560ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'lives' AND column_name = 'updated_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'lives' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.959ms] [rows:1] SELECT count(*) FROM INFORMATION_SCHEMA.table_constraints WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'lives' AND constraint_name = 'fk_users_lives'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.258ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'lives' AND indexname = 'idx_lives_user_status' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.364ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'lives' AND indexname = 'idx_lives_status_start' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.513ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'lives' AND indexname = 'idx_lives_stream_key' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.565ms] [rows:1] SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'chat_messages' AND table_type = 'BASE TABLE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.291ms] [rows:1] SELECT CURRENT_DATABASE()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[2.704ms] [rows:-] SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'stream_demo' AND table_schema = CURRENT_SCHEMA() AND table_name = 'chat_messages'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.543ms] [rows:-] SELECT * FROM "chat_messages" LIMIT 5
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[3.438ms] [rows:-] SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'chat_messages' AND constraint_type = 'UNIQUE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[3.556ms] [rows:-] SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'chat_messages'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.738ms] [rows:-] SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'chat_messages'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.466ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'chat_messages' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'chat_messages' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.408ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'chat_messages' AND column_name = 'live_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'chat_messages' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.497ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'chat_messages' AND column_name = 'user_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'chat_messages' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.507ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'chat_messages' AND column_name = 'username') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'chat_messages' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.617ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'chat_messages' AND column_name = 'content') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'chat_messages' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.591ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'chat_messages' AND column_name = 'type') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'chat_messages' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.291ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'chat_messages' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'chat_messages' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[1.140ms] [rows:1] SELECT count(*) FROM INFORMATION_SCHEMA.table_constraints WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'chat_messages' AND constraint_name = 'fk_lives_chat_messages'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.775ms] [rows:1] SELECT count(*) FROM INFORMATION_SCHEMA.table_constraints WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'chat_messages' AND constraint_name = 'fk_users_chat_messages'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.249ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'chat_messages' AND indexname = 'idx_chat_live_created' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:20
+[0.218ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'chat_messages' AND indexname = 'idx_chat_user_created' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.412ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_users_username ON users (username)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.194ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.296ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_users_created_at ON users (created_at DESC)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.251ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_videos_user_id ON videos (user_id)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.288ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_videos_status ON videos (status)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.184ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_videos_created_at ON videos (created_at DESC)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.165ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_videos_views ON videos (views DESC)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.333ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_videos_likes ON videos (likes DESC)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.547ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_videos_search ON videos USING gin(to_tsvector('english', title || ' ' || description))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.258ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_video_qualities_video_id ON video_qualities (video_id)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.183ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_video_qualities_quality ON video_qualities (quality)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.245ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_lives_user_id ON lives (user_id)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.217ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_lives_status ON lives (status)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.165ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_lives_start_time ON lives (start_time DESC)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.334ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_lives_stream_key ON lives (stream_key)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.224ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments (user_id)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.222ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_payments_status ON payments (status)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.216ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_payments_transaction_id ON payments (transaction_id)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.192ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_payments_created_at ON payments (created_at DESC)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.267ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_chat_messages_live_id ON chat_messages (live_id)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.165ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_chat_messages_user_id ON chat_messages (user_id)
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:95
+[0.165ms] [rows:0] CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages (created_at DESC)
+ℹ️  [INFO] migration_postgresql.go:101 - PostgreSQL索引創建完成
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:114
+[0.301ms] [rows:0] CREATE EXTENSION IF NOT EXISTS "uuid-ossp"
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:114
+[0.230ms] [rows:0] CREATE EXTENSION IF NOT EXISTS "pg_trgm"
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:114
+[0.139ms] [rows:0] CREATE EXTENSION IF NOT EXISTS "btree_gin"
+ℹ️  [INFO] migration_postgresql.go:120 - PostgreSQL擴展初始化完成
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.241ms] [rows:1] SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_sessions' AND table_type = 'BASE TABLE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.157ms] [rows:1] SELECT CURRENT_DATABASE()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[1.107ms] [rows:-] SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'stream_demo' AND table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_sessions'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.429ms] [rows:-] SELECT * FROM "user_live_sessions" LIMIT 5
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.994ms] [rows:-] SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'user_live_sessions' AND constraint_type = 'UNIQUE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.960ms] [rows:-] SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'user_live_sessions'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.295ms] [rows:-] SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'user_live_sessions'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.350ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_sessions' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_sessions' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.308ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_sessions' AND column_name = 'user_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_sessions' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.275ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_sessions' AND column_name = 'room_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_sessions' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.638ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_sessions' AND column_name = 'title') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_sessions' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.611ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_sessions' AND column_name = 'description') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_sessions' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.373ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_sessions' AND column_name = 'stream_key') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_sessions' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.503ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_sessions' AND column_name = 'status') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_sessions' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.342ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_sessions' AND column_name = 'started_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_sessions' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.442ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_sessions' AND column_name = 'ended_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_sessions' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.308ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_sessions' AND column_name = 'duration') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_sessions' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.327ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_sessions' AND column_name = 'peak_viewers') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_sessions' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.303ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_sessions' AND column_name = 'total_viewers') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_sessions' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.395ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_sessions' AND column_name = 'total_messages') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_sessions' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.320ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_sessions' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_sessions' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.368ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_sessions' AND column_name = 'updated_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_sessions' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.299ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'user_live_sessions' AND indexname = 'idx_user_live_sessions_user_id' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:166
+[0.277ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'user_live_sessions' AND indexname = 'idx_user_live_sessions_room_id' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:171
+[0.421ms] [rows:1] SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'chat_message_history' AND table_type = 'BASE TABLE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:171
+[0.206ms] [rows:1] SELECT CURRENT_DATABASE()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:171
+[0.934ms] [rows:-] SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'stream_demo' AND table_schema = CURRENT_SCHEMA() AND table_name = 'chat_message_history'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:171
+[0.561ms] [rows:-] SELECT * FROM "chat_message_history" LIMIT 5
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:171
+[0.736ms] [rows:-] SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'chat_message_history' AND constraint_type = 'UNIQUE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:171
+[0.648ms] [rows:-] SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'chat_message_history'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:171
+[0.356ms] [rows:-] SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'chat_message_history'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:171
+[0.761ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'chat_message_history' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'chat_message_history' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:171
+[0.409ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'chat_message_history' AND column_name = 'room_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'chat_message_history' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:171
+[0.323ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'chat_message_history' AND column_name = 'user_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'chat_message_history' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:171
+[0.280ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'chat_message_history' AND column_name = 'message') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'chat_message_history' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:171
+[0.264ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'chat_message_history' AND column_name = 'message_type') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'chat_message_history' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:171
+[0.294ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'chat_message_history' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'chat_message_history' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:171
+[0.215ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'chat_message_history' AND indexname = 'idx_chat_message_history_room_id' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:171
+[0.226ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'chat_message_history' AND indexname = 'idx_chat_message_history_user_id' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:176
+[0.195ms] [rows:1] SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_stats' AND table_type = 'BASE TABLE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:176
+[0.172ms] [rows:1] SELECT CURRENT_DATABASE()
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:176
+[0.922ms] [rows:-] SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'stream_demo' AND table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_stats'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:176
+[0.625ms] [rows:-] SELECT * FROM "user_live_stats" LIMIT 5
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:176
+[0.858ms] [rows:-] SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'user_live_stats' AND constraint_type = 'UNIQUE'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:176
+[0.713ms] [rows:-] SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'stream_demo' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'user_live_stats'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:176
+[0.413ms] [rows:-] SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'user_live_stats'
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:176
+[0.352ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_stats' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_stats' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:176
+[0.413ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_stats' AND column_name = 'user_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_stats' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:176
+[0.358ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_stats' AND column_name = 'total_sessions') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_stats' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:176
+[0.354ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_stats' AND column_name = 'total_duration') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_stats' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:176
+[0.295ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_stats' AND column_name = 'total_viewers') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_stats' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:176
+[0.421ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_stats' AND column_name = 'total_messages') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_stats' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:176
+[0.428ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_stats' AND column_name = 'created_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_stats' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:176
+[0.253ms] [rows:0] SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'user_live_stats' AND column_name = 'updated_at') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'user_live_stats' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/database/migration_postgresql.go:176
+[0.227ms] [rows:1] SELECT count(*) FROM pg_indexes WHERE tablename = 'user_live_stats' AND indexname = 'idx_user_live_stats_user_id' AND schemaname = CURRENT_SCHEMA()
+ℹ️  [INFO] migration_postgresql.go:51 - PostgreSQL資料庫遷移完成
+ℹ️  [INFO] main.go:47 - 資料庫遷移完成
+2025/07/29 12:53:30 live.go:80: 🚀 啟動直播服務...
+2025/07/29 12:53:30 live_service.go:68: 🚀 啟動本地直播服務...
+2025/07/29 12:53:30 live_service.go:136: 📡 啟動 RTMP 服務器...
+2025/07/29 12:53:30 live_service.go:140: ✅ RTMP 服務器已啟動
+2025/07/29 12:53:30 live_service.go:154: 🎬 啟動直播轉碼器...
+2025/07/29 12:53:30 live_service.go:158: ✅ 直播轉碼器已啟動
+2025/07/29 12:53:30 live_service.go:82: ✅ 本地直播服務啟動完成
+2025/07/29 12:53:30 public_stream_service.go:47: 從持久化存儲加載了 2 個流配置
+INFO: 開始監聽頻道: chat_messages
+INFO: 開始監聽頻道: live_updates
+ℹ️  [INFO] main.go:55 - 依賴注入容器初始化完成
+2025/07/29 12:53:30 transcode_worker.go:39: 🚀 啟動背景轉碼工作服務
+ℹ️  [INFO] main.go:59 - 所有服務啟動完成
+2025/07/29 12:53:30 transcode_worker.go:50: 🔍 服務啟動時檢查待轉碼影片...
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /api/health               --> stream-demo/backend/api.(*Router).healthCheck-fm (4 handlers)
+[GIN-debug] POST   /api/users/register       --> stream-demo/backend/api.(*UserHandler).Register-fm (4 handlers)
+[GIN-debug] POST   /api/users/login          --> stream-demo/backend/api.(*UserHandler).Login-fm (4 handlers)
+[GIN-debug] GET    /api/public-streams       --> stream-demo/backend/api.(*PublicStreamHandler).GetAvailableStreams-fm (4 handlers)
+[GIN-debug] GET    /api/public-streams/:name --> stream-demo/backend/api.(*PublicStreamHandler).GetStreamInfo-fm (4 handlers)
+[GIN-debug] GET    /api/public-streams/:name/url --> stream-demo/backend/api.(*PublicStreamHandler).GetStreamURL-fm (4 handlers)
+[GIN-debug] GET    /api/public-streams/:name/urls --> stream-demo/backend/api.(*PublicStreamHandler).GetStreamURLs-fm (4 handlers)
+[GIN-debug] GET    /api/public-streams/:name/stats --> stream-demo/backend/api.(*PublicStreamHandler).GetStreamStats-fm (4 handlers)
+[GIN-debug] GET    /api/users/:id            --> stream-demo/backend/api.(*UserHandler).GetUser-fm (5 handlers)
+[GIN-debug] PUT    /api/users/:id            --> stream-demo/backend/api.(*UserHandler).UpdateUser-fm (5 handlers)
+[GIN-debug] DELETE /api/users/:id            --> stream-demo/backend/api.(*UserHandler).DeleteUser-fm (5 handlers)
+[GIN-debug] GET    /api/videos               --> stream-demo/backend/api.(*VideoHandler).ListVideos-fm (5 handlers)
+[GIN-debug] POST   /api/videos/upload-url    --> stream-demo/backend/api.(*VideoHandler).GenerateUploadURL-fm (5 handlers)
+[GIN-debug] POST   /api/videos/confirm-upload --> stream-demo/backend/api.(*VideoHandler).ConfirmUpload-fm (5 handlers)
+[GIN-debug] POST   /api/videos               --> stream-demo/backend/api.(*VideoHandler).UploadVideo-fm (5 handlers)
+[GIN-debug] GET    /api/videos/:id           --> stream-demo/backend/api.(*VideoHandler).GetVideo-fm (5 handlers)
+INFO: Redis訊息監聽器已啟動
+[GIN-debug] GET    /api/videos/:id/transcode-status --> stream-demo/backend/api.(*VideoHandler).GetVideoTranscodeStatus-fm (5 handlers)
+[GIN-debug] PUT    /api/videos/:id           --> stream-demo/backend/api.(*VideoHandler).UpdateVideo-fm (5 handlers)
+[GIN-debug] DELETE /api/videos/:id           --> stream-demo/backend/api.(*VideoHandler).DeleteVideo-fm (5 handlers)
+[GIN-debug] GET    /api/videos/search        --> stream-demo/backend/api.(*VideoHandler).SearchVideos-fm (5 handlers)
+[GIN-debug] POST   /api/videos/:id/like      --> stream-demo/backend/api.(*VideoHandler).LikeVideo-fm (5 handlers)
+[GIN-debug] GET    /api/users/:id/videos     --> stream-demo/backend/api.(*VideoHandler).GetUserVideos-fm (5 handlers)
+[GIN-debug] GET    /api/live                 --> stream-demo/backend/api.(*LiveHandler).GetUserLives-fm (5 handlers)
+[GIN-debug] POST   /api/live                 --> stream-demo/backend/api.(*LiveHandler).CreateLive-fm (5 handlers)
+[GIN-debug] GET    /api/live/:id             --> stream-demo/backend/api.(*LiveHandler).GetLive-fm (5 handlers)
+[GIN-debug] PUT    /api/live/:id             --> stream-demo/backend/api.(*LiveHandler).UpdateLive-fm (5 handlers)
+[GIN-debug] DELETE /api/live/:id             --> stream-demo/backend/api.(*LiveHandler).DeleteLive-fm (5 handlers)
+[GIN-debug] GET    /api/live-rooms           --> stream-demo/backend/api.(*LiveRoomHandler).GetActiveRooms-fm (5 handlers)
+[GIN-debug] POST   /api/live-rooms           --> stream-demo/backend/api.(*LiveRoomHandler).CreateRoom-fm (5 handlers)
+[GIN-debug] GET    /api/live-rooms/:id       --> stream-demo/backend/api.(*LiveRoomHandler).GetRoomByID-fm (5 handlers)
+[GIN-debug] POST   /api/live-rooms/:id/join  --> stream-demo/backend/api.(*LiveRoomHandler).JoinRoom-fm (5 handlers)
+[GIN-debug] POST   /api/live-rooms/:id/leave --> stream-demo/backend/api.(*LiveRoomHandler).LeaveRoom-fm (5 handlers)
+[GIN-debug] POST   /api/live-rooms/:id/start --> stream-demo/backend/api.(*LiveRoomHandler).StartLive-fm (5 handlers)
+[GIN-debug] POST   /api/live-rooms/:id/end   --> stream-demo/backend/api.(*LiveRoomHandler).EndLive-fm (5 handlers)
+[GIN-debug] GET    /api/payments             --> stream-demo/backend/api.(*PaymentHandler).ListPayments-fm (5 handlers)
+[GIN-debug] POST   /api/payments             --> stream-demo/backend/api.(*PaymentHandler).CreatePayment-fm (5 handlers)
+[GIN-debug] GET    /api/payments/:id         --> stream-demo/backend/api.(*PaymentHandler).GetPayment-fm (5 handlers)
+[GIN-debug] POST   /api/payments/:id/process --> stream-demo/backend/api.(*PaymentHandler).ProcessPayment-fm (5 handlers)
+[GIN-debug] POST   /api/payments/:id/refund  --> stream-demo/backend/api.(*PaymentHandler).RefundPayment-fm (5 handlers)
+[GIN-debug] GET    /api/users/:id/payments   --> stream-demo/backend/api.(*PaymentHandler).GetUserPayments-fm (5 handlers)
+[GIN-debug] GET    /ws/:liveID               --> stream-demo/backend/ws.(*Handler).ServeWS-fm (4 handlers)
+ℹ️  [INFO] main.go:86 - 🌐 HTTP 服務器啟動在 :8080
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8080
+2025/07/29 12:53:32 transcode_worker.go:87: 🔍 檢查待轉碼影片...
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/services/transcode_worker.go:108
+[1.782ms] [rows:0] SELECT * FROM "videos" WHERE status IN ('uploading','processing','transcoding') OR (status = 'ready' AND updated_at < '2025-07-28 12:53:32.653') LIMIT 5 FOR UPDATE
+2025/07/29 12:53:32 transcode_worker.go:118: 📭 沒有待轉碼的影片
+[GIN] 2025/07/29 - 12:53:40 | 200 |      17.875µs |             ::1 | GET      "/api/health"
+2025/07/29 12:54:00 transcode_worker.go:87: 🔍 檢查待轉碼影片...
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/services/transcode_worker.go:108
+[0.945ms] [rows:0] SELECT * FROM "videos" WHERE status IN ('uploading','processing','transcoding') OR (status = 'ready' AND updated_at < '2025-07-28 12:54:00.654') LIMIT 5 FOR UPDATE
+2025/07/29 12:54:00 transcode_worker.go:118: 📭 沒有待轉碼的影片
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/repositories/postgresql/user.go:30
+[2.335ms] [rows:1] SELECT * FROM "users" WHERE username = 'testuser' ORDER BY "users"."id" LIMIT 1
+[GIN] 2025/07/29 - 12:54:01 | 200 |   56.318458ms |             ::1 | POST     "/api/users/login"
+
+
+[31m2025/07/29 12:54:06 [Recovery] 2025/07/29 - 12:54:06 panic recovered:
+POST /api/live-rooms HTTP/1.1
+Host: localhost:8080
+Accept: */*
+Authorization: *
+Content-Length: 83
+Content-Type: application/json
+User-Agent: curl/8.7.1
+
+
+interface conversion: interface {} is uint, not int
+/usr/local/go/src/runtime/iface.go:275 (0x100090b77)
+	panicdottypeE: panic(&TypeAssertionError{iface, have, want, ""})
+/Users/mike/Documents/self/stream-demo/backend/api/live_room.go:45 (0x1008bac0f)
+	(*LiveRoomHandler).CreateRoom: room, err := h.liveRoomService.CreateRoom(userID.(int), req.Title, req.Description)
+/Users/mike/go/pkg/mod/github.com/gin-gonic/gin@v1.10.1/context.go:185 (0x10051433b)
+	(*Context).Next: c.handlers[c.index](c)
+/Users/mike/Documents/self/stream-demo/backend/middleware/auth.go:40 (0x1008bf49b)
+	(*Router).setupAuthRoutes.AuthMiddleware.func1: c.Next()
+/Users/mike/go/pkg/mod/github.com/gin-gonic/gin@v1.10.1/context.go:185 (0x10051433b)
+	(*Context).Next: c.handlers[c.index](c)
+/Users/mike/Documents/self/stream-demo/backend/middleware/error.go:15 (0x1008c4a6f)
+	(*Router).setupMiddleware.ErrorHandler.func1: c.Next()
+/Users/mike/go/pkg/mod/github.com/gin-gonic/gin@v1.10.1/context.go:185 (0x100519557)
+	(*Context).Next: c.handlers[c.index](c)
+/Users/mike/go/pkg/mod/github.com/gin-gonic/gin@v1.10.1/recovery.go:102 (0x10051953c)
+	CustomRecoveryWithWriter.func1: c.Next()
+/Users/mike/go/pkg/mod/github.com/gin-gonic/gin@v1.10.1/context.go:185 (0x100518903)
+	(*Context).Next: c.handlers[c.index](c)
+/Users/mike/go/pkg/mod/github.com/gin-gonic/gin@v1.10.1/logger.go:249 (0x1005188e4)
+	LoggerWithConfig.func1: c.Next()
+/Users/mike/go/pkg/mod/github.com/gin-gonic/gin@v1.10.1/context.go:185 (0x100517da3)
+	(*Context).Next: c.handlers[c.index](c)
+/Users/mike/go/pkg/mod/github.com/gin-gonic/gin@v1.10.1/gin.go:644 (0x10051792c)
+	(*Engine).handleHTTPRequest: c.Next()
+/Users/mike/go/pkg/mod/github.com/gin-gonic/gin@v1.10.1/gin.go:600 (0x10051768f)
+	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+/usr/local/go/src/net/http/server.go:3301 (0x1002de02b)
+	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+/usr/local/go/src/net/http/server.go:2102 (0x1002c185b)
+	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+/usr/local/go/src/runtime/asm_arm64.s:1223 (0x1000f5fc3)
+	goexit: MOVD	R0, R0	// NOP
+[0m
+[GIN] 2025/07/29 - 12:54:06 | 500 |    4.482833ms |             ::1 | POST     "/api/live-rooms"
+2025/07/29 12:54:30 transcode_worker.go:87: 🔍 檢查待轉碼影片...
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/services/transcode_worker.go:108
+[1.878ms] [rows:0] SELECT * FROM "videos" WHERE status IN ('uploading','processing','transcoding') OR (status = 'ready' AND updated_at < '2025-07-28 12:54:30.652') LIMIT 5 FOR UPDATE
+2025/07/29 12:54:30 transcode_worker.go:118: 📭 沒有待轉碼的影片
+2025/07/29 12:55:00 transcode_worker.go:87: 🔍 檢查待轉碼影片...
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/services/transcode_worker.go:108
+[1.590ms] [rows:0] SELECT * FROM "videos" WHERE status IN ('uploading','processing','transcoding') OR (status = 'ready' AND updated_at < '2025-07-28 12:55:00.651') LIMIT 5 FOR UPDATE
+2025/07/29 12:55:00 transcode_worker.go:118: 📭 沒有待轉碼的影片
+2025/07/29 12:55:30 transcode_worker.go:87: 🔍 檢查待轉碼影片...
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/services/transcode_worker.go:108
+[2.093ms] [rows:0] SELECT * FROM "videos" WHERE status IN ('uploading','processing','transcoding') OR (status = 'ready' AND updated_at < '2025-07-28 12:55:30.652') LIMIT 5 FOR UPDATE
+2025/07/29 12:55:30 transcode_worker.go:118: 📭 沒有待轉碼的影片
+2025/07/29 12:56:00 transcode_worker.go:87: 🔍 檢查待轉碼影片...
+ℹ️  [INFO] log.go:16 - /Users/mike/Documents/self/stream-demo/backend/services/transcode_worker.go:108
+[2.902ms] [rows:0] SELECT * FROM "videos" WHERE status IN ('uploading','processing','transcoding') OR (status = 'ready' AND updated_at < '2025-07-28 12:56:00.652') LIMIT 5 FOR UPDATE
+2025/07/29 12:56:00 transcode_worker.go:118: 📭 沒有待轉碼的影片

@@ -128,8 +128,8 @@ services:
   # 直播流拉取服務 (統一服務)
   stream-puller:
     build:
-      context: ./backend/cmd/stream_puller
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: cmd/stream_puller/Dockerfile
     container_name: stream-demo-stream-puller
     restart: unless-stopped
     ports:
@@ -145,6 +145,26 @@ services:
       - redis
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # NGINX RTMP 服務器 (接收 RTMP 推流)
+  nginx-rtmp:
+    image: tiangolo/nginx-rtmp
+    container_name: stream-demo-nginx-rtmp
+    restart: unless-stopped
+    ports:
+      - "1935:1935"  # RTMP 推流端口
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - public_streams:/tmp/public_streams
+    networks:
+      - stream-demo-network
+    depends_on:
+      - stream-puller
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1935/stat"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -67,7 +67,7 @@ func (s *UserService) Register(username string, email string, password string) (
 	}
 
 	// 轉換為 DTO
-	return &dto.UserDTO{
+	userDTO := &dto.UserDTO{
 		ID:        user.ID,
 		Username:  user.Username,
 		Email:     user.Email,
@@ -75,7 +75,9 @@ func (s *UserService) Register(username string, email string, password string) (
 		Bio:       user.Bio,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
-	}, nil
+	}
+
+	return userDTO, nil
 }
 
 // Login 用戶登入

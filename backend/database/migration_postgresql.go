@@ -43,6 +43,11 @@ func MigratePostgreSQL(conf *config.Config) error {
 		return err
 	}
 
+	// 添加直播間相關資料表
+	if err := migrateLiveRoomTables(db); err != nil {
+		return fmt.Errorf("migrate live room tables failed: %v", err)
+	}
+
 	utils.LogInfo("PostgreSQL資料庫遷移完成")
 	return nil
 }
@@ -152,5 +157,25 @@ func CreateTriggersAndFunctions(db *gorm.DB) error {
 	}
 
 	utils.LogInfo("PostgreSQL觸發器和函數創建完成")
+	return nil
+}
+
+// migrateLiveRoomTables 遷移直播間相關資料表
+func migrateLiveRoomTables(db *gorm.DB) error {
+	// 用戶直播記錄表
+	if err := db.AutoMigrate(&models.UserLiveSession{}); err != nil {
+		return fmt.Errorf("migrate UserLiveSession failed: %v", err)
+	}
+
+	// 聊天消息歷史表
+	if err := db.AutoMigrate(&models.ChatMessageHistory{}); err != nil {
+		return fmt.Errorf("migrate ChatMessageHistory failed: %v", err)
+	}
+
+	// 用戶直播統計表
+	if err := db.AutoMigrate(&models.UserLiveStats{}); err != nil {
+		return fmt.Errorf("migrate UserLiveStats failed: %v", err)
+	}
+
 	return nil
 }

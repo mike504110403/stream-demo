@@ -67,6 +67,7 @@ func main() {
 		container.UserHandler,
 		container.VideoHandler,
 		container.LiveHandler,
+		container.LiveRoomHandler,
 		container.PaymentHandler,
 		container.PublicStreamHandler,
 		container.JWTUtil,
@@ -78,6 +79,11 @@ func main() {
 	// 設置 WebSocket 路由
 	if container.WSHandler != nil {
 		r.GET("/ws/:liveID", container.WSHandler.ServeWS)
+	}
+
+	// 設置直播間 WebSocket 路由
+	if container.LiveRoomWSHandler != nil {
+		r.GET("/ws/live-room/:roomID", container.LiveRoomWSHandler.ServeWS)
 	}
 
 	// 啟動服務器

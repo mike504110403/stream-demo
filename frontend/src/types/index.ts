@@ -131,6 +131,26 @@ export interface UpdateLiveRequest {
   start_time?: string
 }
 
+// 直播間相關類型
+export interface LiveRoomInfo {
+  id: string
+  title: string
+  description: string
+  creator_id: number
+  status: 'created' | 'live' | 'ended' | 'cancelled'
+  stream_key: string
+  viewer_count: number
+  max_viewers: number
+  started_at: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateRoomRequest {
+  title: string
+  description?: string
+}
+
 // 支付相關類型
 export interface Payment {
   id: number

@@ -1,6 +1,10 @@
 package response
 
-import "time"
+import (
+	"stream-demo/backend/database/models"
+	"stream-demo/backend/dto"
+	"time"
+)
 
 // UserResponse 使用者資訊回應
 type UserResponse struct {
@@ -22,7 +26,37 @@ type LoginResponse struct {
 
 // NewUserResponse 從模型創建使用者回應
 func NewUserResponse(user interface{}) *UserResponse {
-	// 這裡需要實現從模型到 DTO 的轉換邏輯
+	if user == nil {
+		return &UserResponse{}
+	}
+
+	// 類型斷言 - 處理 *models.User
+	if u, ok := user.(*models.User); ok {
+		return &UserResponse{
+			ID:        u.ID,
+			Username:  u.Username,
+			Email:     u.Email,
+			Role:      "user",   // 默認角色
+			Status:    "active", // 默認狀態
+			CreatedAt: u.CreatedAt,
+			UpdatedAt: u.UpdatedAt,
+		}
+	}
+
+	// 類型斷言 - 處理 *dto.UserDTO
+	if u, ok := user.(*dto.UserDTO); ok {
+		return &UserResponse{
+			ID:        u.ID,
+			Username:  u.Username,
+			Email:     u.Email,
+			Role:      "user",   // 默認角色
+			Status:    "active", // 默認狀態
+			CreatedAt: u.CreatedAt,
+			UpdatedAt: u.UpdatedAt,
+		}
+	}
+
+	// 如果不是支持的類型，返回空結構
 	return &UserResponse{}
 }
 

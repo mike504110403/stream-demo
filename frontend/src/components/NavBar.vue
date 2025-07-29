@@ -16,6 +16,7 @@
         <el-menu-item index="/">首頁</el-menu-item>
         <el-menu-item index="/public-streams">公開直播</el-menu-item>
         <el-menu-item index="/videos">影片</el-menu-item>
+        <el-menu-item index="/live-rooms">直播間</el-menu-item>
         <el-menu-item index="/lives">直播</el-menu-item>
         <el-menu-item index="/payments">支付</el-menu-item>
         <el-menu-item index="/dashboard">儀表板</el-menu-item>

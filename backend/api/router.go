@@ -15,6 +15,7 @@ type Router struct {
 	userHandler         *UserHandler
 	videoHandler        *VideoHandler
 	liveHandler         *LiveHandler
+	liveRoomHandler     *LiveRoomHandler
 	paymentHandler      *PaymentHandler
 	publicStreamHandler *PublicStreamHandler
 
@@ -28,6 +29,7 @@ func NewRouter(
 	userHandler *UserHandler,
 	videoHandler *VideoHandler,
 	liveHandler *LiveHandler,
+	liveRoomHandler *LiveRoomHandler,
 	paymentHandler *PaymentHandler,
 	publicStreamHandler *PublicStreamHandler,
 	jwtUtil *utils.JWTUtil,
@@ -37,6 +39,7 @@ func NewRouter(
 		userHandler:         userHandler,
 		videoHandler:        videoHandler,
 		liveHandler:         liveHandler,
+		liveRoomHandler:     liveRoomHandler,
 		paymentHandler:      paymentHandler,
 		publicStreamHandler: publicStreamHandler,
 		jwtUtil:             jwtUtil,
@@ -96,6 +99,9 @@ func (r *Router) setupAuthRoutes() {
 		// 直播相關路由
 		r.setupLiveRoutes(auth)
 
+		// 直播間相關路由
+		r.setupLiveRoomRoutes(auth)
+
 		// 支付相關路由
 		r.setupPaymentRoutes(auth)
 	}
@@ -133,21 +139,31 @@ func (r *Router) setupVideoRoutes(group *gin.RouterGroup) {
 
 // setupLiveRoutes 設置直播路由
 func (r *Router) setupLiveRoutes(group *gin.RouterGroup) {
-	lives := group.Group("/lives")
+	live := group.Group("/live")
 	{
-		lives.GET("", r.liveHandler.ListLives)
-		lives.POST("", r.liveHandler.CreateLive)
-		lives.GET("/:id", r.liveHandler.GetLive)
-		lives.PUT("/:id", r.liveHandler.UpdateLive)
-		lives.DELETE("/:id", r.liveHandler.DeleteLive)
-		lives.POST("/:id/start", r.liveHandler.StartLive)
-		lives.POST("/:id/end", r.liveHandler.EndLive)
-		lives.GET("/:id/stream-key", r.liveHandler.GetStreamKey)
-		lives.POST("/:id/chat/toggle", r.liveHandler.ToggleChat)
+		live.GET("", r.liveHandler.GetUserLives)
+		live.POST("", r.liveHandler.CreateLive)
+		live.GET("/:id", r.liveHandler.GetLive)
+		live.PUT("/:id", r.liveHandler.UpdateLive)
+		live.DELETE("/:id", r.liveHandler.DeleteLive)
 	}
+}
 
-	// 用戶直播路由
-	group.GET("/users/:id/lives", r.liveHandler.GetUserLives)
+// setupLiveRoomRoutes 設置直播間路由
+func (r *Router) setupLiveRoomRoutes(group *gin.RouterGroup) {
+	rooms := group.Group("/live-rooms")
+	{
+		rooms.GET("", r.liveRoomHandler.GetActiveRooms)       // 獲取活躍直播間列表
+		rooms.GET("/all", r.liveRoomHandler.GetAllRooms)      // 獲取所有直播間列表（包括已結束的）
+		rooms.POST("", r.liveRoomHandler.CreateRoom)          // 創建直播間
+		rooms.GET("/:id/role", r.liveRoomHandler.GetUserRole) // 獲取用戶角色 (必須在 /:id 之前)
+		rooms.GET("/:id", r.liveRoomHandler.GetRoomByID)      // 獲取直播間信息
+		rooms.POST("/:id/join", r.liveRoomHandler.JoinRoom)   // 加入直播間
+		rooms.POST("/:id/leave", r.liveRoomHandler.LeaveRoom) // 離開直播間
+		rooms.POST("/:id/start", r.liveRoomHandler.StartLive) // 開始直播
+		rooms.POST("/:id/end", r.liveRoomHandler.EndLive)     // 結束直播
+		rooms.DELETE("/:id", r.liveRoomHandler.CloseRoom)     // 關閉直播間
+	}
 }
 
 // setupPaymentRoutes 設置支付路由

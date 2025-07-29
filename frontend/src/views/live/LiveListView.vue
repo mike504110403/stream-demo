@@ -36,7 +36,7 @@
                 </div>
                 <div class="meta-item">
                   <span class="meta-label">開始時間：</span>
-                  <span>{{ formatDate(live.start_time) }}</span>
+                  <span>{{ formatDate(live.started_at) }}</span>
                 </div>
               </div>
             </div>
@@ -44,7 +44,7 @@
             <div class="live-actions">
               <el-button size="small" @click="viewLive(live.id)">詳情</el-button>
               <el-button 
-                v-if="live.status === 'scheduled'" 
+                v-if="live.status === 'created'" 
                 size="small" 
                 type="success" 
                 @click="startLive(live.id)"
@@ -71,32 +71,31 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getLives, startLive as startLiveAPI, endLive as endLiveAPI } from '@/api/live'
-import type { Live } from '@/types'
+import { getActiveRooms, startLive as startLiveAPI, endLive as endLiveAPI } from '@/api/live-room'
+import type { LiveRoomInfo } from '@/types'
 
 const router = useRouter()
 
 const loading = ref(false)
-const lives = ref<Live[]>([])
+const lives = ref<LiveRoomInfo[]>([])
 
 const loadLives = async () => {
   loading.value = true
   try {
-    const response = await getLives()
-    const result = response
-    lives.value = Array.isArray(result) ? result : []
+    const response = await getActiveRooms()
+    lives.value = response || []
   } catch (error) {
-    console.error('載入直播失敗:', error)
+    console.error('載入直播間失敗:', error)
   } finally {
     loading.value = false
   }
 }
 
-const viewLive = (id: number) => {
-  router.push(`/lives/${id}`)
+const viewLive = (id: string) => {
+  router.push(`/live-rooms/${id}`)
 }
 
-const startLive = async (id: number) => {
+const startLive = async (id: string) => {
   try {
     await startLiveAPI(id)
     ElMessage.success('直播已開始！')
@@ -106,7 +105,7 @@ const startLive = async (id: number) => {
   }
 }
 
-const endLive = async (id: number) => {
+const endLive = async (id: string) => {
   try {
     await endLiveAPI(id)
     ElMessage.success('直播已結束！')
@@ -119,8 +118,9 @@ const endLive = async (id: number) => {
 const getStatusType = (status: string) => {
   switch (status) {
     case 'live': return 'success'
-    case 'scheduled': return 'warning'
-    case 'ended': return 'info'
+    case 'created': return 'info'
+    case 'ended': return 'danger'
+    case 'cancelled': return 'warning'
     default: return 'info'
   }
 }
@@ -128,8 +128,9 @@ const getStatusType = (status: string) => {
 const getStatusText = (status: string) => {
   switch (status) {
     case 'live': return '直播中'
-    case 'scheduled': return '已排程'
+    case 'created': return '已創建'
     case 'ended': return '已結束'
+    case 'cancelled': return '已取消'
     default: return status
   }
 }

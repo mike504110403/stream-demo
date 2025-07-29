@@ -254,27 +254,16 @@ manage_stream_puller() {
         start)
             log_info "啟動流拉取服務..."
             
-            # 檢查可執行文件
-            if [ ! -f "./backend/cmd/stream_puller/stream-puller" ]; then
-                log_error "找不到 stream-puller 可執行文件"
-                log_info "請先編譯: cd backend/cmd/stream_puller && go build -o stream-puller main.go"
-                return 1
-            fi
-            
-            # 創建輸出目錄
-            mkdir -p "/tmp/public_streams"
-            
-            # 啟動服務
-            cd "./backend/cmd/stream_puller"
-            nohup ./stream-puller -output "/tmp/public_streams" -port "8083" > stream-puller.log 2>&1 &
+            # 使用 Docker Compose 啟動 stream-puller
+            docker-compose up -d stream-puller
             
             # 等待服務啟動
-            sleep 3
+            sleep 5
             
-            if pgrep -f "stream-puller" > /dev/null; then
+            if docker-compose ps stream-puller | grep -q "Up"; then
                 log_success "流拉取服務啟動成功"
                 log_info "HTTP 服務器: http://localhost:8083"
-                log_info "輸出目錄: /tmp/public_streams"
+                log_info "輸出目錄: /tmp/public_streams (Docker volume)"
             else
                 log_error "服務啟動失敗"
                 return 1
@@ -283,15 +272,9 @@ manage_stream_puller() {
         stop)
             log_info "停止流拉取服務..."
             
-            # 停止 FFmpeg 進程
-            pkill -f "ffmpeg.*/tmp/public_streams" 2>/dev/null || true
+            docker-compose stop stream-puller
             
-            # 停止 stream-puller 進程
-            pkill -f "stream-puller" 2>/dev/null || true
-            
-            sleep 2
-            
-            if ! pgrep -f "stream-puller" > /dev/null; then
+            if ! docker-compose ps stream-puller | grep -q "Up"; then
                 log_success "服務已停止"
             else
                 log_error "停止服務失敗"
@@ -300,28 +283,26 @@ manage_stream_puller() {
             ;;
         restart)
             log_info "重啟流拉取服務..."
-            manage_stream_puller stop
-            sleep 2
-            manage_stream_puller start
+            docker-compose restart stream-puller
+            sleep 5
+            
+            if docker-compose ps stream-puller | grep -q "Up"; then
+                log_success "服務重啟成功"
+            else
+                log_error "服務重啟失敗"
+                return 1
+            fi
             ;;
         status)
             log_info "流拉取服務狀態:"
             echo "=================="
             
-            if pgrep -f "stream-puller" > /dev/null; then
+            docker-compose ps stream-puller
+            
+            if docker-compose ps stream-puller | grep -q "Up"; then
                 echo -e "狀態: ${GREEN}運行中${NC}"
-                
-                # 顯示進程信息
-                echo "進程信息:"
-                ps aux | grep "stream-puller" | grep -v grep | while read line; do
-                    echo "  $line"
-                done
-                
-                # 顯示 FFmpeg 進程
-                echo "FFmpeg 進程:"
-                ps aux | grep "ffmpeg.*/tmp/public_streams" | grep -v grep | while read line; do
-                    echo "  $line"
-                done
+                echo "HTTP 服務器: http://localhost:8083"
+                echo "容器名稱: stream-demo-stream-puller"
                 
                 # 檢查 HTTP 服務
                 if curl -s "http://localhost:8083" > /dev/null 2>&1; then
@@ -330,49 +311,33 @@ manage_stream_puller() {
                     echo -e "HTTP 服務: ${RED}異常${NC}"
                 fi
                 
-                # 顯示 HLS 文件
+                # 顯示 HLS 文件 (從 Docker volume)
                 echo "HLS 文件:"
-                if [ -d "/tmp/public_streams" ]; then
-                    for stream_dir in "/tmp/public_streams"/*; do
-                        if [ -d "$stream_dir" ]; then
-                            stream_name=$(basename "$stream_dir")
-                            if [ -f "$stream_dir/index.m3u8" ]; then
-                                echo -e "  ${GREEN}✓${NC} $stream_name"
-                            else
-                                echo -e "  ${RED}✗${NC} $stream_name"
-                            fi
-                        fi
-                    done
-                fi
-                
+                docker exec stream-demo-stream-puller ls -la /tmp/public_streams/ 2>/dev/null || echo "無 HLS 文件"
             else
                 echo -e "狀態: ${RED}未運行${NC}"
             fi
             ;;
         logs)
-            log_file="./backend/cmd/stream_puller/stream-puller.log"
-            
-            if [ ! -f "$log_file" ]; then
-                log_error "日誌文件不存在: $log_file"
-                return 1
-            fi
-            
             log_info "顯示服務日誌 (按 Ctrl+C 退出):"
             echo "=================="
-            tail -f "$log_file"
+            docker-compose logs -f stream-puller
             ;;
         test)
             log_info "測試流播放..."
             echo "=================="
             
-            if [ ! -d "/tmp/public_streams" ]; then
-                log_error "輸出目錄不存在: /tmp/public_streams"
+            # 檢查容器是否運行
+            if ! docker-compose ps stream-puller | grep -q "Up"; then
+                log_error "stream-puller 容器未運行"
                 return 1
             fi
             
-            for stream_dir in "/tmp/public_streams"/*; do
-                if [ -d "$stream_dir" ]; then
-                    stream_name=$(basename "$stream_dir")
+            # 從容器內檢查 HLS 文件
+            streams=$(docker exec stream-demo-stream-puller ls /tmp/public_streams/ 2>/dev/null || true)
+            
+            if [ -n "$streams" ]; then
+                for stream_name in $streams; do
                     hls_url="http://localhost:8083/$stream_name/index.m3u8"
                     
                     echo "測試流: $stream_name"
@@ -383,10 +348,12 @@ manage_stream_puller() {
                     fi
                     
                     # 檢查片段文件
-                    ts_count=$(find "$stream_dir" -name "*.ts" | wc -l)
+                    ts_count=$(docker exec stream-demo-stream-puller find "/tmp/public_streams/$stream_name" -name "*.ts" 2>/dev/null | wc -l)
                     echo "  片段文件: $ts_count 個"
-                fi
-            done
+                done
+            else
+                log_info "目前沒有直播流"
+            fi
             ;;
         help|--help|-h)
             echo "🎬 流拉取服務管理"
