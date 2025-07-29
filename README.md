@@ -8,11 +8,12 @@
 - ✅ **混合架構**: PostgreSQL 主資料庫 + Redis 緩存與訊息
 - ✅ **智能轉碼**: 背景服務自動生成多品質 HLS 和 MP4
 - ✅ **雙桶存儲**: 原始檔案與轉碼後檔案分離
-- ✅ **直播系統**: RTMP 推流 + HLS 播放 + 低延遲
+- ✅ **直播系統**: RTMP 推流 + HLS 播放 + 低延遲 + 自動化轉換
 - ✅ **即時通信**: WebSocket + Redis Pub/Sub
-- ✅ **現代前端**: Vue 3 + TypeScript + Element Plus
+- ✅ **現代前端**: Vue 3 + TypeScript + Element Plus + hls.js
 - ✅ **完整 Docker**: 一鍵啟動開發環境
 - ✅ **模組化架構**: 依賴注入 + 統一路由管理
+- ✅ **自動化推流**: RTMP 推流自動觸發 HLS 轉換
 
 ## 🏗️ 技術架構
 
@@ -23,7 +24,7 @@
 
 ### 直播架構
 ```
-OBS/推流軟體 → nginx-rtmp (1935) → stream-puller (8083) → 前端播放器
+OBS/推流軟體 → nginx-rtmp (1935) → on_publish 事件 → stream-puller (8083) → FFmpeg 轉換 → HLS 文件 → 前端播放器 (hls.js)
 ```
 
 ### 技術棧
@@ -60,9 +61,10 @@ cd frontend && npm run dev
 ### 4. 訪問應用
 - **前端**: http://localhost:5173
 - **後端 API**: http://localhost:8080
-- **MinIO Console**: http://localhost:9001 (admin/admin)
+- **MinIO Console**: http://localhost:9001 (minioadmin/minioadmin)
 - **直播流服務**: http://localhost:8083
 - **RTMP 推流**: rtmp://localhost:1935/live
+- **HLS 播放**: http://localhost:8083/[stream_key]/index.m3u8
 
 ## 📺 直播間使用
 
@@ -106,7 +108,13 @@ closed (完全刪除)
 ### 3. 開始推流
 1. 在 OBS 中點擊"開始串流"
 2. 回到前端直播間，點擊"開始直播"
-3. 等待幾秒鐘，直播畫面應該會出現在前端播放器中
+3. 系統會自動：
+   - NGINX RTMP 接收推流
+   - 觸發 `on_publish` 事件
+   - `stream-puller` 自動啟動 FFmpeg 轉換
+   - 生成 HLS 文件
+   - 前端 `hls.js` 自動播放（支援自動重試）
+4. 等待幾秒鐘，直播畫面應該會出現在前端播放器中
 
 ### 4. 其他推流軟體
 - **Streamlabs OBS**: 設置方式相同
@@ -134,11 +142,26 @@ closed (完全刪除)
 ./docker-manage.sh stream-puller status
 ./docker-manage.sh stream-puller test
 
+# 查看直播狀態
+./docker-manage.sh live-status
+
 # 運行測試
 ./docker-manage.sh test
 
 # 測試 RTMP 推流
 ./test_rtmp_complete.sh
+```
+
+### 自動化流程驗證
+```bash
+# 1. 檢查 RTMP 推流狀態
+curl http://localhost:1935/stat
+
+# 2. 檢查 HLS 文件生成
+curl http://localhost:8083/[stream_key]/index.m3u8
+
+# 3. 檢查 stream-puller 日誌
+docker-compose logs stream-puller --tail=20
 ```
 
 ## 📊 功能完成度
@@ -154,6 +177,9 @@ closed (完全刪除)
 - [x] **直播間生命週期**: 開始/結束直播為狀態切換，創建/關閉為生命週期 ✅
 - [x] **重新開始直播**: 已結束的直播間可以重新開始 ✅
 - [x] **RTMP 推流支援**: nginx-rtmp 接收推流，stream-puller 轉換 HLS ✅
+- [x] **自動化推流處理**: RTMP 推流自動觸發 HLS 轉換 ✅
+- [x] **前端 HLS 播放**: hls.js 整合，支援自動重試和低延遲 ✅
+- [x] **服務管理整合**: docker-manage.sh 統一管理所有服務 ✅
 - [ ] **角色 API 修復**: 解決角色判斷 API 404 問題
 
 ### 中優先級
@@ -174,6 +200,14 @@ closed (完全刪除)
 ## 🐛 已知問題
 
 - **角色 API 404**: 偶爾出現角色判斷 API 404 錯誤，需要重啟後端
+- **HLS 文件訪問**: 已修復 stream-puller 路由配置，HLS 文件現在可以正常訪問
+
+## ✅ 最近修復
+
+- **自動化推流**: RTMP 推流現在會自動觸發 HLS 轉換
+- **前端播放**: 整合 hls.js，支援自動重試和低延遲播放
+- **服務管理**: 統一整合到 docker-manage.sh，一鍵管理所有服務
+- **HLS 路由**: 修復 stream-puller 的 HLS 文件服務路由
 
 ## 📝 開發筆記
 
@@ -182,3 +216,5 @@ closed (完全刪除)
 - WebSocket 用於實時通知和聊天功能
 - 影片轉碼使用 FFmpeg 背景服務處理
 - RTMP 推流通過 nginx-rtmp 接收，stream-puller 轉換為 HLS
+- 前端使用 hls.js 播放 HLS 流，支援自動重試和低延遲
+- 自動化流程：RTMP 推流 → on_publish 事件 → FFmpeg 轉換 → HLS 生成 → 前端播放

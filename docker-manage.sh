@@ -110,7 +110,7 @@ check_services_status() {
     # 檢查健康狀態
     echo ""
     echo "🏥 健康檢查:"
-    for service in postgresql redis minio ffmpeg-transcoder stream-puller; do
+    for service in postgres redis minio nginx-rtmp stream-puller; do
         if docker-compose ps | grep -q "$service.*Up"; then
             log_success "$service: 運行中"
         else
@@ -121,9 +121,9 @@ check_services_status() {
     # 檢查流拉取服務
     echo ""
     echo "🎬 流拉取服務狀態:"
-    if pgrep -f "stream-puller" > /dev/null; then
+    if docker-compose ps stream-puller | grep -q "Up"; then
         log_success "stream-puller: 運行中"
-        if curl -s "http://localhost:8083" > /dev/null 2>&1; then
+        if curl -s "http://localhost:8083/health" > /dev/null 2>&1; then
             log_success "HLS 服務器: 正常"
         else
             log_error "HLS 服務器: 異常"
@@ -219,10 +219,10 @@ show_live_status() {
         streams=$(ls /tmp/public_streams/ 2>/dev/null || true)
         if [ -n "$streams" ]; then
             for stream in $streams; do
-                if [ -f "/tmp/public_streams/$stream/index.m3u8" ]; then
-                    log_success "直播中: $stream"
-                    echo "  HLS: http://localhost:8083/$stream/index.m3u8"
-                fi
+                            if [ -f "/tmp/public_streams/$stream/index.m3u8" ]; then
+                log_success "直播中: $stream"
+                echo "  HLS: http://localhost:8083/$stream/index.m3u8"
+            fi
             done
         else
             log_info "目前沒有直播流"
@@ -305,7 +305,7 @@ manage_stream_puller() {
                 echo "容器名稱: stream-demo-stream-puller"
                 
                 # 檢查 HTTP 服務
-                if curl -s "http://localhost:8083" > /dev/null 2>&1; then
+                if curl -s "http://localhost:8083/health" > /dev/null 2>&1; then
                     echo -e "HTTP 服務: ${GREEN}正常${NC}"
                 else
                     echo -e "HTTP 服務: ${RED}異常${NC}"

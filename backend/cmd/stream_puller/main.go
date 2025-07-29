@@ -227,7 +227,7 @@ func (sp *StreamPuller) startHTTPServer() {
 		w.Write([]byte("OK"))
 	})
 
-	// 主要服務端點
+	// HLS 文件服務端點 - 處理根路徑和 /hls/ 路徑
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// 設置 CORS
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -239,9 +239,31 @@ func (sp *StreamPuller) startHTTPServer() {
 			return
 		}
 
-		// 提供 HLS 文件
+		// 如果是根路徑，顯示服務信息
+		if r.URL.Path == "/" {
+			w.Header().Set("Content-Type", "text/plain")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("Stream Puller Service - HLS files available at root path"))
+			return
+		}
+
+		// 提供 HLS 文件（從根路徑開始）
 		http.FileServer(http.Dir(sp.outputDir)).ServeHTTP(w, r)
 	})
+
+	// 根路徑處理 - 只處理根路徑
+	// mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// 	utils.LogInfo("🔍 收到請求: %s %s", r.Method, r.URL.Path)
+	// 	if r.URL.Path == "/" {
+	// 		w.Header().Set("Content-Type", "text/plain")
+	// 		w.WriteHeader(http.StatusOK)
+	// 		w.Write([]byte("Stream Puller Service - Use /hls/ for HLS files"))
+	// 		return
+	// 	}
+	// 	// 對於其他路徑，返回 404
+	// 	utils.LogInfo("❌ 路徑不匹配: %s", r.URL.Path)
+	// 	http.NotFound(w, r)
+	// })
 
 	addr := fmt.Sprintf(":%d", sp.httpPort)
 	utils.LogInfo("🌐 HTTP 服務器啟動在 %s", addr)

@@ -230,13 +230,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getRoomById, joinRoom, leaveRoom, startLive as startLiveAPI, endLive as endLiveAPI, closeRoom, getUserRole as getUserRoleAPI } from '@/api/live-room'
 import { useAuthStore } from '@/store/auth'
 import type { LiveRoomInfo } from '@/types'
 import { LiveRoomWebSocket, type LiveRoomMessage } from '@/utils/websocket'
+import Hls from 'hls.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -260,6 +261,10 @@ const chatMessages = ref<HTMLElement>()
 // WebSocket 相關
 const wsClient = ref<LiveRoomWebSocket | null>(null)
 const isConnected = ref(false)
+
+// HLS 播放器相關
+const videoPlayer = ref<HTMLVideoElement>()
+const hls = ref<Hls | null>(null)
 
 // 計算屬性
 const roomId = computed(() => route.params.id as string)
@@ -295,6 +300,96 @@ const hlsUrl = computed(() => {
   if (!roomInfo.value) return ''
   return `http://localhost:8083/${roomInfo.value.stream_key}/index.m3u8`
 })
+
+// 初始化 HLS 播放器
+const initHLSPlayer = async () => {
+  if (!videoPlayer.value || !streamUrl.value) return
+  
+  console.log('初始化 HLS 播放器:', streamUrl.value)
+  
+  // 清理現有的 HLS 實例
+  if (hls.value) {
+    hls.value.destroy()
+    hls.value = null
+  }
+  
+  // 檢查瀏覽器是否支援 HLS
+  if (Hls.isSupported()) {
+    hls.value = new Hls({
+      debug: false,
+      enableWorker: true,
+      lowLatencyMode: true,
+      // 低延遲直播優化
+      maxBufferLength: 4,           // 最大緩衝 4 秒
+      maxMaxBufferLength: 8,        // 絕對最大緩衝 8 秒
+      maxBufferSize: 8 * 1000 * 1000, // 8MB 緩衝
+      maxBufferHole: 0.1,           // 允許的緩衝空洞
+      highBufferWatchdogPeriod: 1,  // 高緩衝監控週期
+      nudgeOffset: 0.1,             // 調整偏移
+      nudgeMaxRetry: 3,             // 最大重試次數
+      maxFragLookUpTolerance: 0.1,  // 片段查找容差
+      liveSyncDurationCount: 1,     // 直播同步片段數
+      liveMaxLatencyDurationCount: 3, // 最大延遲片段數
+      liveDurationInfinity: true,   // 無限直播
+      enableSoftwareAES: true,      // 啟用軟體 AES
+      abrEwmaFastLive: 3,           // 快速 ABR
+      abrEwmaSlowLive: 9,           // 慢速 ABR
+    })
+    
+    hls.value.loadSource(streamUrl.value)
+    hls.value.attachMedia(videoPlayer.value)
+    
+    hls.value.on(Hls.Events.MANIFEST_PARSED, () => {
+      console.log('HLS 播放列表已解析，開始播放')
+      if (videoPlayer.value) {
+        videoPlayer.value.play().catch(err => {
+          console.error('自動播放失敗:', err)
+        })
+      }
+    })
+    
+    hls.value.on(Hls.Events.ERROR, (event, data) => {
+      console.error('HLS 錯誤:', data)
+      if (data.fatal) {
+        switch (data.type) {
+          case Hls.ErrorTypes.NETWORK_ERROR:
+            console.log('網絡錯誤，嘗試恢復...')
+            hls.value?.startLoad()
+            break
+          case Hls.ErrorTypes.MEDIA_ERROR:
+            console.log('媒體錯誤，嘗試恢復...')
+            hls.value?.recoverMediaError()
+            break
+          default:
+            console.error('致命錯誤，無法恢復')
+            break
+        }
+      }
+    })
+  } else if (videoPlayer.value.canPlayType('application/vnd.apple.mpegurl')) {
+    // Safari 原生支援 HLS
+    console.log('使用 Safari 原生 HLS 播放')
+    videoPlayer.value.src = streamUrl.value
+    videoPlayer.value.addEventListener('loadedmetadata', () => {
+      videoPlayer.value?.play().catch(err => {
+        console.error('Safari 自動播放失敗:', err)
+      })
+    })
+  } else {
+    console.error('瀏覽器不支援 HLS 播放')
+  }
+}
+
+// 清理 HLS 播放器
+const cleanupHLSPlayer = () => {
+  if (hls.value) {
+    hls.value.destroy()
+    hls.value = null
+  }
+  if (videoPlayer.value) {
+    videoPlayer.value.src = ''
+  }
+}
 
 // 載入直播間資訊
 const loadRoomInfo = async () => {
@@ -564,6 +659,10 @@ const connectWebSocket = async () => {
       if (roomInfo.value) {
         roomInfo.value.status = 'live'
         console.log('直播狀態更新: 已開始')
+        // 初始化 HLS 播放器
+        nextTick(() => {
+          initHLSPlayer()
+        })
       }
     })
 
@@ -615,12 +714,23 @@ const handleLeaveRoom = async () => {
   }
 }
 
+// 監聽 streamUrl 變化
+watch(streamUrl, (newUrl) => {
+  if (newUrl && roomInfo.value?.status === 'live') {
+    console.log('串流 URL 變化，重新初始化播放器:', newUrl)
+    nextTick(() => {
+      initHLSPlayer()
+    })
+  }
+})
+
 onMounted(async () => {
   await loadRoomInfo()
   await connectWebSocket()
 })
 
 onUnmounted(() => {
+  cleanupHLSPlayer()
   disconnectWebSocket()
   handleLeaveRoom()
 })
