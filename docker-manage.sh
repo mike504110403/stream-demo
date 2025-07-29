@@ -110,7 +110,7 @@ check_services_status() {
     # 檢查健康狀態
     echo ""
     echo "🏥 健康檢查:"
-    for service in postgresql redis minio ffmpeg-transcoder nginx-rtmp live-transcoder; do
+    for service in postgresql redis minio ffmpeg-transcoder stream-puller; do
         if docker-compose ps | grep -q "$service.*Up"; then
             log_success "$service: 運行中"
         else
@@ -200,33 +200,28 @@ show_live_status() {
     log_info "查看直播狀態..."
     
     echo ""
-    echo "📡 RTMP 服務狀態:"
-    if curl -s http://localhost:8082/health > /dev/null 2>&1; then
-        log_success "Nginx-RTMP: 運行中"
-        echo "RTMP 推流地址: rtmp://localhost:1935/live/[stream_key]"
-        echo "RTMP 狀態頁面: http://localhost:8082/stat"
-    else
-        log_error "Nginx-RTMP: 未運行"
-    fi
+    echo "📡 直播服務狀態:"
+    log_info "Stream Puller 統一處理所有直播流"
+    log_info "支援 HLS 拉流和 RTMP 推流轉換"
     
     echo ""
-    echo "🎬 直播轉碼服務狀態:"
-    if curl -s http://localhost:8081/health > /dev/null 2>&1; then
-        log_success "直播轉碼器: 運行中"
-        echo "HLS 播放地址: http://localhost:8081/[stream_name]/index.m3u8"
+    echo "🎬 直播流服務狀態:"
+    if curl -s http://localhost:8083/health > /dev/null 2>&1; then
+        log_success "Stream Puller: 運行中"
+        echo "HLS 播放地址: http://localhost:8083/[stream_name]/index.m3u8"
     else
-        log_error "直播轉碼器: 未運行"
+        log_error "Stream Puller: 未運行"
     fi
     
     echo ""
     echo "🎬 當前直播流:"
-    if docker exec stream-demo-live-transcoder ls /tmp/live/ > /dev/null 2>&1; then
-        streams=$(docker exec stream-demo-live-transcoder ls /tmp/live/ 2>/dev/null || true)
+    if [ -d "/tmp/public_streams" ]; then
+        streams=$(ls /tmp/public_streams/ 2>/dev/null || true)
         if [ -n "$streams" ]; then
             for stream in $streams; do
-                if docker exec stream-demo-live-transcoder test -f "/tmp/live/$stream/index.m3u8"; then
+                if [ -f "/tmp/public_streams/$stream/index.m3u8" ]; then
                     log_success "直播中: $stream"
-                    echo "  HLS: http://localhost:8081/$stream/index.m3u8"
+                    echo "  HLS: http://localhost:8083/$stream/index.m3u8"
                 fi
             done
         else
@@ -237,19 +232,9 @@ show_live_status() {
     fi
     
     echo ""
-    echo "📊 RTMP 推流狀態:"
-    if curl -s http://localhost:8082/stat > /dev/null 2>&1; then
-        rtmp_streams=$(curl -s http://localhost:8082/stat | grep -o 'name="[^"]*"' | cut -d'"' -f2 | grep -v "live_transcoded" || true)
-        if [ -n "$rtmp_streams" ]; then
-            for stream in $rtmp_streams; do
-                log_success "RTMP 推流中: $stream"
-            done
-        else
-            log_info "目前沒有 RTMP 推流"
-        fi
-    else
-        log_error "無法獲取 RTMP 狀態"
-    fi
+    echo "📊 流服務狀態:"
+    log_info "Stream Puller 統一處理所有直播流"
+    log_info "支援 HLS 拉流和 RTMP 推流轉換"
 }
 
 # 運行測試

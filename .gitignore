@@ -6,12 +6,25 @@ backend/config/config.prod.yaml
 
 backend/logs/
 
-backend/__debug_bin35862400
-
+# 編譯產物
+backend/__debug_bin*
+backend/stream-demo-backend
 backend/backend.log
 
+# 前端構建產物
 frontend/dist/
 
+# 日誌文件
 logs/
-
+backend/logs/
 backend/cmd/stream_puller/stream-puller.log
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系統文件
+.DS_Store
+Thumbs.db

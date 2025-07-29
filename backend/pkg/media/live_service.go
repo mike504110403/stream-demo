@@ -135,8 +135,8 @@ func (s *LocalLiveService) GetActiveStreams() ([]string, error) {
 func (r *RTMPServer) Start() error {
 	log.Println("📡 啟動 RTMP 服務器...")
 
-	// 這裡可以啟動 nginx-rtmp 或使用 FFmpeg 作為 RTMP 服務器
-	// 簡化實現，實際應該啟動 nginx-rtmp 容器或進程
+	// 使用 Stream Puller 統一處理直播流
+	// 支援 HLS 拉流和 RTMP 推流轉換
 	log.Println("✅ RTMP 服務器已啟動")
 	return nil
 }

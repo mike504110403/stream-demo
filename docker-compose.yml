@@ -125,58 +125,29 @@ services:
       timeout: 10s
       retries: 3
 
-  # Nginx-RTMP 服務（接收外部推流）
-  nginx-rtmp:
+  # 直播流拉取服務 (統一服務)
+  stream-puller:
     build:
-      context: ./docker/nginx-rtmp
+      context: ./backend/cmd/stream_puller
       dockerfile: Dockerfile
-    container_name: stream-demo-nginx-rtmp
+    container_name: stream-demo-stream-puller
     restart: unless-stopped
     ports:
-      - "1935:1935"  # RTMP 端口
-      - "8082:8080"  # HTTP 端口（狀態監控）
+      - "8083:8081"  # HLS 播放服務端口
     volumes:
-      - live_hls:/tmp/live
-    networks:
-      - stream-demo-network
-    depends_on:
-      - minio
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # 直播轉碼服務（接收公開 RTMP 流 + 外部推流）
-  live-transcoder:
-    build:
-      context: ./docker/live-transcoder
-      dockerfile: Dockerfile
-    container_name: stream-demo-live-transcoder
-    restart: unless-stopped
-    ports:
-      - "8081:8080"  # HTTP 端口（HLS 分發）
-    volumes:
-      - live_hls:/tmp/live
+      - public_streams:/tmp/public_streams
     networks:
       - stream-demo-network
     environment:
-      - HLS_OUTPUT_DIR=/tmp/live
-      - MINIO_ENDPOINT=http://minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
-      - MINIO_LIVE_BUCKET=stream-demo-live
-      - RTMP_SERVER=rtmp://nginx-rtmp:1935
+      - OUTPUT_DIR=/tmp/public_streams
+      - HTTP_PORT=8081
     depends_on:
-      - minio
-      - nginx-rtmp
+      - redis
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-
-
 
 # 資料卷定義
 volumes:
@@ -190,7 +161,7 @@ volumes:
     driver: local
   ffmpeg_temp:
     driver: local
-  live_hls:
+  public_streams:
     driver: local
 
 # 網路定義

@@ -117,7 +117,18 @@ func (sp *StreamPuller) startStream(name string, config *StreamConfig) {
 
 // startHTTPServer 啟動 HTTP 服務器
 func (sp *StreamPuller) startHTTPServer() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// 創建新的 mux
+	mux := http.NewServeMux()
+
+	// 健康檢查端點
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("healthy"))
+	})
+
+	// 主要服務端點
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// 設置 CORS
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
@@ -135,7 +146,7 @@ func (sp *StreamPuller) startHTTPServer() {
 	addr := fmt.Sprintf(":%d", sp.httpPort)
 	utils.LogInfo("🌐 HTTP 服務器啟動在 %s", addr)
 
-	if err := http.ListenAndServe(addr, nil); err != nil {
+	if err := http.ListenAndServe(addr, mux); err != nil {
 		utils.LogError("HTTP 服務器啟動失敗: %v", err)
 	}
 }

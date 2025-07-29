@@ -204,7 +204,7 @@ const streamUrl = computed(() => {
   // 根據直播狀態返回不同的串流 URL
   if (liveInfo.value.status === 'live') {
     // 使用 HLS 直播流
-    return `http://localhost:8081/${liveInfo.value.stream_key}/index.m3u8`
+    return `http://localhost:8083/${liveInfo.value.stream_key}/index.m3u8`
   }
   
   return ''
@@ -217,7 +217,7 @@ const rtmpUrl = computed(() => {
 
 const hlsUrl = computed(() => {
   if (!liveInfo.value) return ''
-  return `http://localhost:8081/${liveInfo.value.stream_key}/index.m3u8`
+  return `http://localhost:8083/${liveInfo.value.stream_key}/index.m3u8`
 })
 
 // 載入直播資訊
