@@ -20,11 +20,11 @@
         </el-col>
         
         <el-col :span="6">
-          <el-card class="action-card" @click="$router.push('/lives')">
+          <el-card class="action-card" @click="$router.push('/live-rooms')">
             <div class="action-content">
               <div class="action-icon">📺</div>
-              <div class="action-title">直播管理</div>
-              <div class="action-desc">管理您的直播節目</div>
+              <div class="action-title">直播間管理</div>
+              <div class="action-desc">管理您的直播間</div>
             </div>
           </el-card>
         </el-col>
@@ -67,10 +67,10 @@
         
         <el-col :span="8">
           <el-card>
-            <h3>🔴 直播功能</h3>
+            <h3>🔴 直播間功能</h3>
             <p>創建直播間，與觀眾實時互動</p>
-            <el-button type="primary" @click="$router.push('/lives/create')">
-              創建直播
+            <el-button type="primary" @click="$router.push('/live-rooms/create')">
+              創建直播間
             </el-button>
           </el-card>
         </el-col>

@@ -226,6 +226,7 @@ import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { createLive } from '@/api/live'
 import type { Live, CreateLiveRequest } from '@/types'
+import { getRtmpPushUrl } from '@/utils/stream-config'
 
 const router = useRouter()
 
@@ -257,7 +258,7 @@ const formRules: FormRules = {
 // 計算屬性
 const rtmpUrl = computed(() => {
   if (!createdLive.value) return ''
-  return `rtmp://localhost:1935/live/${createdLive.value.stream_key}`
+  return getRtmpPushUrl(createdLive.value.stream_key)
 })
 
 const liveRoomUrl = computed(() => {

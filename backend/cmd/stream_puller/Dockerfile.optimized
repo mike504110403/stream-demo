@@ -1,0 +1,70 @@
+FROM golang:1.24.3-alpine AS builder
+
+# 安裝必要的工具
+RUN apk add --no-cache git
+
+# 設置工作目錄
+WORKDIR /app
+
+# 複製整個後端目錄
+COPY . .
+
+# 下載依賴
+RUN go mod download
+
+# 編譯優化版本的 stream-puller
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o stream-puller-optimized ./cmd/stream_puller/main.go
+
+# 運行階段
+FROM alpine:latest
+
+# 安裝 FFmpeg、curl 和進程管理工具
+RUN apk add --no-cache \
+    ffmpeg \
+    curl \
+    procps \
+    htop \
+    && rm -rf /var/cache/apk/*
+
+# 創建非 root 用戶
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
+
+# 設置工作目錄
+WORKDIR /app
+
+# 從構建階段複製二進制文件
+COPY --from=builder /app/stream-puller-optimized ./stream-puller
+
+# 創建輸出目錄並設置權限
+RUN mkdir -p /tmp/public_streams && \
+    chown -R appuser:appgroup /tmp/public_streams && \
+    chown -R appuser:appgroup /app
+
+# 創建日誌目錄
+RUN mkdir -p /var/log/stream-puller && \
+    chown -R appuser:appgroup /var/log/stream-puller
+
+# 切換到非 root 用戶
+USER appuser
+
+# 暴露端口
+EXPOSE 8081
+
+# 設置環境變數
+ENV OUTPUT_DIR=/tmp/public_streams
+ENV HTTP_PORT=8081
+ENV MAX_CONCURRENT_STREAMS=5
+ENV FFMPEG_TIMEOUT=30
+ENV DB_HOST=postgresql
+ENV DB_PORT=5432
+ENV DB_USER=stream_user
+ENV DB_PASS=stream_password
+ENV DB_NAME=stream_demo
+
+# 健康檢查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8081/health || exit 1
+
+# 啟動命令
+CMD ["./stream-puller", "-output", "/tmp/public_streams", "-port", "8081", "-db-host", "postgresql", "-db-port", "5432", "-db-user", "stream_user", "-db-pass", "stream_password", "-db-name", "stream_demo"] 

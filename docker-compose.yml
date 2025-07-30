@@ -125,11 +125,11 @@ services:
       timeout: 10s
       retries: 3
 
-  # 直播流拉取服務 (統一服務)
+  # 外部流拉取服務 (優化版)
   stream-puller:
     build:
       context: ./backend
-      dockerfile: cmd/stream_puller/Dockerfile
+      dockerfile: cmd/stream_puller/Dockerfile.optimized
     container_name: stream-demo-stream-puller
     restart: unless-stopped
     ports:
@@ -141,33 +141,134 @@ services:
     environment:
       - OUTPUT_DIR=/tmp/public_streams
       - HTTP_PORT=8081
+      - DB_HOST=postgresql
+      - DB_PORT=5432
+      - DB_USER=stream_user
+      - DB_PASS=stream_password
+      - DB_NAME=stream_demo
     depends_on:
-      - redis
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # NGINX RTMP 服務器 (接收 RTMP 推流)
+  # NGINX RTMP 服務器 (LL-HLS 版本) - 處理 RTMP 推流和 HLS 生成
   nginx-rtmp:
     image: tiangolo/nginx-rtmp
     container_name: stream-demo-nginx-rtmp
     restart: unless-stopped
     ports:
-      - "1935:1935"  # RTMP 推流端口
+      - "1935:1935"  # RTMP 推流端口 (對外開放，用於 OBS 等推流工具)
     volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - public_streams:/tmp/public_streams
+      - ./docker/nginx/nginx-llhls.conf:/etc/nginx/nginx.conf:ro
+      - hls_streams:/tmp/hls
+      - hls_standard:/tmp/hls_standard
     networks:
       - stream-demo-network
-    depends_on:
-      - stream-puller
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:1935/stat"]
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # 後端 API 服務
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: stream-demo-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"    # 後端 API 端口
+    networks:
+      - stream-demo-network
+    environment:
+      # 資料庫配置 (使用 viper 的環境變數命名規則)
+      - DATABASES__POSTGRESQL__MASTER__HOST=postgresql
+      - DATABASES__POSTGRESQL__MASTER__PORT=5432
+      - DATABASES__POSTGRESQL__MASTER__USERNAME=stream_user
+      - DATABASES__POSTGRESQL__MASTER__PASSWORD=stream_password
+      - DATABASES__POSTGRESQL__MASTER__DBNAME=stream_demo
+      - DATABASES__POSTGRESQL__SLAVE__HOST=postgresql
+      - DATABASES__POSTGRESQL__SLAVE__PORT=5432
+      - DATABASES__POSTGRESQL__SLAVE__USERNAME=stream_user
+      - DATABASES__POSTGRESQL__SLAVE__PASSWORD=stream_password
+      - DATABASES__POSTGRESQL__SLAVE__DBNAME=stream_demo
+      # Redis 配置
+      - REDIS__MASTER__HOST=redis
+      - REDIS__MASTER__PORT=6379
+      - REDIS__MASTER__PASSWORD=
+      - REDIS__MASTER__DB=0
+      - REDIS__SLAVE__HOST=redis
+      - REDIS__SLAVE__PORT=6379
+      - REDIS__SLAVE__PASSWORD=
+      - REDIS__SLAVE__DB=0
+      # MinIO 配置
+      - STORAGE__S3__ENDPOINT=http://minio:9000
+      - STORAGE__S3__ACCESS_KEY=minioadmin
+      - STORAGE__S3__SECRET_KEY=minioadmin
+      - STORAGE__S3__BUCKET=stream-demo-videos
+      # 服務配置
+      - GIN__HOST=0.0.0.0
+      - GIN__PORT=8080
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 前端應用服務
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: stream-demo-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"      # 前端應用端口
+    networks:
+      - stream-demo-network
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Nginx 反向代理服務
+  nginx-reverse-proxy:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile.reverse-proxy
+    container_name: stream-demo-nginx-reverse-proxy
+    restart: unless-stopped
+    ports:
+      - "8084:80"      # 統一入口端口 (避免與後端 8080 衝突)
+    networks:
+      - stream-demo-network
+    depends_on:
+      - frontend
+      - backend
+      - nginx-rtmp
+      - stream-puller
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 # 資料卷定義
 volumes:
@@ -182,6 +283,10 @@ volumes:
   ffmpeg_temp:
     driver: local
   public_streams:
+    driver: local
+  hls_streams:
+    driver: local
+  hls_standard:
     driver: local
 
 # 網路定義

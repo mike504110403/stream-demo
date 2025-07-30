@@ -1,6 +1,7 @@
 import axios from 'axios'
 import type { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
+// import { config } from './config'  // 暫時註釋掉未使用的 import
 
 // 自定義 request 接口，返回提取後的數據
 interface CustomAxiosInstance {
@@ -12,7 +13,7 @@ interface CustomAxiosInstance {
 
 // 創建 axios 實例
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: import.meta.env.DEV ? '/api' : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'),
+  baseURL: '/api',  // 統一使用相對路徑，由 nginx 反向代理處理
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

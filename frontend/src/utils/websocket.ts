@@ -30,7 +30,9 @@ export class LiveRoomWebSocket {
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        const wsUrl = `ws://localhost:8080/ws/live-room/${this.roomId}?token=${this.token}`
+        // 使用相對路徑，由 nginx 反向代理處理
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+        const wsUrl = `${protocol}//${window.location.host}/ws/live-room/${this.roomId}?token=${this.token}`
         this.ws = new WebSocket(wsUrl)
 
         this.ws.onopen = () => {

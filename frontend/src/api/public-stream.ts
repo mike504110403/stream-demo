@@ -1,4 +1,4 @@
-import request from '@/utils/request';
+// import request from '@/utils/request';  // 暫時註釋掉未使用的 import
 import type {
   PublicStreamResponse,
   PublicStreamData,
@@ -11,31 +11,108 @@ import type {
 export const publicStreamApi = {
   // 獲取所有可用的公開流
   getAvailableStreams(): Promise<PublicStreamData> {
-    return request.get('/public-streams');
+    // 直接使用 fetch 調用 Stream-Puller API，避免 request 工具的自動 /api 前綴
+    return fetch('/stream-puller/api/public-streams')
+      .then(response => response.json())
+      .then(data => {
+        // 轉換 Stream-Puller 的響應格式為前端期望的格式
+        if (data.success && data.data && data.data.streams) {
+          return {
+            streams: data.data.streams.map((stream: any) => ({
+              ...stream,
+              status: stream.enabled ? 'active' : 'inactive'
+            })),
+            total: data.data.streams.length
+          };
+        } else {
+          throw new Error('響應格式不正確');
+        }
+      });
   },
 
   // 獲取特定流的詳細資訊
   getStreamInfo(streamName: string): Promise<PublicStreamInfo> {
-    return request.get(`/public-streams/${streamName}`);
+    // 從 Stream-Puller API 獲取流資訊
+    return fetch('/stream-puller/api/public-streams')
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.data && data.data.streams) {
+          const stream = data.data.streams.find((s: any) => s.name === streamName);
+          if (stream) {
+            return {
+              ...stream,
+              status: stream.enabled ? 'active' : 'inactive'
+            };
+          } else {
+            throw new Error('流不存在');
+          }
+        } else {
+          throw new Error('響應格式不正確');
+        }
+      });
   },
 
   // 獲取流的播放 URL
   getStreamURL(streamName: string): Promise<PublicStreamURLResponse> {
-    return request.get(`/public-streams/${streamName}/url`);
+    // 直接返回 Stream-Puller 的 HLS 播放 URL
+    const hlsUrl = `/stream-puller/${streamName}/index.m3u8`;
+    return Promise.resolve({
+      success: true,
+      data: {
+        stream_name: streamName,
+        urls: { hls: hlsUrl }
+      }
+    });
   },
 
   // 獲取播放 URL (HLS)
   getStreamURLs(streamName: string): Promise<{ stream_name: string; urls: { hls: string } }> {
-    return request.get(`/public-streams/${streamName}/urls`);
+    // 直接從 Stream-Puller 獲取 HLS 播放 URL
+    const hlsUrl = `/stream-puller/${streamName}/index.m3u8`;
+    return Promise.resolve({
+      stream_name: streamName,
+      urls: { hls: hlsUrl }
+    });
   },
 
   // 獲取流的統計資訊
   getStreamStats(streamName: string): Promise<{ success: boolean; data: PublicStreamStats }> {
-    return request.get(`/public-streams/${streamName}/stats`);
+    // 返回模擬的統計資訊，因為 Stream-Puller 沒有統計 API
+    return Promise.resolve({
+      success: true,
+      data: {
+        viewer_count: Math.floor(Math.random() * 100) + 1,
+        stream_name: streamName,
+        status: 'active',
+        uptime: Math.floor(Math.random() * 3600) + 1,
+        title: streamName,
+        last_update: new Date().toISOString(),
+        category: 'default'
+      }
+    });
   },
 
   // 按分類獲取流
   getStreamsByCategory(category: string): Promise<PublicStreamResponse> {
-    return request.get(`/public-streams/category/${category}`);
+    // 從 Stream-Puller API 獲取流並按分類過濾
+    return fetch('/stream-puller/api/public-streams')
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.data && data.data.streams) {
+          const filteredStreams = data.data.streams.filter((s: any) => s.category === category);
+          return {
+            success: true,
+            data: {
+              streams: filteredStreams.map((stream: any) => ({
+                ...stream,
+                status: stream.enabled ? 'active' : 'inactive'
+              })),
+              total: filteredStreams.length
+            }
+          };
+        } else {
+          throw new Error('響應格式不正確');
+        }
+      });
   }
 }; 

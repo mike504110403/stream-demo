@@ -80,10 +80,19 @@
                 autoplay 
                 muted
                 class="video-player"
+                @loadstart="onVideoLoadStart"
+                @loadeddata="onVideoLoadedData"
+                @canplay="onVideoCanPlay"
+                @playing="onVideoPlaying"
+                @waiting="onVideoWaiting"
+                @error="onVideoError"
               >
-                <source :src="streamUrl" type="application/x-mpegURL">
                 您的瀏覽器不支援影片播放
               </video>
+              <div v-if="hlsLoading" class="hls-loading-overlay">
+                <div class="loading-spinner"></div>
+                <p>正在載入直播流...</p>
+              </div>
             </div>
             <div v-else class="offline-message">
               <div class="offline-icon">📺</div>
@@ -265,6 +274,7 @@ const isConnected = ref(false)
 // HLS 播放器相關
 const videoPlayer = ref<HTMLVideoElement>()
 const hls = ref<Hls | null>(null)
+const hlsLoading = ref(false)
 
 // 計算屬性
 const roomId = computed(() => route.params.id as string)
@@ -285,58 +295,98 @@ const isCreator = computed(() => {
 })
 const isViewer = computed(() => !isCreator.value)
 
+import { getRtmpPushUrl, getHlsPlayUrl } from '@/utils/stream-config'
+
 // 串流 URL
 const streamUrl = computed(() => {
   if (!roomInfo.value || roomInfo.value.status !== 'live') return ''
-  return `http://localhost:8083/${roomInfo.value.stream_key}/index.m3u8`
+  return getHlsPlayUrl(roomInfo.value.stream_key)
 })
 
 const rtmpUrl = computed(() => {
   if (!roomInfo.value) return ''
-  return `rtmp://localhost:1935/live/${roomInfo.value.stream_key}`
+  return getRtmpPushUrl(roomInfo.value.stream_key)
 })
 
 const hlsUrl = computed(() => {
   if (!roomInfo.value) return ''
-  return `http://localhost:8083/${roomInfo.value.stream_key}/index.m3u8`
+  return getHlsPlayUrl(roomInfo.value.stream_key)
 })
 
 // 初始化 HLS 播放器
 const initHLSPlayer = async () => {
-  if (!videoPlayer.value || !streamUrl.value) return
+  console.log('initHLSPlayer 被調用:', {
+    videoPlayer: !!videoPlayer.value,
+    streamUrl: streamUrl.value,
+    hlsUrl: hlsUrl.value,
+    roomInfo: roomInfo.value,
+    roomStatus: roomInfo.value?.status,
+    streamKey: roomInfo.value?.stream_key
+  })
   
-  console.log('初始化 HLS 播放器:', streamUrl.value)
+  if (!videoPlayer.value) {
+    console.log('videoPlayer 未準備好，跳過初始化')
+    return
+  }
+  
+  // 使用 hlsUrl 而不是 streamUrl，因為 hlsUrl 不依賴於狀態
+  const urlToUse = roomInfo.value?.status === 'live' ? streamUrl.value : hlsUrl.value
+  
+  if (!urlToUse) {
+    console.log('URL 為空，跳過初始化')
+    return
+  }
+  
+  console.log('初始化 HLS 播放器:', urlToUse)
   
   // 清理現有的 HLS 實例
   if (hls.value) {
+    console.log('清理現有的 HLS 實例')
     hls.value.destroy()
     hls.value = null
   }
   
   // 檢查瀏覽器是否支援 HLS
   if (Hls.isSupported()) {
+    console.log('瀏覽器支援 HLS.js，使用 HLS.js 播放')
     hls.value = new Hls({
-      debug: false,
+      debug: true, // 開啟調試模式以便排查問題
       enableWorker: true,
       lowLatencyMode: true,
-      // 低延遲直播優化
-      maxBufferLength: 4,           // 最大緩衝 4 秒
-      maxMaxBufferLength: 8,        // 絕對最大緩衝 8 秒
-      maxBufferSize: 8 * 1000 * 1000, // 8MB 緩衝
+      // LL-HLS 優化配置
+      maxBufferLength: 2,           // 最大緩衝 2 秒 (LL-HLS 需要更短的緩衝)
+      maxMaxBufferLength: 4,        // 絕對最大緩衝 4 秒
+      maxBufferSize: 4 * 1000 * 1000, // 4MB 緩衝
       maxBufferHole: 0.1,           // 允許的緩衝空洞
       highBufferWatchdogPeriod: 1,  // 高緩衝監控週期
       nudgeOffset: 0.1,             // 調整偏移
       nudgeMaxRetry: 3,             // 最大重試次數
       maxFragLookUpTolerance: 0.1,  // 片段查找容差
-      liveSyncDurationCount: 1,     // 直播同步片段數
-      liveMaxLatencyDurationCount: 3, // 最大延遲片段數
+      liveSyncDurationCount: 1,     // 直播同步片段數 (LL-HLS 使用 1)
+      liveMaxLatencyDurationCount: 2, // 最大延遲片段數 (LL-HLS 使用更少)
       liveDurationInfinity: true,   // 無限直播
       enableSoftwareAES: true,      // 啟用軟體 AES
       abrEwmaFastLive: 3,           // 快速 ABR
       abrEwmaSlowLive: 9,           // 慢速 ABR
+      // LL-HLS 特定配置
+      enableDateRangeMetadataCues: true,
+      enableEmsgMetadataCues: true,
+      enableID3MetadataCues: true,
+      enableWebVTT: true,
+      enableIMSC1: true,
+      enableCEA708Captions: true,
+      // 片段載入配置
+      fragLoadingMaxRetry: 4,       // 片段載入最大重試次數
+      fragLoadingRetryDelay: 1000,  // 片段載入重試延遲 1 秒
+      fragLoadingMaxRetryTimeout: 64000, // 片段載入最大重試超時 64 秒
+      // 播放列表配置
+      manifestLoadingMaxRetry: 4,   // 播放列表載入最大重試次數
+      manifestLoadingRetryDelay: 1000, // 播放列表載入重試延遲 1 秒
+      manifestLoadingMaxRetryTimeout: 64000, // 播放列表載入最大重試超時 64 秒
     })
     
-    hls.value.loadSource(streamUrl.value)
+    console.log('HLS.js 實例創建成功，開始載入源')
+    hls.value.loadSource(urlToUse)
     hls.value.attachMedia(videoPlayer.value)
     
     hls.value.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -348,7 +398,36 @@ const initHLSPlayer = async () => {
       }
     })
     
-    hls.value.on(Hls.Events.ERROR, (event, data) => {
+    // 添加更多事件監聽器來調試 LL-HLS
+    hls.value.on(Hls.Events.MANIFEST_LOADING, () => {
+      console.log('正在載入 HLS 播放列表...')
+    })
+    
+    hls.value.on(Hls.Events.MANIFEST_LOADED, () => {
+      console.log('HLS 播放列表載入完成')
+    })
+    
+    hls.value.on(Hls.Events.LEVEL_LOADED, (_event, data) => {
+      console.log('HLS 品質等級載入完成:', data.level)
+    })
+    
+    hls.value.on(Hls.Events.FRAG_LOADING, (_event, data) => {
+      console.log('正在載入片段:', data.frag.url)
+    })
+    
+    hls.value.on(Hls.Events.FRAG_LOADED, (_event, data) => {
+      console.log('片段載入完成:', data.frag.url)
+    })
+    
+    hls.value.on(Hls.Events.BUFFER_APPENDING, () => {
+      console.log('正在追加緩衝...')
+    })
+    
+    hls.value.on(Hls.Events.BUFFER_APPENDED, () => {
+      console.log('緩衝追加完成')
+    })
+    
+    hls.value.on(Hls.Events.ERROR, (_event, data) => {
       console.error('HLS 錯誤:', data)
       if (data.fatal) {
         switch (data.type) {
@@ -369,7 +448,7 @@ const initHLSPlayer = async () => {
   } else if (videoPlayer.value.canPlayType('application/vnd.apple.mpegurl')) {
     // Safari 原生支援 HLS
     console.log('使用 Safari 原生 HLS 播放')
-    videoPlayer.value.src = streamUrl.value
+    videoPlayer.value.src = urlToUse
     videoPlayer.value.addEventListener('loadedmetadata', () => {
       videoPlayer.value?.play().catch(err => {
         console.error('Safari 自動播放失敗:', err)
@@ -389,6 +468,36 @@ const cleanupHLSPlayer = () => {
   if (videoPlayer.value) {
     videoPlayer.value.src = ''
   }
+}
+
+// 視頻事件處理函數
+const onVideoLoadStart = () => {
+  console.log('視頻開始載入')
+  hlsLoading.value = true
+}
+
+const onVideoLoadedData = () => {
+  console.log('視頻數據載入完成')
+}
+
+const onVideoCanPlay = () => {
+  console.log('視頻可以播放')
+  hlsLoading.value = false
+}
+
+const onVideoPlaying = () => {
+  console.log('視頻開始播放')
+  hlsLoading.value = false
+}
+
+const onVideoWaiting = () => {
+  console.log('視頻等待中')
+  hlsLoading.value = true
+}
+
+const onVideoError = (event: Event) => {
+  console.error('視頻播放錯誤:', event)
+  hlsLoading.value = false
 }
 
 // 載入直播間資訊
@@ -655,7 +764,7 @@ const connectWebSocket = async () => {
     })
 
     // 處理直播開始通知
-    wsClient.value.on('live_started', (message: LiveRoomMessage) => {
+          wsClient.value.on('live_started', (_message: LiveRoomMessage) => {
       if (roomInfo.value) {
         roomInfo.value.status = 'live'
         console.log('直播狀態更新: 已開始')
@@ -667,7 +776,7 @@ const connectWebSocket = async () => {
     })
 
     // 處理直播結束通知
-    wsClient.value.on('live_ended', (message: LiveRoomMessage) => {
+          wsClient.value.on('live_ended', (_message: LiveRoomMessage) => {
       if (roomInfo.value) {
         roomInfo.value.status = 'ended'
         console.log('直播狀態更新: 已結束')
@@ -675,7 +784,7 @@ const connectWebSocket = async () => {
     })
 
     // 處理直播間關閉通知
-    wsClient.value.on('room_closed', (message: LiveRoomMessage) => {
+          wsClient.value.on('room_closed', (_message: LiveRoomMessage) => {
       ElMessage.warning('直播間已關閉')
       router.push('/live-rooms')
     })
@@ -716,8 +825,45 @@ const handleLeaveRoom = async () => {
 
 // 監聽 streamUrl 變化
 watch(streamUrl, (newUrl) => {
+  console.log('streamUrl 變化:', newUrl)
   if (newUrl && roomInfo.value?.status === 'live') {
     console.log('串流 URL 變化，重新初始化播放器:', newUrl)
+    nextTick(() => {
+      initHLSPlayer()
+    })
+  }
+})
+
+// 監聽房間狀態變化，在直播開始時初始化 HLS 播放器
+watch(() => roomInfo.value?.status, (newStatus, oldStatus) => {
+  console.log('房間狀態變化:', { oldStatus, newStatus })
+  if (newStatus === 'live') {
+    console.log('直播狀態，初始化 HLS 播放器')
+    nextTick(() => {
+      initHLSPlayer()
+    })
+  } else if (oldStatus === 'live' && newStatus && (newStatus === 'ended' || newStatus === 'cancelled')) {
+    console.log('直播結束，清理 HLS 播放器')
+    cleanupHLSPlayer()
+  }
+})
+
+// 監聽 roomInfo 變化，確保在載入完成後初始化播放器
+watch(() => roomInfo.value, (newRoomInfo) => {
+  console.log('roomInfo 變化:', newRoomInfo)
+  if (newRoomInfo && newRoomInfo.status === 'live') {
+    console.log('房間信息載入完成，直播中，初始化 HLS 播放器')
+    nextTick(() => {
+      initHLSPlayer()
+    })
+  }
+}, { immediate: true })
+
+// 監聽用戶角色變化，確保在角色確定後初始化播放器
+watch(() => userRole.value, (newRole) => {
+  console.log('用戶角色變化:', newRole)
+  if (roomInfo.value?.status === 'live') {
+    console.log('用戶角色確定，直播中，初始化 HLS 播放器')
     nextTick(() => {
       initHLSPlayer()
     })
@@ -727,6 +873,22 @@ watch(streamUrl, (newUrl) => {
 onMounted(async () => {
   await loadRoomInfo()
   await connectWebSocket()
+  
+  // 延遲檢查，確保在組件完全載入後檢查是否需要初始化 HLS 播放器
+  setTimeout(() => {
+    console.log('onMounted 延遲檢查:', {
+      roomInfo: roomInfo.value,
+      roomStatus: roomInfo.value?.status,
+      streamUrl: streamUrl.value,
+      videoPlayer: !!videoPlayer.value,
+      userRole: userRole.value
+    })
+    
+    if (roomInfo.value?.status === 'live' && streamUrl.value && videoPlayer.value) {
+      console.log('onMounted 延遲檢查：需要初始化 HLS 播放器')
+      initHLSPlayer()
+    }
+  }, 1000)
 })
 
 onUnmounted(() => {
@@ -795,6 +957,37 @@ onUnmounted(() => {
 .live-player {
   width: 100%;
   height: 100%;
+  position: relative;
+}
+
+.hls-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  z-index: 10;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .video-player {

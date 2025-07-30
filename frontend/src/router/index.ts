@@ -46,30 +46,6 @@ const router = createRouter({
       component: () => import('@/views/video/VideoDetailView.vue'),
       meta: { requiresAuth: true }
     },
-    {
-      path: '/lives',
-      name: 'Lives',
-      component: () => import('@/views/live/LiveListView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/lives/create',
-      name: 'CreateLive',
-      component: () => import('@/views/live/LiveRoomCreate.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/lives/:id',
-      name: 'LiveDetail',
-      component: () => import('@/views/live/LiveListView.vue'), // 暫時使用 LiveListView
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/lives/:id/stream',
-      name: 'LiveStream',
-      component: () => import('@/views/live/LiveRoom.vue'),
-      meta: { requiresAuth: true }
-    },
     // 直播間路由
     {
       path: '/live-rooms',
@@ -106,6 +82,12 @@ const router = createRouter({
       name: 'PublicStreamPlayer',
       component: () => import('@/views/public-stream/PublicStreamPlayerView.vue'),
       meta: { requiresAuth: false }
+    },
+    {
+      path: '/public-streams/manage',
+      name: 'PublicStreamManage',
+      component: () => import('@/views/public-stream/PublicStreamManageView.vue'),
+      meta: { requiresAuth: true }
     },
     {
       path: '/payments',

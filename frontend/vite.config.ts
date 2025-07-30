@@ -15,7 +15,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8084',
         changeOrigin: true,
         secure: false,
         ws: true, // 支援 WebSocket
@@ -28,6 +28,38 @@ export default defineConfig({
           });
           proxy.on('proxyRes', (proxyRes, req, _res) => {
             console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
+          });
+        },
+      },
+      '/stream-puller': {
+        target: 'http://localhost:8084',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/stream-puller/, '/stream-puller'),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('stream-puller proxy error', err);
+          });
+        },
+      },
+      '/hls': {
+        target: 'http://localhost:8084',
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('hls proxy error', err);
+          });
+        },
+      },
+      '/ws': {
+        target: 'http://localhost:8084',
+        changeOrigin: true,
+        secure: false,
+        ws: true, // 支援 WebSocket
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('ws proxy error', err);
           });
         },
       }

@@ -472,6 +472,7 @@ func (s *LiveRoomService) CloseRoom(roomID string, userID int) error {
 		fmt.Sprintf("live:room:%s", roomID),
 		fmt.Sprintf("live:room:%s:users", roomID),
 		fmt.Sprintf("live:room:%s:roles", roomID),
+		fmt.Sprintf("live:room:%s:chat", roomID), // 清除聊天記錄
 	}
 
 	for _, key := range keys {
