@@ -40,33 +40,72 @@ OBS/推流軟體 → nginx-rtmp (1935) → on_publish 事件 → stream-puller (
 
 ## 🚀 快速開始
 
-### 1. 啟動周邊服務
+### 開發模式 (推薦用於本地開發)
+
+#### 方式一：F5 一鍵啟動（最簡單）
 ```bash
-./docker-manage.sh start
+# 按 F5 或 Fn+F5 自動執行
+# 會自動檢查依賴、啟動周邊服務、啟動前後端
 ```
 
-### 2. 初始化服務
+#### 方式二：手動啟動
 ```bash
-./docker-manage.sh init      # 初始化 MinIO 桶
-./docker-manage.sh init-live # 初始化直播服務
+# 1. 啟動周邊服務
+./cmd/manage.sh start-dev
+
+# 2. 初始化服務
+./cmd/manage.sh init      # 初始化 MinIO 桶
+./cmd/manage.sh init-live # 初始化直播服務
+
+# 3. 在 IDE 中啟動前後端
+# 後端: 使用 launch.json 配置
+# 前端: npm run dev
 ```
 
-### 3. 啟動應用
-```bash
-# 後端 (Go)
-cd backend && go run main.go
-
-# 前端 (Vue)
-cd frontend && npm run dev
-```
-
-### 4. 訪問應用
-- **前端**: http://localhost:5173
-- **後端 API**: http://localhost:8080
+#### 訪問應用
+- **統一入口**: http://localhost:8084
+- **前端 (IDE)**: http://localhost:5173
+- **後端 (IDE)**: http://localhost:8080
 - **MinIO Console**: http://localhost:9001 (minioadmin/minioadmin)
 - **直播流服務**: http://localhost:8083
 - **RTMP 推流**: rtmp://localhost:1935/live
 - **HLS 播放**: http://localhost:8083/[stream_key]/index.m3u8
+
+### 生產模式 (完整容器化部署)
+
+#### 1. 啟動所有服務
+```bash
+./cmd/manage.sh start
+```
+
+#### 2. 初始化服務
+```bash
+./cmd/manage.sh init      # 初始化 MinIO 桶
+./cmd/manage.sh init-live # 初始化直播服務
+```
+
+#### 3. 訪問應用
+- **統一入口**: http://localhost:8084
+- **前端**: http://localhost:8084
+- **後端 API**: http://localhost:8084/api
+- **MinIO Console**: http://localhost:9001 (minioadmin/minioadmin)
+- **直播流服務**: http://localhost:8083
+- **RTMP 推流**: rtmp://localhost:1935/live
+- **HLS 播放**: http://localhost:8083/[stream_key]/index.m3u8
+
+> 💡 **開發模式優勢**: 前後端由 IDE 啟動，支援熱重載，適合本地開發。詳細說明請參考 [QUICKSTART.md](./QUICKSTART.md)
+
+### 🔧 環境配置說明
+
+#### 開發模式配置
+- **nginx-reverse-proxy-dev.conf**: 連接到 `host.docker.internal` (主機服務)
+- **Dockerfile.reverse-proxy**: 開發模式專用映像檔
+- **前後端**: 由 IDE 啟動，支援熱重載
+
+#### 生產模式配置  
+- **nginx-reverse-proxy-prod.conf**: 連接到容器內服務 (`frontend:80`, `backend:8080`)
+- **Dockerfile.reverse-proxy-prod**: 生產模式專用映像檔
+- **前後端**: 容器化部署，完整隔離
 
 ## 📺 直播間使用
 

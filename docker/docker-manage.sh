@@ -42,7 +42,8 @@ show_help() {
     echo "用法: $0 [命令]"
     echo ""
     echo "命令:"
-    echo "  start     啟動所有服務"
+    echo "  start     啟動所有服務 (生產模式)"
+    echo "  start-dev 啟動周邊服務 (開發模式，前後端由 IDE 啟動)"
     echo "  stop      停止所有服務"
     echo "  restart   重啟所有服務"
     echo "  status    查看服務狀態"
@@ -58,6 +59,11 @@ show_help() {
     echo "  backend   管理後端 API"
     echo "  test      運行 Go 測試"
     echo "  help      顯示此幫助信息"
+    echo ""
+    echo "開發模式命令:"
+    echo "  start-dev 啟動周邊服務 (資料庫、Redis、MinIO、直播服務等)"
+    echo "  dev-status 查看開發模式狀態"
+    echo "  dev-logs  查看開發模式日誌"
     echo ""
     echo "流拉取服務命令:"
     echo "  stream-puller start    啟動流拉取服務"
@@ -76,15 +82,16 @@ show_help() {
     echo "  nginx test     測試反向代理功能"
     echo ""
     echo "範例:"
-    echo "  $0 start    # 啟動所有服務"
-    echo "  $0 logs     # 查看日誌"
-    echo "  $0 status   # 查看狀態"
+    echo "  $0 start      # 啟動所有服務 (生產模式)"
+    echo "  $0 start-dev  # 啟動周邊服務 (開發模式)"
+    echo "  $0 logs       # 查看日誌"
+    echo "  $0 status     # 查看狀態"
 }
 
-# 啟動服務
+# 啟動服務 (生產模式)
 start_services() {
-    log_info "啟動所有服務..."
-    docker-compose up -d
+    log_info "啟動所有服務 (生產模式)..."
+    docker-compose -f docker/docker-compose.yml up -d
     log_success "服務啟動完成"
     
     # 等待服務啟動
@@ -95,17 +102,102 @@ start_services() {
     check_services_status
 }
 
+# 啟動開發模式服務 (只啟動周邊服務)
+start_dev_services() {
+    log_info "啟動開發模式服務 (周邊服務)..."
+    log_info "前後端將由 IDE 啟動，nginx 會代理到主機的 5173 和 8080 端口"
+    
+    # 使用開發模式配置啟動服務
+    docker-compose -f docker/docker-compose.dev.yml --project-name stream-demo up -d
+    log_success "開發模式服務啟動完成"
+    
+    # 等待服務啟動
+    log_info "等待服務啟動..."
+    sleep 10
+    
+    # 檢查開發模式服務狀態
+    check_dev_services_status
+}
+
+# 檢查開發模式服務狀態
+check_dev_services_status() {
+    log_info "檢查開發模式服務狀態..."
+    
+    # 檢查容器狀態
+    echo ""
+    echo "📊 開發模式容器狀態:"
+    docker-compose -f docker/docker-compose.dev.yml --project-name stream-demo ps
+    
+    # 檢查健康狀態
+    echo ""
+    echo "🏥 健康檢查:"
+    for service in postgresql redis minio nginx-rtmp stream-puller nginx-reverse-proxy; do
+        if docker-compose -f docker/docker-compose.dev.yml --project-name stream-demo ps | grep -q "$service.*Up"; then
+            log_success "$service: 運行中"
+        else
+            log_error "$service: 未運行"
+        fi
+    done
+    
+    # 檢查開發模式配置
+    echo ""
+    echo "🔧 開發模式配置:"
+    if curl -s "http://localhost:8084/dev-status" > /dev/null 2>&1; then
+        log_success "Nginx 開發模式: 正常"
+        echo "  開發模式狀態: $(curl -s http://localhost:8084/dev-status)"
+    else
+        log_error "Nginx 開發模式: 異常"
+    fi
+    
+    # 檢查 IDE 啟動的服務
+    echo ""
+    echo "💻 IDE 服務檢查:"
+    if curl -s "http://localhost:5173" > /dev/null 2>&1; then
+        log_success "前端 (IDE): 運行中 (http://localhost:5173)"
+    else
+        log_warning "前端 (IDE): 未運行 (http://localhost:5173)"
+    fi
+    
+    if curl -s "http://localhost:8080/api/health" > /dev/null 2>&1; then
+        log_success "後端 (IDE): 運行中 (http://localhost:8080)"
+    else
+        log_warning "後端 (IDE): 未運行 (http://localhost:8080)"
+    fi
+    
+    echo ""
+    echo "📋 開發模式訪問地址:"
+    echo "  統一入口: http://localhost:8084"
+    echo "  前端 (IDE): http://localhost:5173"
+    echo "  後端 (IDE): http://localhost:8080"
+    echo "  MinIO Console: http://localhost:9001"
+    echo "  HLS 播放: http://localhost:8083/[stream_name]/index.m3u8"
+    echo "  RTMP 推流: rtmp://localhost:1935/live"
+}
+
+# 查看開發模式日誌
+show_dev_logs() {
+    local service=${1:-""}
+    
+    if [ -z "$service" ]; then
+        log_info "查看開發模式服務日誌 (按 Ctrl+C 退出)..."
+        docker-compose -f docker/docker-compose.dev.yml --project-name stream-demo logs -f
+    else
+        log_info "查看開發模式 $service 服務日誌 (按 Ctrl+C 退出)..."
+        docker-compose -f docker/docker-compose.dev.yml --project-name stream-demo logs -f "$service"
+    fi
+}
+
 # 停止服務
 stop_services() {
     log_info "停止所有服務..."
-    docker-compose down
+    docker-compose -f docker/docker-compose.yml down
     log_success "服務停止完成"
 }
 
 # 重啟服務
 restart_services() {
     log_info "重啟所有服務..."
-    docker-compose restart
+    docker-compose -f docker/docker-compose.yml restart
     log_success "服務重啟完成"
 }
 
@@ -116,13 +208,13 @@ check_services_status() {
     # 檢查容器狀態
     echo ""
     echo "📊 容器狀態:"
-    docker-compose ps
+    docker-compose -f docker/docker-compose.yml ps
     
     # 檢查健康狀態
     echo ""
     echo "🏥 健康檢查:"
     for service in postgres redis minio nginx-rtmp stream-puller nginx-reverse-proxy; do
-        if docker-compose ps | grep -q "$service.*Up"; then
+        if docker-compose -f docker/docker-compose.yml ps | grep -q "$service.*Up"; then
             log_success "$service: 運行中"
         else
             log_error "$service: 未運行"
@@ -150,17 +242,17 @@ show_logs() {
     
     if [ -z "$service" ]; then
         log_info "查看所有服務日誌 (按 Ctrl+C 退出)..."
-        docker-compose logs -f
+        docker-compose -f docker/docker-compose.yml logs -f
     else
         log_info "查看 $service 服務日誌 (按 Ctrl+C 退出)..."
-        docker-compose logs -f "$service"
+        docker-compose -f docker/docker-compose.yml logs -f "$service"
     fi
 }
 
 # 重新構建服務
 build_services() {
     log_info "重新構建服務..."
-    docker-compose build --no-cache
+    docker-compose -f docker/docker-compose.yml build --no-cache
     log_success "服務構建完成"
 }
 
@@ -169,7 +261,8 @@ clean_resources() {
     log_warning "清理 Docker 資源..."
     
     # 停止並移除容器
-    docker-compose down --remove-orphans
+    docker-compose -f docker/docker-compose.yml down --remove-orphans
+    docker-compose -f docker/docker-compose.dev.yml --project-name stream-demo down --remove-orphans
     
     # 清理未使用的映像
     docker image prune -f
@@ -837,6 +930,9 @@ main() {
         start)
             start_services
             ;;
+        start-dev)
+            start_dev_services
+            ;;
         stop)
             stop_services
             ;;
@@ -846,8 +942,14 @@ main() {
         status)
             check_services_status
             ;;
+        dev-status)
+            check_dev_services_status
+            ;;
         logs)
             show_logs "$2"
+            ;;
+        dev-logs)
+            show_dev_logs "$2"
             ;;
         build)
             build_services

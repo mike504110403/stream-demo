@@ -99,22 +99,54 @@
       "problemMatcher": []
     },
     {
-      "label": "migrate-database",
+      "label": "檢查開發環境",
       "type": "shell",
-      "command": "go",
-      "args": ["run", "cmd/migrate/main.go", "-action=migrate"],
+      "command": "./cmd/dev.sh",
+      "args": ["status"],
       "options": {
-        "cwd": "${workspaceFolder}/backend",
-        "env": {
-          "APP_ENV": "local"
-        }
+        "cwd": "${workspaceFolder}"
       },
       "group": "build",
       "presentation": {
         "echo": true,
         "reveal": "always",
-        "focus": true,
+        "focus": false,
         "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "啟動周邊服務",
+      "type": "shell",
+      "command": "./cmd/dev.sh",
+      "args": ["start"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🎯 智能啟動開發環境",
+      "type": "shell",
+      "command": "./cmd/one-click-start.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
       },
       "problemMatcher": []
     }
