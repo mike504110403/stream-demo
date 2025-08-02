@@ -1,12 +1,12 @@
 import request from '@/utils/request'
-import type { 
-  Video, 
-  UploadVideoRequest, 
+import type {
+  Video,
+  UploadVideoRequest,
   UpdateVideoRequest,
   SearchVideoRequest,
   GenerateUploadURLRequest,
   GenerateUploadURLResponse,
-  ConfirmUploadRequest
+  ConfirmUploadRequest,
 } from '@/types'
 
 // 獲取影片列表

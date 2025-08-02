@@ -5,7 +5,7 @@
         <h1>🎬 串流平台</h1>
         <p>歡迎回來！請登入您的帳號</p>
       </div>
-      
+
       <el-form
         ref="loginFormRef"
         :model="loginForm"
@@ -23,7 +23,7 @@
             @keyup.enter="handleLogin"
           />
         </el-form-item>
-        
+
         <el-form-item prop="password">
           <el-input
             v-model="loginForm.password"
@@ -35,7 +35,7 @@
             @keyup.enter="handleLogin"
           />
         </el-form-item>
-        
+
         <el-form-item>
           <el-button
             type="primary"
@@ -48,7 +48,7 @@
           </el-button>
         </el-form-item>
       </el-form>
-      
+
       <div class="login-footer">
         <p>
           還沒有帳號？
@@ -77,65 +77,70 @@ const loading = ref(false)
 
 const loginForm = reactive<LoginRequest>({
   username: '',
-  password: ''
+  password: '',
 })
 
 const loginRules: FormRules = {
   username: [
     { required: true, message: '請輸入帳號', trigger: 'blur' },
-    { min: 6, message: '帳號長度不能少於6位', trigger: 'blur' }
+    { min: 6, message: '帳號長度不能少於6位', trigger: 'blur' },
   ],
   password: [
     { required: true, message: '請輸入密碼', trigger: 'blur' },
-    { min: 6, message: '密碼長度不能少於6位', trigger: 'blur' }
-  ]
+    { min: 6, message: '密碼長度不能少於6位', trigger: 'blur' },
+  ],
 }
 
 const handleLogin = async () => {
   if (!loginFormRef.value) return
-  
+
   try {
     const valid = await loginFormRef.value.validate()
     if (!valid) {
       console.log('表單驗證失敗')
       return
     }
-    
+
     loading.value = true
     console.log('開始登入請求，數據:', loginForm)
-    
+
     try {
       // 響應攔截器已經處理了統一格式，直接獲取 data 內容
       const response = await login(loginForm)
       const data = response as any // 響應攔截器已經提取了 data
-      
+
       console.log('登入成功，收到數據:', data)
-      
+
       // 檢查必要的字段
       if (!data || !data.token || !data.user) {
-        console.error('登入響應缺少必要字段:', { data, hasToken: !!data?.token, hasUser: !!data?.user })
+        console.error('登入響應缺少必要字段:', {
+          data,
+          hasToken: !!data?.token,
+          hasUser: !!data?.user,
+        })
         ElMessage.error('登入響應格式錯誤')
         return
       }
-      
+
       // 存儲認證信息
-      console.log('存儲認證信息:', { token: !!data.token, user: data.user.username })
+      console.log('存儲認證信息:', {
+        token: !!data.token,
+        user: data.user.username,
+      })
       authStore.setAuth(data.token, data.user)
-      
+
       ElMessage.success('登入成功！')
-      
+
       // 處理重定向邏輯
       const redirect = router.currentRoute.value.query.redirect as string
       const targetRoute = redirect || '/dashboard'
-      
+
       console.log('重定向到:', targetRoute)
       await router.replace(targetRoute)
-      
     } catch (apiError) {
       console.error('API 請求錯誤:', apiError)
       // 錯誤已經由響應攔截器處理，這裡記錄即可
     }
-    
   } catch (validateError) {
     console.error('表單驗證錯誤:', validateError)
     // 表單驗證錯誤通常由 Element Plus 自動顯示
@@ -211,4 +216,4 @@ const handleLogin = async () => {
 .register-link:hover {
   text-decoration: underline;
 }
-</style> 
+</style>

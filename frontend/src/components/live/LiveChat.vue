@@ -52,7 +52,9 @@
             <div class="message-content">
               <div class="message-header">
                 <span class="username">{{ message.username }}</span>
-                <span class="timestamp">{{ formatTime(message.created_at) }}</span>
+                <span class="timestamp">{{
+                  formatTime(message.created_at)
+                }}</span>
               </div>
               <div class="message-text">{{ message.content }}</div>
             </div>
@@ -102,7 +104,12 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Loading, InfoFilled, Warning, ChatDotRound } from '@element-plus/icons-vue'
+import {
+  Loading,
+  InfoFilled,
+  Warning,
+  ChatDotRound,
+} from '@element-plus/icons-vue'
 import type { ChatMessage } from '@/types'
 
 interface Props {
@@ -113,7 +120,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  chatEnabled: true
+  chatEnabled: true,
 })
 
 // 響應式數據
@@ -133,18 +140,18 @@ let heartbeatTimer: number | null = null
 const initWebSocket = () => {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const wsUrl = `${protocol}//${window.location.host}/ws/live/${props.liveId}`
-  
+
   console.log('連接 WebSocket:', wsUrl)
-  
+
   ws = new WebSocket(wsUrl)
-  
+
   ws.onopen = () => {
     console.log('WebSocket 連接成功')
     connected.value = true
     startHeartbeat()
   }
-  
-  ws.onmessage = (event) => {
+
+  ws.onmessage = event => {
     try {
       const data = JSON.parse(event.data)
       handleWebSocketMessage(data)
@@ -152,15 +159,15 @@ const initWebSocket = () => {
       console.error('解析 WebSocket 訊息失敗:', error)
     }
   }
-  
+
   ws.onclose = () => {
     console.log('WebSocket 連接關閉')
     connected.value = false
     stopHeartbeat()
     scheduleReconnect()
   }
-  
-  ws.onerror = (error) => {
+
+  ws.onerror = error => {
     console.error('WebSocket 錯誤:', error)
     connected.value = false
   }
@@ -194,15 +201,15 @@ const sendMessage = () => {
   if (!messageText.value.trim() || !connected.value) {
     return
   }
-  
+
   const message = {
     type: 'chat_message',
     live_id: props.liveId,
     user_id: props.currentUserId,
     username: props.currentUsername,
-    content: messageText.value.trim()
+    content: messageText.value.trim(),
   }
-  
+
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(message))
     messageText.value = ''
@@ -226,9 +233,9 @@ const addSystemMessage = (content: string) => {
     user_id: 0,
     username: '系統',
     content,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
   }
-  
+
   messages.value.push(systemMessage)
   scrollToBottom()
 }
@@ -269,7 +276,7 @@ const scheduleReconnect = () => {
   if (reconnectTimer) {
     clearTimeout(reconnectTimer)
   }
-  
+
   reconnectTimer = window.setTimeout(() => {
     console.log('嘗試重新連接...')
     initWebSocket()
@@ -283,7 +290,7 @@ const loadHistoryMessages = async () => {
     // 這裡應該調用 API 來載入歷史訊息
     // const response = await getChatMessages(props.liveId)
     // messages.value = response.data
-    
+
     // 暫時使用模擬數據
     setTimeout(() => {
       messages.value = [
@@ -294,8 +301,8 @@ const loadHistoryMessages = async () => {
           user_id: 0,
           username: '系統',
           content: '歡迎來到直播間！',
-          created_at: new Date(Date.now() - 60000).toISOString()
-        }
+          created_at: new Date(Date.now() - 60000).toISOString(),
+        },
       ]
       loading.value = false
       scrollToBottom()
@@ -311,30 +318,35 @@ const formatTime = (dateString: string): string => {
   const date = new Date(dateString)
   const now = new Date()
   const diff = now.getTime() - date.getTime()
-  
-  if (diff < 60000) { // 1分鐘內
+
+  if (diff < 60000) {
+    // 1分鐘內
     return '剛剛'
-  } else if (diff < 3600000) { // 1小時內
+  } else if (diff < 3600000) {
+    // 1小時內
     return `${Math.floor(diff / 60000)}分鐘前`
   } else {
-    return date.toLocaleTimeString('zh-TW', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return date.toLocaleTimeString('zh-TW', {
+      hour: '2-digit',
+      minute: '2-digit',
     })
   }
 }
 
 // 監聽聊天開關狀態
-watch(() => props.chatEnabled, (enabled) => {
-  if (enabled && !connected.value) {
-    initWebSocket()
+watch(
+  () => props.chatEnabled,
+  enabled => {
+    if (enabled && !connected.value) {
+      initWebSocket()
+    }
   }
-})
+)
 
 // 生命週期
 onMounted(() => {
   loadHistoryMessages()
-  
+
   if (props.chatEnabled) {
     initWebSocket()
   }
@@ -345,11 +357,11 @@ onUnmounted(() => {
     ws.close()
     ws = null
   }
-  
+
   if (reconnectTimer) {
     clearTimeout(reconnectTimer)
   }
-  
+
   if (heartbeatTimer) {
     clearInterval(heartbeatTimer)
   }
@@ -548,8 +560,12 @@ onUnmounted(() => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* 響應式設計 */
@@ -557,17 +573,17 @@ onUnmounted(() => {
   .chat-header {
     padding: 12px;
   }
-  
+
   .chat-messages {
     padding: 12px;
     min-height: 250px;
     max-height: 400px;
   }
-  
+
   .chat-input {
     padding: 12px;
   }
-  
+
   .message-text {
     font-size: 13px;
     padding: 6px 10px;

@@ -15,14 +15,16 @@
           創建第一個直播
         </el-button>
       </div>
-      
+
       <el-row :gutter="20" v-else>
         <el-col :span="8" v-for="live in lives" :key="live.id">
           <el-card class="live-card">
             <div class="live-info">
               <h3 class="live-title">{{ live.title }}</h3>
-              <p class="live-description">{{ live.description || '暫無描述' }}</p>
-              
+              <p class="live-description">
+                {{ live.description || '暫無描述' }}
+              </p>
+
               <div class="live-meta">
                 <div class="meta-item">
                   <span class="meta-label">狀態：</span>
@@ -40,21 +42,23 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="live-actions">
-              <el-button size="small" @click="viewLive(live.id)">詳情</el-button>
-              <el-button 
-                v-if="live.status === 'created'" 
-                size="small" 
-                type="success" 
+              <el-button size="small" @click="viewLive(live.id)"
+                >詳情</el-button
+              >
+              <el-button
+                v-if="live.status === 'created'"
+                size="small"
+                type="success"
                 @click="startLive(live.id)"
               >
                 開始直播
               </el-button>
-              <el-button 
-                v-if="live.status === 'live'" 
-                size="small" 
-                type="warning" 
+              <el-button
+                v-if="live.status === 'live'"
+                size="small"
+                type="warning"
                 @click="endLive(live.id)"
               >
                 結束直播
@@ -71,7 +75,11 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getActiveRooms, startLive as startLiveAPI, endLive as endLiveAPI } from '@/api/live-room'
+import {
+  getActiveRooms,
+  startLive as startLiveAPI,
+  endLive as endLiveAPI,
+} from '@/api/live-room'
 import type { LiveRoomInfo } from '@/types'
 
 const router = useRouter()
@@ -117,21 +125,31 @@ const endLive = async (id: string) => {
 
 const getStatusType = (status: string) => {
   switch (status) {
-    case 'live': return 'success'
-    case 'created': return 'info'
-    case 'ended': return 'danger'
-    case 'cancelled': return 'warning'
-    default: return 'info'
+    case 'live':
+      return 'success'
+    case 'created':
+      return 'info'
+    case 'ended':
+      return 'danger'
+    case 'cancelled':
+      return 'warning'
+    default:
+      return 'info'
   }
 }
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'live': return '直播中'
-    case 'created': return '已創建'
-    case 'ended': return '已結束'
-    case 'cancelled': return '已取消'
-    default: return status
+    case 'live':
+      return '直播中'
+    case 'created':
+      return '已創建'
+    case 'ended':
+      return '已結束'
+    case 'cancelled':
+      return '已取消'
+    default:
+      return status
   }
 }
 
@@ -226,4 +244,4 @@ onMounted(() => {
   gap: 8px;
   justify-content: flex-end;
 }
-</style> 
+</style>

@@ -1,9 +1,9 @@
 import request from '@/utils/request'
-import type { 
-  User, 
-  LoginRequest, 
-  RegisterRequest, 
-  UpdateUserRequest 
+import type {
+  User,
+  LoginRequest,
+  RegisterRequest,
+  UpdateUserRequest,
 } from '@/types'
 
 // 用戶註冊

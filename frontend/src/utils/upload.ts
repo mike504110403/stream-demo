@@ -26,13 +26,13 @@ export async function uploadVideoSeparately(
     onProgress?.({
       percent: 10,
       message: '正在獲取上傳 URL...',
-      status: 'uploading'
+      status: 'uploading',
     })
 
     const uploadUrlResponse = await generateUploadURL({
       ...metadata,
       filename: file.name,
-      file_size: file.size
+      file_size: file.size,
     })
 
     // Axios 攔截器已經提取了 data 字段，直接解構
@@ -41,22 +41,22 @@ export async function uploadVideoSeparately(
     onProgress?.({
       percent: 20,
       message: '開始上傳檔案...',
-      status: 'uploading'
+      status: 'uploading',
     })
 
     // 第二步：直接上傳檔案到 S3 (使用 PUT 方式)
     // 使用 XMLHttpRequest 實現進度追蹤
     await new Promise<void>((resolve, reject) => {
       const xhr = new XMLHttpRequest()
-      
+
       // 上傳進度
-      xhr.upload.addEventListener('progress', (e) => {
+      xhr.upload.addEventListener('progress', e => {
         if (e.lengthComputable) {
           const percent = 20 + Math.round((e.loaded / e.total) * 60) // 20-80%
           onProgress?.({
             percent,
             message: `上傳中... ${Math.round((e.loaded / e.total) * 100)}%`,
-            status: 'uploading'
+            status: 'uploading',
           })
         }
       })
@@ -66,7 +66,12 @@ export async function uploadVideoSeparately(
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve()
         } else {
-          console.error('S3 上傳失敗:', xhr.status, xhr.statusText, xhr.responseText)
+          console.error(
+            'S3 上傳失敗:',
+            xhr.status,
+            xhr.statusText,
+            xhr.responseText
+          )
           reject(new Error(`S3 上傳失敗: ${xhr.statusText} (${xhr.status})`))
         }
       })
@@ -82,11 +87,11 @@ export async function uploadVideoSeparately(
       })
 
       xhr.timeout = 300000 // 5分鐘超時
-      
+
       // 設置請求頭（簡化版本，避免簽名問題）
       xhr.open('PUT', upload_url)
       // 不設置 Content-Type，讓瀏覽器自動處理
-      
+
       // 直接發送文件數據，不使用 FormData
       xhr.send(file)
     })
@@ -94,32 +99,31 @@ export async function uploadVideoSeparately(
     onProgress?.({
       percent: 90,
       message: '確認上傳完成...',
-      status: 'uploading'
+      status: 'uploading',
     })
 
     // 第三步：確認上傳完成
     const confirmResponse = await confirmUpload({
       video_id: video.id,
-      s3_key: key
+      s3_key: key,
     })
 
     onProgress?.({
       percent: 100,
       message: '上傳完成！轉碼處理已開始，請稍後查看影片列表',
-      status: 'success'
+      status: 'success',
     })
 
     return confirmResponse
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : '上傳失敗'
-    
+
     onProgress?.({
       percent: -1,
       message: `上傳失敗: ${errorMessage}`,
-      status: 'error'
+      status: 'error',
     })
-    
+
     throw error
   }
 }
@@ -133,4 +137,4 @@ export async function uploadVideo(
   description?: string
 ) {
   return uploadVideoSeparately(file, { title, description })
-} 
+}

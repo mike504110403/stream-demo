@@ -16,7 +16,7 @@
         @pause="onPause"
         @ended="onEnded"
       >
-        <source :src="streamUrl" type="application/x-mpegURL">
+        <source :src="streamUrl" type="application/x-mpegURL" />
         您的瀏覽器不支援 HLS 播放
       </video>
 
@@ -30,7 +30,7 @@
             {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
           </div>
         </div>
-        
+
         <div class="control-right">
           <button @click="toggleMute" class="control-btn">
             <i :class="isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up'"></i>
@@ -89,7 +89,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   autoPlay: true,
-  showControls: true
+  showControls: true,
 })
 
 // 響應式數據
@@ -126,13 +126,12 @@ const fetchStreamURL = async () => {
   try {
     loading.value = true
     error.value = false
-    
+
     const response = await publicStreamApi.getStreamURLs(props.streamName)
     streamUrl.value = response.urls.hls
-    
+
     // 更新觀眾數（從流資訊中獲取）
     viewerCount.value = streamInfo.value.viewer_count || 0
-    
   } catch (err: any) {
     error.value = true
     errorMessage.value = err.message || '獲取播放地址失敗'
@@ -242,7 +241,7 @@ const updateStats = async () => {
 onMounted(async () => {
   await fetchStreamInfo()
   await fetchStreamURL()
-  
+
   // 啟動定時器
   timeUpdateTimer = window.setInterval(updateTime, 1000)
   statsTimer = window.setInterval(updateStats, 5000)
@@ -258,10 +257,13 @@ onUnmounted(() => {
 })
 
 // 監聽流名稱變化
-watch(() => props.streamName, async () => {
-  await fetchStreamInfo()
-  await fetchStreamURL()
-})
+watch(
+  () => props.streamName,
+  async () => {
+    await fetchStreamInfo()
+    await fetchStreamURL()
+  }
+)
 </script>
 
 <style scoped>
@@ -357,8 +359,12 @@ watch(() => props.streamName, async () => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-content {
@@ -430,4 +436,4 @@ watch(() => props.streamName, async () => {
 .stat i {
   color: #007bff;
 }
-</style> 
+</style>

@@ -51,19 +51,24 @@
         <!-- 上傳進度顯示 -->
         <el-form-item v-if="uploadProgress.percent > 0" label="上傳進度">
           <div class="progress-container">
-            <el-progress 
-              :percentage="uploadProgress.percent" 
-              :status="uploadProgress.status === 'error' ? 'exception' : 
-                      uploadProgress.status === 'success' ? 'success' : undefined"
+            <el-progress
+              :percentage="uploadProgress.percent"
+              :status="
+                uploadProgress.status === 'error'
+                  ? 'exception'
+                  : uploadProgress.status === 'success'
+                    ? 'success'
+                    : undefined
+              "
             />
             <div class="progress-message">{{ uploadProgress.message }}</div>
           </div>
         </el-form-item>
 
         <el-form-item>
-          <el-button 
-            type="primary" 
-            @click="handleUpload" 
+          <el-button
+            type="primary"
+            @click="handleUpload"
             :loading="uploading"
             :disabled="!selectedFile || uploading"
           >
@@ -79,7 +84,12 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, type FormInstance, type FormRules, type UploadFile } from 'element-plus'
+import {
+  ElMessage,
+  type FormInstance,
+  type FormRules,
+  type UploadFile,
+} from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { uploadVideoSeparately, type UploadProgress } from '@/utils/upload'
 
@@ -91,33 +101,43 @@ const selectedFile = ref<File | null>(null)
 
 const uploadForm = reactive({
   title: '',
-  description: ''
+  description: '',
 })
 
 const uploadProgress = reactive<UploadProgress>({
   percent: 0,
   message: '',
-  status: 'pending'
+  status: 'pending',
 })
 
 const uploadRules: FormRules = {
   title: [
     { required: true, message: '請輸入標題', trigger: 'blur' },
-    { min: 1, max: 100, message: '標題長度在 1 到 100 個字符', trigger: 'blur' }
-  ]
+    {
+      min: 1,
+      max: 100,
+      message: '標題長度在 1 到 100 個字符',
+      trigger: 'blur',
+    },
+  ],
 }
 
 const handleFileChange = (file: UploadFile) => {
   selectedFile.value = file.raw || null
-  
+
   // 檔案大小檢查（500MB）
   if (selectedFile.value && selectedFile.value.size > 500 * 1024 * 1024) {
     ElMessage.error('檔案大小不能超過 500MB')
     selectedFile.value = null
     return
   }
-  
-  console.log('選擇檔案:', selectedFile.value?.name, '大小:', selectedFile.value?.size)
+
+  console.log(
+    '選擇檔案:',
+    selectedFile.value?.name,
+    '大小:',
+    selectedFile.value?.size
+  )
 }
 
 const resetForm = () => {
@@ -133,7 +153,7 @@ const resetForm = () => {
 const handleUpload = async () => {
   if (!uploadFormRef.value) return
 
-  await uploadFormRef.value.validate(async (valid) => {
+  await uploadFormRef.value.validate(async valid => {
     if (valid) {
       if (!selectedFile.value) {
         ElMessage.warning('請選擇要上傳的影片檔案')
@@ -141,13 +161,13 @@ const handleUpload = async () => {
       }
 
       uploading.value = true
-      
+
       try {
         console.log('開始分離式上傳...', {
           title: uploadForm.title,
           description: uploadForm.description,
           filename: selectedFile.value.name,
-          fileSize: selectedFile.value.size
+          fileSize: selectedFile.value.size,
         })
 
         // 使用分離式上傳
@@ -155,9 +175,9 @@ const handleUpload = async () => {
           selectedFile.value,
           {
             title: uploadForm.title,
-            description: uploadForm.description
+            description: uploadForm.description,
           },
-          (progress) => {
+          progress => {
             // 更新進度
             Object.assign(uploadProgress, progress)
             console.log('上傳進度:', progress)
@@ -166,12 +186,11 @@ const handleUpload = async () => {
 
         console.log('上傳成功:', result)
         ElMessage.success('影片上傳成功！轉碼處理已開始，請稍後查看影片列表')
-        
+
         // 延遲跳轉，讓用戶看到成功訊息
         setTimeout(() => {
           router.push('/videos')
         }, 3000)
-
       } catch (error) {
         console.error('上傳失敗:', error)
         ElMessage.error(uploadProgress.message || '上傳失敗，請重試')
@@ -218,4 +237,4 @@ const handleUpload = async () => {
   font-size: 14px;
   color: #666;
 }
-</style> 
+</style>

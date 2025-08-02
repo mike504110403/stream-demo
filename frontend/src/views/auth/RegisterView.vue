@@ -5,7 +5,7 @@
         <h1>🎬 串流平台</h1>
         <p>歡迎加入我們！請註冊您的帳號</p>
       </div>
-      
+
       <el-form
         ref="registerFormRef"
         :model="registerForm"
@@ -21,7 +21,7 @@
             prefix-icon="User"
           />
         </el-form-item>
-        
+
         <el-form-item prop="email">
           <el-input
             v-model="registerForm.email"
@@ -31,7 +31,7 @@
             prefix-icon="Message"
           />
         </el-form-item>
-        
+
         <el-form-item prop="password">
           <el-input
             v-model="registerForm.password"
@@ -42,7 +42,7 @@
             show-password
           />
         </el-form-item>
-        
+
         <el-form-item prop="confirmPassword">
           <el-input
             v-model="registerForm.confirmPassword"
@@ -53,7 +53,7 @@
             show-password
           />
         </el-form-item>
-        
+
         <el-form-item>
           <el-button
             type="primary"
@@ -66,13 +66,11 @@
           </el-button>
         </el-form-item>
       </el-form>
-      
+
       <div class="register-footer">
         <p>
           已有帳號？
-          <router-link to="/login" class="login-link">
-            立即登入
-          </router-link>
+          <router-link to="/login" class="login-link"> 立即登入 </router-link>
         </p>
       </div>
     </div>
@@ -95,7 +93,7 @@ const registerForm = reactive<RegisterRequest & { confirmPassword: string }>({
   username: '',
   email: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
 })
 
 const validateConfirmPassword = (_rule: any, value: string, callback: any) => {
@@ -111,29 +109,35 @@ const validateConfirmPassword = (_rule: any, value: string, callback: any) => {
 const registerRules: FormRules = {
   username: [
     { required: true, message: '請輸入用戶名', trigger: 'blur' },
-    { min: 3, max: 32, message: '用戶名長度在 3 到 32 個字符', trigger: 'blur' }
+    {
+      min: 3,
+      max: 32,
+      message: '用戶名長度在 3 到 32 個字符',
+      trigger: 'blur',
+    },
   ],
   email: [
     { required: true, message: '請輸入郵箱', trigger: 'blur' },
-    { type: 'email', message: '請輸入正確的郵箱格式', trigger: 'blur' }
+    { type: 'email', message: '請輸入正確的郵箱格式', trigger: 'blur' },
   ],
   password: [
     { required: true, message: '請輸入密碼', trigger: 'blur' },
-    { min: 6, message: '密碼長度不能少於6位', trigger: 'blur' }
+    { min: 6, message: '密碼長度不能少於6位', trigger: 'blur' },
   ],
   confirmPassword: [
-    { required: true, validator: validateConfirmPassword, trigger: 'blur' }
-  ]
+    { required: true, validator: validateConfirmPassword, trigger: 'blur' },
+  ],
 }
 
 const handleRegister = async () => {
   if (!registerFormRef.value) return
-  
-  await registerFormRef.value.validate(async (valid) => {
+
+  await registerFormRef.value.validate(async valid => {
     if (valid) {
       loading.value = true
       try {
-        const { confirmPassword: _confirmPassword, ...registerData } = registerForm
+        const { confirmPassword: _confirmPassword, ...registerData } =
+          registerForm
         await register(registerData)
         ElMessage.success('註冊成功！請登入')
         router.push('/login')
@@ -213,4 +217,4 @@ const handleRegister = async () => {
 .login-link:hover {
   text-decoration: underline;
 }
-</style> 
+</style>

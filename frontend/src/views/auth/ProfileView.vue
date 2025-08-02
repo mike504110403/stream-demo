@@ -20,7 +20,7 @@
               <el-input
                 v-model="profileForm.avatar"
                 placeholder="請輸入頭像 URL"
-                style="margin-top: 12px;"
+                style="margin-top: 12px"
               />
             </div>
           </div>
@@ -31,7 +31,11 @@
         </el-form-item>
 
         <el-form-item label="郵箱" prop="email">
-          <el-input v-model="profileForm.email" type="email" placeholder="請輸入郵箱" />
+          <el-input
+            v-model="profileForm.email"
+            type="email"
+            placeholder="請輸入郵箱"
+          />
         </el-form-item>
 
         <el-form-item label="個人簡介" prop="bio">
@@ -47,27 +51,29 @@
           <el-button type="primary" @click="handleUpdate" :loading="loading">
             更新資料
           </el-button>
-          <el-button @click="resetForm">
-            重置
-          </el-button>
+          <el-button @click="resetForm"> 重置 </el-button>
         </el-form-item>
       </el-form>
     </el-card>
 
     <!-- 帳號設定 -->
-    <el-card class="profile-card" style="margin-top: 20px;">
+    <el-card class="profile-card" style="margin-top: 20px">
       <template #header>
         <span>帳號設定</span>
       </template>
-      
+
       <div class="account-info">
         <div class="info-item">
           <span class="info-label">註冊時間：</span>
-          <span class="info-value">{{ formatDate(authStore.user?.created_at) }}</span>
+          <span class="info-value">{{
+            formatDate(authStore.user?.created_at)
+          }}</span>
         </div>
         <div class="info-item">
           <span class="info-label">最後更新：</span>
-          <span class="info-value">{{ formatDate(authStore.user?.updated_at) }}</span>
+          <span class="info-value">{{
+            formatDate(authStore.user?.updated_at)
+          }}</span>
         </div>
       </div>
 
@@ -84,7 +90,12 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import {
+  ElMessage,
+  ElMessageBox,
+  type FormInstance,
+  type FormRules,
+} from 'element-plus'
 import { useAuthStore } from '@/store/auth'
 import { updateUser, deleteUser } from '@/api/user'
 import type { UpdateUserRequest } from '@/types'
@@ -99,21 +110,24 @@ const profileForm = reactive<UpdateUserRequest & { id?: number }>({
   username: '',
   email: '',
   avatar: '',
-  bio: ''
+  bio: '',
 })
 
 const profileRules: FormRules = {
   username: [
     { required: true, message: '請輸入用戶名', trigger: 'blur' },
-    { min: 3, max: 32, message: '用戶名長度在 3 到 32 個字符', trigger: 'blur' }
+    {
+      min: 3,
+      max: 32,
+      message: '用戶名長度在 3 到 32 個字符',
+      trigger: 'blur',
+    },
   ],
   email: [
     { required: true, message: '請輸入郵箱', trigger: 'blur' },
-    { type: 'email', message: '請輸入正確的郵箱格式', trigger: 'blur' }
+    { type: 'email', message: '請輸入正確的郵箱格式', trigger: 'blur' },
   ],
-  bio: [
-    { max: 500, message: '個人簡介不能超過 500 個字符', trigger: 'blur' }
-  ]
+  bio: [{ max: 500, message: '個人簡介不能超過 500 個字符', trigger: 'blur' }],
 }
 
 const initForm = () => {
@@ -133,7 +147,7 @@ const resetForm = () => {
 const handleUpdate = async () => {
   if (!profileFormRef.value || !profileForm.id) return
 
-  await profileFormRef.value.validate(async (valid) => {
+  await profileFormRef.value.validate(async valid => {
     if (valid) {
       loading.value = true
       try {
@@ -141,13 +155,13 @@ const handleUpdate = async () => {
           username: profileForm.username,
           email: profileForm.email,
           avatar: profileForm.avatar,
-          bio: profileForm.bio
+          bio: profileForm.bio,
         })
-        
+
         // 更新本地用戶資料
         const userData = updatedUser
         authStore.updateUser(userData)
-        
+
         ElMessage.success('更新成功')
       } catch (error) {
         console.error('更新失敗:', error)
@@ -166,7 +180,7 @@ const handleDeleteAccount = async () => {
       {
         confirmButtonText: '確定刪除',
         cancelButtonText: '取消',
-        type: 'error'
+        type: 'error',
       }
     )
 
@@ -250,4 +264,4 @@ onMounted(() => {
   color: #f56c6c;
   margin-bottom: 16px;
 }
-</style> 
+</style>

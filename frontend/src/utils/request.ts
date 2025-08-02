@@ -13,7 +13,7 @@ interface CustomAxiosInstance {
 
 // 創建 axios 實例
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: '/api',  // 統一使用相對路徑，由 nginx 反向代理處理
+  baseURL: '/api', // 統一使用相對路徑，由 nginx 反向代理處理
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -22,7 +22,7 @@ const axiosInstance: AxiosInstance = axios.create({
 
 // 請求攔截器
 axiosInstance.interceptors.request.use(
-  async (config) => {
+  async config => {
     // 動態導入 useAuthStore 避免循環依賴
     const { useAuthStore } = await import('@/store/auth')
     const authStore = useAuthStore()
@@ -42,7 +42,7 @@ axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => {
     const res = response.data
     console.log('API 成功響應:', response.status, res) // 調試用
-    
+
     // 檢查是否為統一的響應格式 {code, message, data} 或 {success, data} 或 {message, data}
     if (res && typeof res === 'object') {
       if ('code' in res) {
@@ -73,27 +73,27 @@ axiosInstance.interceptors.response.use(
         return otherFields
       }
     }
-    
+
     // 如果不是統一格式，直接返回原始數據
     return res
   },
   async (error: AxiosError) => {
     console.error('API 錯誤響應:', error) // 調試用
-    
+
     // 處理不同類型的錯誤
     if (error.response) {
       // 服務器返回了錯誤狀態碼
       const status = error.response.status
       const data = error.response.data as any
-      
+
       console.error('錯誤狀態碼:', status)
       console.error('錯誤數據:', data)
-      
+
       // 直接顯示後端返回的 message
       const message = data?.message || `請求失敗 (${status})`
-      
+
       ElMessage.error(message)
-      
+
       return Promise.reject(error)
     } else if (error.request) {
       // 請求已發送但沒有收到響應

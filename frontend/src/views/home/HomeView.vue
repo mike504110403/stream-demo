@@ -3,17 +3,29 @@
     <div class="hero-section">
       <div class="hero-content">
         <h1 class="hero-title">🎬 歡迎來到串流平台</h1>
-        <p class="hero-subtitle">
-          分享您的精彩內容，與世界連接
-        </p>
+        <p class="hero-subtitle">分享您的精彩內容，與世界連接</p>
         <div class="hero-actions">
-          <el-button v-if="!authStore.isAuthenticated" type="primary" size="large" @click="$router.push('/register')">
+          <el-button
+            v-if="!authStore.isAuthenticated"
+            type="primary"
+            size="large"
+            @click="$router.push('/register')"
+          >
             立即註冊
           </el-button>
-          <el-button v-if="!authStore.isAuthenticated" size="large" @click="$router.push('/login')">
+          <el-button
+            v-if="!authStore.isAuthenticated"
+            size="large"
+            @click="$router.push('/login')"
+          >
             登入
           </el-button>
-          <el-button v-if="authStore.isAuthenticated" type="primary" size="large" @click="$router.push('/dashboard')">
+          <el-button
+            v-if="authStore.isAuthenticated"
+            type="primary"
+            size="large"
+            @click="$router.push('/dashboard')"
+          >
             進入儀表板
           </el-button>
         </div>
@@ -119,7 +131,8 @@ const authStore = useAuthStore()
   justify-content: center;
 }
 
-.features-section, .stats-section {
+.features-section,
+.stats-section {
   padding: 80px 0;
 }
 
@@ -184,4 +197,4 @@ const authStore = useAuthStore()
   font-size: 18px;
   color: #666;
 }
-</style> 
+</style>

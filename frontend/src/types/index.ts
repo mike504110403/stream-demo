@@ -49,21 +49,21 @@ export interface Video {
   description?: string
   user_id: number
   username?: string
-  original_url?: string        // 原始影片 URL
-  video_url?: string          // 舊字段，保持兼容性
-  thumbnail_url?: string      // 縮圖 URL
-  hls_master_url?: string     // HLS 播放列表 URL
-  mp4_url?: string            // MP4 轉碼版本 URL（網頁播放）
+  original_url?: string // 原始影片 URL
+  video_url?: string // 舊字段，保持兼容性
+  thumbnail_url?: string // 縮圖 URL
+  hls_master_url?: string // HLS 播放列表 URL
+  mp4_url?: string // MP4 轉碼版本 URL（網頁播放）
   status: 'processing' | 'ready' | 'failed' | 'uploading' | 'transcoding'
   processing_progress?: number
-  duration?: number           // 影片長度（秒）
-  file_size?: number          // 檔案大小（字節）
+  duration?: number // 影片長度（秒）
+  file_size?: number // 檔案大小（字節）
   views: number
   likes: number
   created_at: string
   updated_at: string
   user?: User
-  qualities?: VideoQuality[]  // 影片品質列表
+  qualities?: VideoQuality[] // 影片品質列表
 }
 
 export interface UploadVideoRequest {
@@ -214,4 +214,4 @@ export interface PaginationResponse<T> {
   total: number
   page: number
   limit: number
-} 
+}

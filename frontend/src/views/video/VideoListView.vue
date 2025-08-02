@@ -23,7 +23,11 @@
           </el-input>
         </el-col>
         <el-col :span="8">
-          <el-select v-model="statusFilter" placeholder="篩選狀態" @change="loadVideos">
+          <el-select
+            v-model="statusFilter"
+            placeholder="篩選狀態"
+            @change="loadVideos"
+          >
             <el-option label="全部" value="" />
             <el-option label="上傳中" value="uploading" />
             <el-option label="轉碼中" value="transcoding" />
@@ -33,7 +37,7 @@
           </el-select>
         </el-col>
       </el-row>
-      
+
       <!-- 轉碼狀態提示 -->
       <el-alert
         v-if="hasProcessingVideos"
@@ -41,7 +45,7 @@
         type="info"
         :closable="false"
         show-icon
-        style="margin-top: 16px;"
+        style="margin-top: 16px"
       >
         <template #default>
           有影片正在轉碼中，請定期刷新頁面查看最新狀態。轉碼完成後影片將自動出現在列表中。
@@ -58,12 +62,16 @@
           上傳第一個影片
         </el-button>
       </div>
-      
+
       <el-row :gutter="20" v-else>
         <el-col :span="6" v-for="video in videos" :key="video.id">
-                     <el-card class="video-card" @click="viewVideo(Number(video.id))">
+          <el-card class="video-card" @click="viewVideo(Number(video.id))">
             <div class="video-thumbnail">
-              <img v-if="video.thumbnail_url" :src="video.thumbnail_url" :alt="video.title" />
+              <img
+                v-if="video.thumbnail_url"
+                :src="video.thumbnail_url"
+                :alt="video.title"
+              />
               <div v-else class="placeholder-thumbnail">
                 <div class="placeholder-icon">🎬</div>
               </div>
@@ -73,11 +81,13 @@
                 </el-tag>
               </div>
             </div>
-            
+
             <div class="video-info">
               <h3 class="video-title">{{ video.title }}</h3>
-              <p class="video-description">{{ video.description || '暫無描述' }}</p>
-              
+              <p class="video-description">
+                {{ video.description || '暫無描述' }}
+              </p>
+
               <div class="video-stats">
                 <span class="stat">
                   <el-icon><View /></el-icon>
@@ -88,15 +98,20 @@
                   {{ video.likes }}
                 </span>
               </div>
-              
+
               <div class="video-date">
                 {{ formatDate(video.created_at) }}
               </div>
             </div>
-            
+
             <div class="video-actions" @click.stop>
               <el-button size="small" @click="editVideo(video)">編輯</el-button>
-              <el-button size="small" type="danger" @click="deleteVideo(video.id)">刪除</el-button>
+              <el-button
+                size="small"
+                type="danger"
+                @click="deleteVideo(video.id)"
+                >刪除</el-button
+              >
             </div>
           </el-card>
         </el-col>
@@ -110,10 +125,10 @@
           <el-input v-model="editForm.title" />
         </el-form-item>
         <el-form-item label="描述" prop="description">
-                     <el-input v-model="editForm.description" type="textarea" :rows="3" />
+          <el-input v-model="editForm.description" type="textarea" :rows="3" />
         </el-form-item>
       </el-form>
-      
+
       <template #footer>
         <el-button @click="editDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="handleUpdate" :loading="updating">
@@ -127,9 +142,19 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import {
+  ElMessage,
+  ElMessageBox,
+  type FormInstance,
+  type FormRules,
+} from 'element-plus'
 import { View, Star } from '@element-plus/icons-vue'
-import { getVideos, searchVideos, updateVideo, deleteVideo as deleteVideoApi } from '@/api/video'
+import {
+  getVideos,
+  searchVideos,
+  updateVideo,
+  deleteVideo as deleteVideoApi,
+} from '@/api/video'
 import type { Video, UpdateVideoRequest } from '@/types'
 
 const router = useRouter()
@@ -144,19 +169,24 @@ const editDialogVisible = ref(false)
 const editFormRef = ref<FormInstance>()
 const editForm = reactive<UpdateVideoRequest & { id?: number }>({
   title: '',
-  description: ''
+  description: '',
 })
 
 const editRules: FormRules = {
   title: [
     { required: true, message: '請輸入標題', trigger: 'blur' },
-    { min: 1, max: 100, message: '標題長度在 1 到 100 個字符', trigger: 'blur' }
-  ]
+    {
+      min: 1,
+      max: 100,
+      message: '標題長度在 1 到 100 個字符',
+      trigger: 'blur',
+    },
+  ],
 }
 
 // 計算是否有正在處理的影片
 const hasProcessingVideos = computed(() => {
-  return videos.value.some(video => 
+  return videos.value.some(video =>
     ['uploading', 'transcoding', 'processing'].includes(video.status)
   )
 })
@@ -166,28 +196,30 @@ const loadVideos = async () => {
   try {
     const response = await getVideos()
     console.log('API 響應:', response) // 調試用
-    
+
     // 處理後端 ListResponse 結構: {total: number, items: Video[]}
     // request.ts 攔截器已經提取了 data，所以 response 就是實際數據
     const result = response
     let filteredVideos: Video[] = []
-    
+
     if (result && typeof result === 'object') {
       // 如果有 items 字段，說明是 ListResponse 結構
       if ('items' in result && Array.isArray(result.items)) {
         filteredVideos = result.items
-      } 
+      }
       // 如果直接是數組
       else if (Array.isArray(result)) {
         filteredVideos = result
       }
     }
-    
+
     // 狀態篩選
     if (statusFilter.value) {
-      filteredVideos = filteredVideos.filter((video: Video) => video.status === statusFilter.value)
+      filteredVideos = filteredVideos.filter(
+        (video: Video) => video.status === statusFilter.value
+      )
     }
-    
+
     videos.value = filteredVideos
     console.log('處理後的影片列表:', filteredVideos) // 調試用
   } catch (error) {
@@ -203,28 +235,28 @@ const handleSearch = async () => {
     loadVideos()
     return
   }
-  
+
   loading.value = true
   try {
     const response = await searchVideos({ q: searchQuery.value })
     console.log('搜尋 API 響應:', response) // 調試用
-    
+
     // 處理搜尋結果
     // request.ts 攔截器已經提取了 data，所以 response 就是實際數據
     const result = response
     let searchResults: Video[] = []
-    
+
     if (result && typeof result === 'object') {
       // 如果有 items 字段，說明是 ListResponse 結構
       if ('items' in result && Array.isArray(result.items)) {
         searchResults = result.items
-      } 
+      }
       // 如果直接是數組
       else if (Array.isArray(result)) {
         searchResults = result
       }
     }
-    
+
     videos.value = searchResults
   } catch (error) {
     console.error('搜尋影片失敗:', error)
@@ -247,14 +279,14 @@ const editVideo = (video: Video) => {
 
 const handleUpdate = async () => {
   if (!editFormRef.value || !editForm.id) return
-  
-  await editFormRef.value.validate(async (valid) => {
+
+  await editFormRef.value.validate(async valid => {
     if (valid) {
       updating.value = true
       try {
         await updateVideo(editForm.id!, {
           title: editForm.title,
-          description: editForm.description
+          description: editForm.description,
         })
         ElMessage.success('更新成功')
         editDialogVisible.value = false
@@ -273,9 +305,9 @@ const deleteVideo = async (id: number) => {
     await ElMessageBox.confirm('確定要刪除這個影片嗎？', '確認刪除', {
       confirmButtonText: '確定',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
     })
-    
+
     await deleteVideoApi(id)
     ElMessage.success('刪除成功')
     loadVideos()
@@ -288,23 +320,35 @@ const deleteVideo = async (id: number) => {
 
 const getStatusType = (status: string) => {
   switch (status) {
-    case 'ready': return 'success'
-    case 'uploading': return 'info'
-    case 'transcoding': return 'warning'
-    case 'processing': return 'warning'
-    case 'failed': return 'danger'
-    default: return 'info'
+    case 'ready':
+      return 'success'
+    case 'uploading':
+      return 'info'
+    case 'transcoding':
+      return 'warning'
+    case 'processing':
+      return 'warning'
+    case 'failed':
+      return 'danger'
+    default:
+      return 'info'
   }
 }
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'ready': return '已完成'
-    case 'uploading': return '上傳中'
-    case 'transcoding': return '轉碼中'
-    case 'processing': return '處理中'
-    case 'failed': return '失敗'
-    default: return status
+    case 'ready':
+      return '已完成'
+    case 'uploading':
+      return '上傳中'
+    case 'transcoding':
+      return '轉碼中'
+    case 'processing':
+      return '處理中'
+    case 'failed':
+      return '失敗'
+    default:
+      return status
   }
 }
 
@@ -450,4 +494,4 @@ onMounted(() => {
   display: flex;
   gap: 8px;
 }
-</style> 
+</style>

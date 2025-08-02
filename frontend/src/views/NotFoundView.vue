@@ -9,9 +9,7 @@
         <el-button type="primary" @click="$router.push('/')">
           返回首頁
         </el-button>
-        <el-button @click="$router.back()">
-          返回上頁
-        </el-button>
+        <el-button @click="$router.back()"> 返回上頁 </el-button>
       </div>
     </div>
   </div>
@@ -63,4 +61,4 @@
   gap: 16px;
   justify-content: center;
 }
-</style> 
+</style>

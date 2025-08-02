@@ -18,7 +18,7 @@
             </div>
           </el-card>
         </el-col>
-        
+
         <el-col :span="6">
           <el-card class="action-card" @click="$router.push('/live-rooms')">
             <div class="action-content">
@@ -28,7 +28,7 @@
             </div>
           </el-card>
         </el-col>
-        
+
         <el-col :span="6">
           <el-card class="action-card" @click="$router.push('/payments')">
             <div class="action-content">
@@ -38,7 +38,7 @@
             </div>
           </el-card>
         </el-col>
-        
+
         <el-col :span="6">
           <el-card class="action-card" @click="$router.push('/profile')">
             <div class="action-content">
@@ -64,17 +64,20 @@
             </el-button>
           </el-card>
         </el-col>
-        
+
         <el-col :span="8">
           <el-card>
             <h3>🔴 直播間功能</h3>
             <p>創建直播間，與觀眾實時互動</p>
-            <el-button type="primary" @click="$router.push('/live-rooms/create')">
+            <el-button
+              type="primary"
+              @click="$router.push('/live-rooms/create')"
+            >
               創建直播間
             </el-button>
           </el-card>
         </el-col>
-        
+
         <el-col :span="8">
           <el-card>
             <h3>💳 支付系統</h3>
@@ -118,11 +121,13 @@ const authStore = useAuthStore()
   font-size: 16px;
 }
 
-.quick-actions, .features {
+.quick-actions,
+.features {
   margin-bottom: 32px;
 }
 
-.quick-actions h2, .features h2 {
+.quick-actions h2,
+.features h2 {
   margin-bottom: 16px;
   color: #333;
 }

@@ -59,9 +59,7 @@
               active-text="開啟"
               inactive-text="關閉"
             />
-            <div class="form-tip">
-              開啟後觀眾可以在直播間聊天
-            </div>
+            <div class="form-tip">開啟後觀眾可以在直播間聊天</div>
           </el-form-item>
 
           <el-form-item>
@@ -72,9 +70,7 @@
             >
               創建直播
             </el-button>
-            <el-button @click="resetForm">
-              重置
-            </el-button>
+            <el-button @click="resetForm"> 重置 </el-button>
           </el-form-item>
         </el-form>
       </el-card>
@@ -152,42 +148,26 @@
                     readonly
                     size="small"
                   />
-                  <el-button
-                    type="primary"
-                    size="small"
-                    @click="copyStreamKey"
-                  >
+                  <el-button type="primary" size="small" @click="copyStreamKey">
                     複製
                   </el-button>
                 </div>
               </div>
-              
+
               <div class="info-item">
                 <label>RTMP 推流地址：</label>
                 <div class="key-display">
-                  <el-input
-                    v-model="rtmpUrl"
-                    readonly
-                    size="small"
-                  />
-                  <el-button
-                    type="primary"
-                    size="small"
-                    @click="copyRtmpUrl"
-                  >
+                  <el-input v-model="rtmpUrl" readonly size="small" />
+                  <el-button type="primary" size="small" @click="copyRtmpUrl">
                     複製
                   </el-button>
                 </div>
               </div>
-              
+
               <div class="info-item">
                 <label>直播間地址：</label>
                 <div class="key-display">
-                  <el-input
-                    v-model="liveRoomUrl"
-                    readonly
-                    size="small"
-                  />
+                  <el-input v-model="liveRoomUrl" readonly size="small" />
                   <el-button
                     type="primary"
                     size="small"
@@ -201,16 +181,11 @@
           </template>
         </el-result>
       </div>
-      
+
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="showSuccessDialog = false">
-            關閉
-          </el-button>
-          <el-button
-            type="primary"
-            @click="goToLiveRoom"
-          >
+          <el-button @click="showSuccessDialog = false"> 關閉 </el-button>
+          <el-button type="primary" @click="goToLiveRoom">
             進入直播間
           </el-button>
         </div>
@@ -241,18 +216,23 @@ const formData = ref<CreateLiveRequest & { chat_enabled: boolean }>({
   title: '',
   description: '',
   start_time: '',
-  chat_enabled: true
+  chat_enabled: true,
 })
 
 // 表單驗證規則
 const formRules: FormRules = {
   title: [
     { required: true, message: '請輸入直播標題', trigger: 'blur' },
-    { min: 2, max: 100, message: '標題長度在 2 到 100 個字符', trigger: 'blur' }
+    {
+      min: 2,
+      max: 100,
+      message: '標題長度在 2 到 100 個字符',
+      trigger: 'blur',
+    },
   ],
   start_time: [
-    { required: true, message: '請選擇開始時間', trigger: 'change' }
-  ]
+    { required: true, message: '請選擇開始時間', trigger: 'change' },
+  ],
 }
 
 // 計算屬性
@@ -282,13 +262,12 @@ const handleSubmit = async () => {
     const response = await createLive({
       title: formData.value.title,
       description: formData.value.description,
-      start_time: formData.value.start_time
+      start_time: formData.value.start_time,
     })
 
     createdLive.value = response
     showSuccessDialog.value = true
     ElMessage.success('直播創建成功！')
-
   } catch (error: any) {
     console.error('創建直播失敗:', error)
     ElMessage.error(error.message || '創建直播失敗')
@@ -306,7 +285,7 @@ const resetForm = () => {
     title: '',
     description: '',
     start_time: '',
-    chat_enabled: true
+    chat_enabled: true,
   }
 }
 
@@ -351,17 +330,18 @@ const disabledTime = (date: Date) => {
   if (date) {
     const now = new Date()
     const selectedDate = new Date(date)
-    
+
     // 如果是今天，限制時間不能早於當前時間
     if (selectedDate.toDateString() === now.toDateString()) {
       return {
-        disabledHours: () => Array.from({ length: now.getHours() }, (_, i) => i),
+        disabledHours: () =>
+          Array.from({ length: now.getHours() }, (_, i) => i),
         disabledMinutes: (hour: number) => {
           if (hour === now.getHours()) {
             return Array.from({ length: now.getMinutes() }, (_, i) => i)
           }
           return []
-        }
+        },
       }
     }
   }
@@ -510,17 +490,17 @@ const disabledTime = (date: Date) => {
   .live-create {
     padding: 12px;
   }
-  
+
   .page-header {
     flex-direction: column;
     gap: 12px;
     align-items: stretch;
   }
-  
+
   .page-header h1 {
     text-align: center;
   }
-  
+
   .create-form {
     min-height: auto;
   }

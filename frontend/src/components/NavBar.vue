@@ -5,7 +5,7 @@
         <h2>🎬 串流平台</h2>
       </router-link>
     </div>
-    
+
     <div class="navbar-menu">
       <el-menu
         :default-active="activeIndex"
@@ -21,7 +21,7 @@
         <el-menu-item index="/dashboard">儀表板</el-menu-item>
       </el-menu>
     </div>
-    
+
     <div class="navbar-user">
       <el-dropdown @command="handleCommand">
         <span class="el-dropdown-link">
@@ -115,4 +115,4 @@ const handleCommand = (command: string) => {
   margin-left: 8px;
   margin-right: 4px;
 }
-</style> 
+</style>

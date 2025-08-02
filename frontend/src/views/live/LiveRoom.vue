@@ -3,46 +3,41 @@
     <div class="page-header">
       <h1>{{ roomInfo?.title || '直播間' }}</h1>
       <div class="header-actions">
-        
         <!-- 主播專用按鈕 -->
         <template v-if="isCreator">
-          <el-button 
-            v-if="roomInfo?.status === 'created' || roomInfo?.status === 'ended'" 
-            type="success" 
+          <el-button
+            v-if="
+              roomInfo?.status === 'created' || roomInfo?.status === 'ended'
+            "
+            type="success"
             @click="handleStartLive"
             :loading="startingLive"
           >
             {{ roomInfo?.status === 'ended' ? '重新開始直播' : '開始直播' }}
           </el-button>
-          <el-button 
-            v-if="roomInfo?.status === 'live'" 
-            type="warning" 
+          <el-button
+            v-if="roomInfo?.status === 'live'"
+            type="warning"
             @click="handleEndLive"
             :loading="endingLive"
           >
             結束直播
           </el-button>
-          <el-button 
-            type="primary" 
-            @click="showStreamInfo = true"
-          >
+          <el-button type="primary" @click="showStreamInfo = true">
             串流資訊
           </el-button>
-          <el-button 
-            type="danger" 
+          <el-button
+            type="danger"
             @click="handleCloseRoom"
             :loading="closingRoom"
           >
             關閉直播間
           </el-button>
         </template>
-        
+
         <!-- 觀眾專用按鈕 -->
         <template v-if="isViewer">
-          <el-button 
-            type="info" 
-            @click="handleLeaveRoom"
-          >
+          <el-button type="info" @click="handleLeaveRoom">
             離開直播間
           </el-button>
         </template>
@@ -54,15 +49,9 @@
     </div>
 
     <div v-else-if="error" class="error-container">
-      <el-result
-        icon="error"
-        :title="error"
-        sub-title="無法載入直播間資訊"
-      >
+      <el-result icon="error" :title="error" sub-title="無法載入直播間資訊">
         <template #extra>
-          <el-button type="primary" @click="loadRoomInfo">
-            重新載入
-          </el-button>
+          <el-button type="primary" @click="loadRoomInfo"> 重新載入 </el-button>
         </template>
       </el-result>
     </div>
@@ -74,10 +63,10 @@
         <div class="player-section">
           <div class="player-container">
             <div v-if="roomInfo.status === 'live'" class="live-player">
-              <video 
+              <video
                 ref="videoPlayer"
-                controls 
-                autoplay 
+                controls
+                autoplay
                 muted
                 class="video-player"
                 @loadstart="onVideoLoadStart"
@@ -97,11 +86,21 @@
             <div v-else class="offline-message">
               <div class="offline-icon">📺</div>
               <div class="offline-text">
-                {{ roomInfo.status === 'created' ? '直播尚未開始' : '直播已結束' }}
+                {{
+                  roomInfo.status === 'created' ? '直播尚未開始' : '直播已結束'
+                }}
               </div>
-              <div v-if="isCreator && (roomInfo.status === 'created' || roomInfo.status === 'ended')" class="offline-action">
+              <div
+                v-if="
+                  isCreator &&
+                  (roomInfo.status === 'created' || roomInfo.status === 'ended')
+                "
+                class="offline-action"
+              >
                 <el-button type="primary" @click="handleStartLive">
-                  {{ roomInfo.status === 'ended' ? '重新開始直播' : '開始直播' }}
+                  {{
+                    roomInfo.status === 'ended' ? '重新開始直播' : '開始直播'
+                  }}
                 </el-button>
               </div>
             </div>
@@ -114,36 +113,52 @@
             <div class="chat-header">
               <h3>聊天室</h3>
               <div class="chat-status">
-                <span class="viewer-count">{{ roomInfo.viewer_count }} 觀眾</span>
-                <el-tag 
-                  :type="isConnected ? 'success' : 'danger'" 
-                  size="small"
+                <span class="viewer-count"
+                  >{{ roomInfo.viewer_count }} 觀眾</span
                 >
+                <el-tag :type="isConnected ? 'success' : 'danger'" size="small">
                   {{ isConnected ? '已連接' : '未連接' }}
                 </el-tag>
               </div>
             </div>
             <div class="chat-messages" ref="chatMessages">
               <div class="message-list">
-                <div v-for="message in messages" :key="message.id" class="message">
-                  <span class="username" :class="{ 'creator': message.role === 'creator' }">
+                <div
+                  v-for="message in messages"
+                  :key="message.id"
+                  class="message"
+                >
+                  <span
+                    class="username"
+                    :class="{ creator: message.role === 'creator' }"
+                  >
                     {{ message.username }}
-                    <el-tag v-if="message.role === 'creator'" size="small" type="warning">主播</el-tag>:
+                    <el-tag
+                      v-if="message.role === 'creator'"
+                      size="small"
+                      type="warning"
+                      >主播</el-tag
+                    >:
                   </span>
                   <span class="content">{{ message.content }}</span>
-                  <span class="timestamp">{{ formatTime(message.timestamp) }}</span>
+                  <span class="timestamp">{{
+                    formatTime(message.timestamp)
+                  }}</span>
                 </div>
               </div>
             </div>
             <div class="chat-input">
-              <el-input 
-                v-model="newMessage" 
+              <el-input
+                v-model="newMessage"
                 placeholder="輸入訊息..."
                 @keyup.enter="sendMessage"
                 :disabled="!isConnected"
               >
                 <template #append>
-                  <el-button @click="sendMessage" :disabled="!newMessage.trim() || !isConnected">
+                  <el-button
+                    @click="sendMessage"
+                    :disabled="!newMessage.trim() || !isConnected"
+                  >
                     發送
                   </el-button>
                 </template>
@@ -169,13 +184,13 @@
               </div>
             </div>
           </template>
-          
+
           <div class="details-content">
             <h2>{{ roomInfo.title }}</h2>
             <p v-if="roomInfo.description" class="description">
               {{ roomInfo.description }}
             </p>
-            
+
             <div class="meta-info">
               <div class="meta-item">
                 <span class="label">創建者：</span>
@@ -189,7 +204,7 @@
                 <span class="label">開始時間：</span>
                 <span class="value">{{ formatDate(roomInfo.started_at) }}</span>
               </div>
-              
+
               <!-- 主播專用資訊 -->
               <template v-if="isCreator">
                 <div class="meta-item">
@@ -204,11 +219,7 @@
     </div>
 
     <!-- 串流資訊對話框 -->
-    <el-dialog 
-      v-model="showStreamInfo" 
-      title="串流資訊" 
-      width="600px"
-    >
+    <el-dialog v-model="showStreamInfo" title="串流資訊" width="600px">
       <div class="stream-info">
         <div class="info-item">
           <label>串流金鑰：</label>
@@ -217,7 +228,7 @@
             <el-button @click="copyStreamKey" size="small">複製</el-button>
           </div>
         </div>
-        
+
         <div class="info-item">
           <label>RTMP 推流地址：</label>
           <div class="info-content">
@@ -225,7 +236,7 @@
             <el-button @click="copyRtmpUrl" size="small">複製</el-button>
           </div>
         </div>
-        
+
         <div class="info-item">
           <label>HLS 播放地址：</label>
           <div class="info-content">
@@ -242,7 +253,15 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getRoomById, joinRoom, leaveRoom, startLive as startLiveAPI, endLive as endLiveAPI, closeRoom, getUserRole as getUserRoleAPI } from '@/api/live-room'
+import {
+  getRoomById,
+  joinRoom,
+  leaveRoom,
+  startLive as startLiveAPI,
+  endLive as endLiveAPI,
+  closeRoom,
+  getUserRole as getUserRoleAPI,
+} from '@/api/live-room'
 import { useAuthStore } from '@/store/auth'
 import type { LiveRoomInfo } from '@/types'
 import { LiveRoomWebSocket, type LiveRoomMessage } from '@/utils/websocket'
@@ -263,7 +282,15 @@ const closingRoom = ref(false)
 const userRole = ref<string>('') // 添加用戶角色狀態
 
 // 聊天相關
-const messages = ref<Array<{id: string, username: string, content: string, role?: string, timestamp: number}>>([])
+const messages = ref<
+  Array<{
+    id: string
+    username: string
+    content: string
+    role?: string
+    timestamp: number
+  }>
+>([])
 const newMessage = ref('')
 const chatMessages = ref<HTMLElement>()
 
@@ -284,12 +311,14 @@ const currentUsername = computed(() => authStore.user?.username || '')
 // 用戶角色相關
 const isCreator = computed(() => {
   // 優先檢查用戶角色，然後檢查創建者ID
-  const result = userRole.value === 'creator' || roomInfo.value?.creator_id === currentUserId.value
+  const result =
+    userRole.value === 'creator' ||
+    roomInfo.value?.creator_id === currentUserId.value
   console.log('角色判斷:', {
     userRole: userRole.value,
     creator_id: roomInfo.value?.creator_id,
     currentUserId: currentUserId.value,
-    isCreator: result
+    isCreator: result,
   })
   return result
 })
@@ -321,31 +350,32 @@ const initHLSPlayer = async () => {
     hlsUrl: hlsUrl.value,
     roomInfo: roomInfo.value,
     roomStatus: roomInfo.value?.status,
-    streamKey: roomInfo.value?.stream_key
+    streamKey: roomInfo.value?.stream_key,
   })
-  
+
   if (!videoPlayer.value) {
     console.log('videoPlayer 未準備好，跳過初始化')
     return
   }
-  
+
   // 使用 hlsUrl 而不是 streamUrl，因為 hlsUrl 不依賴於狀態
-  const urlToUse = roomInfo.value?.status === 'live' ? streamUrl.value : hlsUrl.value
-  
+  const urlToUse =
+    roomInfo.value?.status === 'live' ? streamUrl.value : hlsUrl.value
+
   if (!urlToUse) {
     console.log('URL 為空，跳過初始化')
     return
   }
-  
+
   console.log('初始化 HLS 播放器:', urlToUse)
-  
+
   // 清理現有的 HLS 實例
   if (hls.value) {
     console.log('清理現有的 HLS 實例')
     hls.value.destroy()
     hls.value = null
   }
-  
+
   // 檢查瀏覽器是否支援 HLS
   if (Hls.isSupported()) {
     console.log('瀏覽器支援 HLS.js，使用 HLS.js 播放')
@@ -354,20 +384,20 @@ const initHLSPlayer = async () => {
       enableWorker: true,
       lowLatencyMode: true,
       // LL-HLS 優化配置
-      maxBufferLength: 2,           // 最大緩衝 2 秒 (LL-HLS 需要更短的緩衝)
-      maxMaxBufferLength: 4,        // 絕對最大緩衝 4 秒
+      maxBufferLength: 2, // 最大緩衝 2 秒 (LL-HLS 需要更短的緩衝)
+      maxMaxBufferLength: 4, // 絕對最大緩衝 4 秒
       maxBufferSize: 4 * 1000 * 1000, // 4MB 緩衝
-      maxBufferHole: 0.1,           // 允許的緩衝空洞
-      highBufferWatchdogPeriod: 1,  // 高緩衝監控週期
-      nudgeOffset: 0.1,             // 調整偏移
-      nudgeMaxRetry: 3,             // 最大重試次數
-      maxFragLookUpTolerance: 0.1,  // 片段查找容差
-      liveSyncDurationCount: 1,     // 直播同步片段數 (LL-HLS 使用 1)
+      maxBufferHole: 0.1, // 允許的緩衝空洞
+      highBufferWatchdogPeriod: 1, // 高緩衝監控週期
+      nudgeOffset: 0.1, // 調整偏移
+      nudgeMaxRetry: 3, // 最大重試次數
+      maxFragLookUpTolerance: 0.1, // 片段查找容差
+      liveSyncDurationCount: 1, // 直播同步片段數 (LL-HLS 使用 1)
       liveMaxLatencyDurationCount: 2, // 最大延遲片段數 (LL-HLS 使用更少)
-      liveDurationInfinity: true,   // 無限直播
-      enableSoftwareAES: true,      // 啟用軟體 AES
-      abrEwmaFastLive: 3,           // 快速 ABR
-      abrEwmaSlowLive: 9,           // 慢速 ABR
+      liveDurationInfinity: true, // 無限直播
+      enableSoftwareAES: true, // 啟用軟體 AES
+      abrEwmaFastLive: 3, // 快速 ABR
+      abrEwmaSlowLive: 9, // 慢速 ABR
       // LL-HLS 特定配置
       enableDateRangeMetadataCues: true,
       enableEmsgMetadataCues: true,
@@ -376,19 +406,19 @@ const initHLSPlayer = async () => {
       enableIMSC1: true,
       enableCEA708Captions: true,
       // 片段載入配置
-      fragLoadingMaxRetry: 4,       // 片段載入最大重試次數
-      fragLoadingRetryDelay: 1000,  // 片段載入重試延遲 1 秒
+      fragLoadingMaxRetry: 4, // 片段載入最大重試次數
+      fragLoadingRetryDelay: 1000, // 片段載入重試延遲 1 秒
       fragLoadingMaxRetryTimeout: 64000, // 片段載入最大重試超時 64 秒
       // 播放列表配置
-      manifestLoadingMaxRetry: 4,   // 播放列表載入最大重試次數
+      manifestLoadingMaxRetry: 4, // 播放列表載入最大重試次數
       manifestLoadingRetryDelay: 1000, // 播放列表載入重試延遲 1 秒
       manifestLoadingMaxRetryTimeout: 64000, // 播放列表載入最大重試超時 64 秒
     })
-    
+
     console.log('HLS.js 實例創建成功，開始載入源')
     hls.value.loadSource(urlToUse)
     hls.value.attachMedia(videoPlayer.value)
-    
+
     hls.value.on(Hls.Events.MANIFEST_PARSED, () => {
       console.log('HLS 播放列表已解析，開始播放')
       if (videoPlayer.value) {
@@ -397,36 +427,36 @@ const initHLSPlayer = async () => {
         })
       }
     })
-    
+
     // 添加更多事件監聽器來調試 LL-HLS
     hls.value.on(Hls.Events.MANIFEST_LOADING, () => {
       console.log('正在載入 HLS 播放列表...')
     })
-    
+
     hls.value.on(Hls.Events.MANIFEST_LOADED, () => {
       console.log('HLS 播放列表載入完成')
     })
-    
+
     hls.value.on(Hls.Events.LEVEL_LOADED, (_event, data) => {
       console.log('HLS 品質等級載入完成:', data.level)
     })
-    
+
     hls.value.on(Hls.Events.FRAG_LOADING, (_event, data) => {
       console.log('正在載入片段:', data.frag.url)
     })
-    
+
     hls.value.on(Hls.Events.FRAG_LOADED, (_event, data) => {
       console.log('片段載入完成:', data.frag.url)
     })
-    
+
     hls.value.on(Hls.Events.BUFFER_APPENDING, () => {
       console.log('正在追加緩衝...')
     })
-    
+
     hls.value.on(Hls.Events.BUFFER_APPENDED, () => {
       console.log('緩衝追加完成')
     })
-    
+
     hls.value.on(Hls.Events.ERROR, (_event, data) => {
       console.error('HLS 錯誤:', data)
       if (data.fatal) {
@@ -514,21 +544,21 @@ const loadRoomInfo = async () => {
   try {
     const response = await getRoomById(roomId.value)
     roomInfo.value = response
-    
+
     // 調試：檢查認證狀態
     console.log('載入房間信息時的認證狀態:', {
       token: !!authStore.token,
       user: authStore.user,
       currentUserId: currentUserId.value,
-      roomCreatorId: roomInfo.value?.creator_id
+      roomCreatorId: roomInfo.value?.creator_id,
     })
-    
+
     // 加入直播間
     await joinRoom(roomId.value)
-    
+
     // 獲取用戶在房間中的角色
     await getUserRole()
-    
+
     // 初始化空的聊天消息列表
     messages.value = []
   } catch (err: any) {
@@ -560,7 +590,7 @@ const getUserRole = async () => {
 // 開始直播
 const handleStartLive = async () => {
   if (!roomId.value) return
-  
+
   startingLive.value = true
   try {
     await startLiveAPI(roomId.value)
@@ -576,7 +606,7 @@ const handleStartLive = async () => {
 // 結束直播
 const handleEndLive = async () => {
   if (!roomId.value) return
-  
+
   endingLive.value = true
   try {
     await endLiveAPI(roomId.value)
@@ -592,7 +622,7 @@ const handleEndLive = async () => {
 // 關閉直播間
 const handleCloseRoom = async () => {
   if (!roomId.value) return
-  
+
   // 確認對話框
   try {
     await ElMessageBox.confirm(
@@ -607,7 +637,7 @@ const handleCloseRoom = async () => {
   } catch {
     return // 用戶取消
   }
-  
+
   closingRoom.value = true
   try {
     await closeRoom(roomId.value)
@@ -623,7 +653,7 @@ const handleCloseRoom = async () => {
 // 發送消息
 const sendMessage = () => {
   if (!newMessage.value.trim() || !roomInfo.value) return
-  
+
   // 通過 WebSocket 發送聊天消息
   if (wsClient.value && isConnected.value) {
     wsClient.value.sendChatMessage(newMessage.value)
@@ -634,12 +664,12 @@ const sendMessage = () => {
       id: Date.now().toString(),
       username: currentUsername.value,
       content: newMessage.value,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }
-    
+
     messages.value.push(message)
     newMessage.value = ''
-    
+
     // 滾動到底部
     setTimeout(() => {
       if (chatMessages.value) {
@@ -677,21 +707,31 @@ const copyHlsUrl = () => {
 // 工具函數
 const getStatusType = (status: string) => {
   switch (status) {
-    case 'live': return 'success'
-    case 'created': return 'info'
-    case 'ended': return 'danger'
-    case 'cancelled': return 'warning'
-    default: return 'info'
+    case 'live':
+      return 'success'
+    case 'created':
+      return 'info'
+    case 'ended':
+      return 'danger'
+    case 'cancelled':
+      return 'warning'
+    default:
+      return 'info'
   }
 }
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'live': return '直播中'
-    case 'created': return '已創建'
-    case 'ended': return '已結束'
-    case 'cancelled': return '已取消'
-    default: return status
+    case 'live':
+      return '直播中'
+    case 'created':
+      return '已創建'
+    case 'ended':
+      return '已結束'
+    case 'cancelled':
+      return '已取消'
+    default:
+      return status
   }
 }
 
@@ -701,19 +741,19 @@ const formatDate = (dateString: string) => {
 }
 
 const formatTime = (timestamp: number) => {
-  return new Date(timestamp).toLocaleTimeString('zh-TW', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  return new Date(timestamp).toLocaleTimeString('zh-TW', {
+    hour: '2-digit',
+    minute: '2-digit',
   })
 }
 
 // WebSocket 連接
 const connectWebSocket = async () => {
   if (!roomId.value || !authStore.token) return
-  
+
   try {
     wsClient.value = new LiveRoomWebSocket(roomId.value, authStore.token)
-    
+
     // 註冊消息處理器
     wsClient.value.on('chat', (message: LiveRoomMessage) => {
       const chatMessage = {
@@ -721,10 +761,10 @@ const connectWebSocket = async () => {
         username: message.username || `user_${message.user_id}`,
         content: message.content || '',
         role: message.role,
-        timestamp: message.timestamp
+        timestamp: message.timestamp,
       }
       messages.value.push(chatMessage)
-      
+
       // 滾動到底部
       nextTick(() => {
         if (chatMessages.value) {
@@ -732,7 +772,7 @@ const connectWebSocket = async () => {
         }
       })
     })
-    
+
     wsClient.value.on('user_joined', (message: LiveRoomMessage) => {
       if (message.data?.viewer_count !== undefined && roomInfo.value) {
         roomInfo.value.viewer_count = message.data.viewer_count
@@ -743,7 +783,7 @@ const connectWebSocket = async () => {
         ElMessage.info(`${message.username} 加入了直播間`)
       }
     })
-    
+
     wsClient.value.on('user_left', (message: LiveRoomMessage) => {
       if (message.data?.viewer_count !== undefined && roomInfo.value) {
         roomInfo.value.viewer_count = message.data.viewer_count
@@ -764,7 +804,7 @@ const connectWebSocket = async () => {
     })
 
     // 處理直播開始通知
-          wsClient.value.on('live_started', (_message: LiveRoomMessage) => {
+    wsClient.value.on('live_started', (_message: LiveRoomMessage) => {
       if (roomInfo.value) {
         roomInfo.value.status = 'live'
         console.log('直播狀態更新: 已開始')
@@ -776,7 +816,7 @@ const connectWebSocket = async () => {
     })
 
     // 處理直播結束通知
-          wsClient.value.on('live_ended', (_message: LiveRoomMessage) => {
+    wsClient.value.on('live_ended', (_message: LiveRoomMessage) => {
       if (roomInfo.value) {
         roomInfo.value.status = 'ended'
         console.log('直播狀態更新: 已結束')
@@ -784,16 +824,15 @@ const connectWebSocket = async () => {
     })
 
     // 處理直播間關閉通知
-          wsClient.value.on('room_closed', (_message: LiveRoomMessage) => {
+    wsClient.value.on('room_closed', (_message: LiveRoomMessage) => {
       ElMessage.warning('直播間已關閉')
       router.push('/live-rooms')
     })
-    
+
     // 連接 WebSocket
     await wsClient.value.connect()
     isConnected.value = true
     console.log('WebSocket 連接成功')
-    
   } catch (error) {
     console.error('WebSocket 連接失敗:', error)
     ElMessage.warning('WebSocket 連接失敗，聊天功能可能無法正常使用')
@@ -824,7 +863,7 @@ const handleLeaveRoom = async () => {
 }
 
 // 監聽 streamUrl 變化
-watch(streamUrl, (newUrl) => {
+watch(streamUrl, newUrl => {
   console.log('streamUrl 變化:', newUrl)
   if (newUrl && roomInfo.value?.status === 'live') {
     console.log('串流 URL 變化，重新初始化播放器:', newUrl)
@@ -835,45 +874,59 @@ watch(streamUrl, (newUrl) => {
 })
 
 // 監聽房間狀態變化，在直播開始時初始化 HLS 播放器
-watch(() => roomInfo.value?.status, (newStatus, oldStatus) => {
-  console.log('房間狀態變化:', { oldStatus, newStatus })
-  if (newStatus === 'live') {
-    console.log('直播狀態，初始化 HLS 播放器')
-    nextTick(() => {
-      initHLSPlayer()
-    })
-  } else if (oldStatus === 'live' && newStatus && (newStatus === 'ended' || newStatus === 'cancelled')) {
-    console.log('直播結束，清理 HLS 播放器')
-    cleanupHLSPlayer()
+watch(
+  () => roomInfo.value?.status,
+  (newStatus, oldStatus) => {
+    console.log('房間狀態變化:', { oldStatus, newStatus })
+    if (newStatus === 'live') {
+      console.log('直播狀態，初始化 HLS 播放器')
+      nextTick(() => {
+        initHLSPlayer()
+      })
+    } else if (
+      oldStatus === 'live' &&
+      newStatus &&
+      (newStatus === 'ended' || newStatus === 'cancelled')
+    ) {
+      console.log('直播結束，清理 HLS 播放器')
+      cleanupHLSPlayer()
+    }
   }
-})
+)
 
 // 監聽 roomInfo 變化，確保在載入完成後初始化播放器
-watch(() => roomInfo.value, (newRoomInfo) => {
-  console.log('roomInfo 變化:', newRoomInfo)
-  if (newRoomInfo && newRoomInfo.status === 'live') {
-    console.log('房間信息載入完成，直播中，初始化 HLS 播放器')
-    nextTick(() => {
-      initHLSPlayer()
-    })
-  }
-}, { immediate: true })
+watch(
+  () => roomInfo.value,
+  newRoomInfo => {
+    console.log('roomInfo 變化:', newRoomInfo)
+    if (newRoomInfo && newRoomInfo.status === 'live') {
+      console.log('房間信息載入完成，直播中，初始化 HLS 播放器')
+      nextTick(() => {
+        initHLSPlayer()
+      })
+    }
+  },
+  { immediate: true }
+)
 
 // 監聽用戶角色變化，確保在角色確定後初始化播放器
-watch(() => userRole.value, (newRole) => {
-  console.log('用戶角色變化:', newRole)
-  if (roomInfo.value?.status === 'live') {
-    console.log('用戶角色確定，直播中，初始化 HLS 播放器')
-    nextTick(() => {
-      initHLSPlayer()
-    })
+watch(
+  () => userRole.value,
+  newRole => {
+    console.log('用戶角色變化:', newRole)
+    if (roomInfo.value?.status === 'live') {
+      console.log('用戶角色確定，直播中，初始化 HLS 播放器')
+      nextTick(() => {
+        initHLSPlayer()
+      })
+    }
   }
-})
+)
 
 onMounted(async () => {
   await loadRoomInfo()
   await connectWebSocket()
-  
+
   // 延遲檢查，確保在組件完全載入後檢查是否需要初始化 HLS 播放器
   setTimeout(() => {
     console.log('onMounted 延遲檢查:', {
@@ -881,10 +934,14 @@ onMounted(async () => {
       roomStatus: roomInfo.value?.status,
       streamUrl: streamUrl.value,
       videoPlayer: !!videoPlayer.value,
-      userRole: userRole.value
+      userRole: userRole.value,
     })
-    
-    if (roomInfo.value?.status === 'live' && streamUrl.value && videoPlayer.value) {
+
+    if (
+      roomInfo.value?.status === 'live' &&
+      streamUrl.value &&
+      videoPlayer.value
+    ) {
       console.log('onMounted 延遲檢查：需要初始化 HLS 播放器')
       initHLSPlayer()
     }
@@ -986,8 +1043,12 @@ onUnmounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .video-player {
@@ -1179,7 +1240,7 @@ onUnmounted(() => {
   .live-layout {
     grid-template-columns: 1fr;
   }
-  
+
   .meta-info {
     grid-template-columns: 1fr;
   }

@@ -15,23 +15,30 @@
           <!-- 優先使用 HLS，然後是原始影片 -->
           <div v-if="getVideoURL()" class="video-container">
             <!-- 品質選擇器 -->
-            <div v-if="video.qualities && video.qualities.length > 0" class="quality-selector">
-              <el-select v-model="selectedQuality" @change="changeQuality" size="small">
-                <el-option 
-                  label="自動 (最佳品質)"
-                  :value="0"
-                />
-                <el-option 
-                  v-for="quality in video.qualities" 
+            <div
+              v-if="video.qualities && video.qualities.length > 0"
+              class="quality-selector"
+            >
+              <el-select
+                v-model="selectedQuality"
+                @change="changeQuality"
+                size="small"
+              >
+                <el-option label="自動 (最佳品質)" :value="0" />
+                <el-option
+                  v-for="quality in video.qualities"
                   :key="quality.id"
                   :label="`${quality.quality} (${quality.width}x${quality.height})`"
                   :value="quality.id"
                 />
               </el-select>
               <!-- 自動品質切換狀態 -->
-              <div v-if="selectedQuality === 0 && autoQualityInfo.show" class="auto-quality-info">
-                <el-tag 
-                  :type="autoQualityInfo.type" 
+              <div
+                v-if="selectedQuality === 0 && autoQualityInfo.show"
+                class="auto-quality-info"
+              >
+                <el-tag
+                  :type="autoQualityInfo.type"
                   size="small"
                   @click="showAutoQualityDetails = !showAutoQualityDetails"
                 >
@@ -39,11 +46,11 @@
                 </el-tag>
               </div>
             </div>
-            
-            <video 
+
+            <video
               ref="videoElement"
-              controls 
-              width="100%" 
+              controls
+              width="100%"
               height="auto"
               @loadstart="handleVideoLoad"
               @error="handleVideoError"
@@ -68,18 +75,28 @@
               <p>⚠️ 播放錯誤: {{ videoError }}</p>
               <p>影片格式: {{ getVideoFormat() }}</p>
               <div v-if="getVideoFormat() === 'MOV'" class="format-suggestion">
-                <p>💡 <strong>建議</strong>: MOV 格式在網頁瀏覽器中的支援有限</p>
+                <p>
+                  💡 <strong>建議</strong>: MOV 格式在網頁瀏覽器中的支援有限
+                </p>
                 <p>🔧 <strong>解決方案</strong>:</p>
                 <ul>
                   <li>使用 MP4 格式上傳 (建議)</li>
-                  <li>使用 FFmpeg 轉換: <code>ffmpeg -i input.mov output.mp4</code></li>
+                  <li>
+                    使用 FFmpeg 轉換:
+                    <code>ffmpeg -i input.mov output.mp4</code>
+                  </li>
                   <li>或使用線上轉換工具</li>
                 </ul>
               </div>
               <el-button size="small" @click="showDebug = !showDebug">
                 {{ showDebug ? '隱藏' : '顯示' }}調試信息
               </el-button>
-              <el-button size="small" type="primary" @click="downloadVideo" v-if="getVideoURL()">
+              <el-button
+                size="small"
+                type="primary"
+                @click="downloadVideo"
+                v-if="getVideoURL()"
+              >
                 下載影片
               </el-button>
             </div>
@@ -89,7 +106,10 @@
             <p v-if="video.status === 'processing'">影片處理中，請稍後...</p>
             <p v-else-if="video.status === 'failed'">影片處理失敗</p>
             <p v-else>影片暫時無法播放</p>
-            <div class="debug-info" style="margin-top: 16px; font-size: 12px; color: #999;">
+            <div
+              class="debug-info"
+              style="margin-top: 16px; font-size: 12px; color: #999"
+            >
               <p>狀態: {{ video.status }}</p>
               <p>原始 URL: {{ video.original_url || '無' }}</p>
               <p>HLS URL: {{ video.hls_master_url || '無' }}</p>
@@ -100,7 +120,7 @@
         <div class="video-info">
           <h2>{{ video.title }}</h2>
           <p class="video-description">{{ video.description || '暫無描述' }}</p>
-          
+
           <div class="video-meta">
             <div class="meta-item">
               <span class="meta-label">狀態：</span>
@@ -170,7 +190,7 @@ const autoQualityInfo = ref({
   type: 'info' as 'info' | 'warning' | 'success',
   message: '',
   currentQuality: '',
-  reason: ''
+  reason: '',
 })
 const showAutoQualityDetails = ref(false)
 const autoQualityTimer = ref<ReturnType<typeof setInterval> | null>(null)
@@ -187,10 +207,10 @@ const loadVideo = async () => {
     // request.ts 攔截器已經提取了 data，所以 response 就是實際數據
     video.value = response
     console.log('影片數據:', video.value) // 調試用
-    
+
     // 等待 DOM 更新後設置影片源
     await nextTick()
-    
+
     // 確保 videoElement 準備好後再設置影片源
     const setupVideoWithRetry = () => {
       if (videoElement.value) {
@@ -201,7 +221,7 @@ const loadVideo = async () => {
         setTimeout(setupVideoWithRetry, 100)
       }
     }
-    
+
     setupVideoWithRetry()
   } catch (error) {
     console.error('載入影片失敗:', error)
@@ -214,22 +234,22 @@ const loadVideo = async () => {
 // 獲取播放 URL（優先使用轉碼後的 MP4，然後是 HLS，最後是原始 URL）
 const getVideoURL = () => {
   if (!video.value) return null
-  
+
   // 優先使用轉碼後的 MP4（最佳相容性）
   if (video.value.mp4_url) {
     return video.value.mp4_url
   }
-  
+
   // 然後使用 HLS（適合串流）
   if (video.value.hls_master_url) {
     return video.value.hls_master_url
   }
-  
-  // 最後使用原始影片 URL  
+
+  // 最後使用原始影片 URL
   if (video.value.original_url) {
     return video.value.original_url
   }
-  
+
   return null
 }
 
@@ -239,22 +259,22 @@ const setupVideoSource = () => {
     console.log('影片元素或數據未準備好')
     return
   }
-  
+
   const url = getVideoURL()
   if (!url) {
     console.log('無法獲取影片 URL')
     return
   }
-  
+
   console.log('設置影片源:', url)
-  
+
   // 設置影片源
   if (url.includes('.m3u8')) {
     setupHLSPlayer(url)
   } else {
     setupMP4Player(url)
   }
-  
+
   // 如果選擇自動品質，啟動監控
   if (selectedQuality.value === 0) {
     startAutoQualityMonitoring()
@@ -266,46 +286,47 @@ const startAutoQualityMonitoring = () => {
   if (selectedQuality.value !== 0 || !video.value?.qualities) {
     return
   }
-  
+
   console.log('開始自動品質監控')
-  
+
   // 清理之前的定時器
   if (autoQualityTimer.value) {
     clearInterval(autoQualityTimer.value)
   }
-  
+
   // 每3秒檢查一次播放狀態
   autoQualityTimer.value = setInterval(() => {
     if (!videoElement.value || selectedQuality.value !== 0) {
       return
     }
-    
+
     const video = videoElement.value
     const currentTime = video.currentTime
     const buffered = video.buffered
-    
+
     // 檢查緩衝區狀態
     let bufferedEnd = 0
     if (buffered.length > 0) {
       bufferedEnd = buffered.end(buffered.length - 1)
     }
-    
+
     const bufferAhead = bufferedEnd - currentTime
     const isBuffering = video.readyState < 3 // HAVE_FUTURE_DATA
-    
+
     console.log('自動品質檢查:', {
       currentTime,
       bufferedEnd,
       bufferAhead,
       isBuffering,
-      readyState: video.readyState
+      readyState: video.readyState,
     })
-    
+
     // 如果緩衝區不足或正在緩衝，考慮降低品質
     if (bufferAhead < 5 || isBuffering) {
       bufferingCount.value++
-      
-      if (bufferingCount.value >= 2) { // 連續2次檢測到問題
+
+      if (bufferingCount.value >= 2) {
+        // 連續2次檢測到問題
         console.log('檢測到播放問題，考慮降低品質')
         autoSwitchToLowerQuality()
         bufferingCount.value = 0
@@ -322,49 +343,55 @@ const autoSwitchToLowerQuality = () => {
   if (!video.value?.qualities || selectedQuality.value !== 0) {
     return
   }
-  
+
   const qualities = [...video.value.qualities].sort((a, b) => {
     // 按解析度排序（從高到低）
     const aHeight = parseInt(a.quality.replace(/\D/g, ''))
     const bHeight = parseInt(b.quality.replace(/\D/g, ''))
     return bHeight - aHeight
   })
-  
+
   // 找到當前播放的品質
   const currentURL = getVideoURL()
   let currentQualityIndex = -1
-  
+
   for (let i = 0; i < qualities.length; i++) {
     if (qualities[i].file_url === currentURL) {
       currentQualityIndex = i
       break
     }
   }
-  
+
   // 如果找不到當前品質或已經是最低品質，嘗試使用 MP4
-  if (currentQualityIndex === -1 || currentQualityIndex === qualities.length - 1) {
+  if (
+    currentQualityIndex === -1 ||
+    currentQualityIndex === qualities.length - 1
+  ) {
     if (video.value.mp4_url && video.value.mp4_url !== currentURL) {
       console.log('自動切換到 MP4 格式')
       switchToQuality('mp4', '網路較慢，已切換到 MP4 格式')
       return
     }
   }
-  
+
   // 切換到較低品質
   if (currentQualityIndex > 0) {
     const lowerQuality = qualities[currentQualityIndex - 1]
     console.log(`自動切換到較低品質: ${lowerQuality.quality}`)
-    switchToQuality(lowerQuality.id, `網路較慢，已自動切換到 ${lowerQuality.quality}`)
+    switchToQuality(
+      lowerQuality.id,
+      `網路較慢，已自動切換到 ${lowerQuality.quality}`
+    )
   }
 }
 
 // 切換到指定品質
 const switchToQuality = (qualityId: number | string, reason: string) => {
   if (!video.value) return
-  
+
   let targetURL = ''
   let qualityName = ''
-  
+
   if (qualityId === 'mp4') {
     targetURL = video.value.mp4_url || ''
     qualityName = 'MP4'
@@ -375,26 +402,26 @@ const switchToQuality = (qualityId: number | string, reason: string) => {
       qualityName = quality.quality
     }
   }
-  
+
   if (!targetURL) {
     console.log('無法找到目標品質的 URL')
     return
   }
-  
+
   // 更新自動品質信息
   autoQualityInfo.value = {
     show: true,
     type: 'warning',
     message: `已切換到 ${qualityName}`,
     currentQuality: qualityName,
-    reason: reason
+    reason: reason,
   }
-  
+
   // 3秒後隱藏通知
   setTimeout(() => {
     autoQualityInfo.value.show = false
   }, 3000)
-  
+
   // 設置新的影片源
   if (targetURL.includes('.m3u8')) {
     setupHLSPlayer(targetURL)
@@ -406,39 +433,39 @@ const switchToQuality = (qualityId: number | string, reason: string) => {
 // 設置 HLS 播放器
 const setupHLSPlayer = (url: string) => {
   if (!videoElement.value) return
-  
+
   console.log('設置 HLS 播放器:', url)
-  
+
   // 清理之前的 HLS 實例
   if (hls.value) {
     hls.value.destroy()
     hls.value = null
   }
-  
+
   if (Hls.isSupported()) {
     hls.value = new Hls({
       debug: true,
       enableWorker: true,
-      lowLatencyMode: true
+      lowLatencyMode: true,
     })
-    
+
     hls.value.loadSource(url)
     hls.value.attachMedia(videoElement.value)
-    
+
     hls.value.on(Hls.Events.MANIFEST_PARSED, () => {
       console.log('HLS 清單解析完成，開始播放')
       videoElement.value?.play().catch(e => {
         console.error('HLS 自動播放失敗:', e)
       })
     })
-    
+
     hls.value.on(Hls.Events.ERROR, (_event, data) => {
       console.error('HLS 錯誤:', data)
       if (data.fatal) {
         videoError.value = `HLS 播放錯誤: ${data.details}`
       }
     })
-    
+
     // 添加備用的自動播放邏輯
     videoElement.value.oncanplay = () => {
       console.log('HLS 可以播放')
@@ -451,7 +478,7 @@ const setupHLSPlayer = (url: string) => {
   } else {
     console.log('瀏覽器原生支援 HLS')
     videoElement.value.src = url
-    
+
     // 為原生 HLS 添加自動播放
     videoElement.value.oncanplay = () => {
       console.log('原生 HLS 可以播放')
@@ -467,16 +494,16 @@ const setupHLSPlayer = (url: string) => {
 // 設置 MP4 播放器
 const setupMP4Player = (url: string) => {
   if (!videoElement.value) return
-  
+
   console.log('設置 MP4 播放器:', url)
-  
+
   // 清理之前的事件監聽器
   videoElement.value.onloadeddata = null
   videoElement.value.oncanplay = null
   videoElement.value.onloadedmetadata = null
-  
+
   videoElement.value.src = url
-  
+
   // 添加載入完成事件
   videoElement.value.onloadeddata = () => {
     console.log('MP4 載入完成，開始播放')
@@ -484,7 +511,7 @@ const setupMP4Player = (url: string) => {
       console.error('MP4 自動播放失敗:', e)
     })
   }
-  
+
   // 添加可以播放事件（備用）
   videoElement.value.oncanplay = () => {
     console.log('MP4 可以播放')
@@ -494,7 +521,7 @@ const setupMP4Player = (url: string) => {
       })
     }
   }
-  
+
   // 添加元數據載入事件（備用）
   videoElement.value.onloadedmetadata = () => {
     console.log('MP4 元數據載入完成')
@@ -509,31 +536,33 @@ const setupMP4Player = (url: string) => {
 // 切換影片品質
 const changeQuality = () => {
   console.log('切換品質到:', selectedQuality.value)
-  
+
   // 停止自動品質監控
   if (autoQualityTimer.value) {
     clearInterval(autoQualityTimer.value)
     autoQualityTimer.value = null
   }
-  
+
   // 隱藏自動品質信息
   autoQualityInfo.value.show = false
-  
+
   if (!video.value?.qualities || selectedQuality.value === 0) {
     console.log('使用預設品質')
     // 使用預設品質（MP4 或 HLS 主播放列表）
     setupVideoSource()
     return
   }
-  
-  const quality = video.value.qualities.find(q => q.id === selectedQuality.value)
+
+  const quality = video.value.qualities.find(
+    q => q.id === selectedQuality.value
+  )
   if (!quality) {
     console.log('找不到指定品質')
     return
   }
-  
+
   console.log('切換到品質:', quality.quality, 'URL:', quality.file_url)
-  
+
   // 設置新的品質 URL
   if (quality.file_url.includes('.m3u8')) {
     setupHLSPlayer(quality.file_url)
@@ -560,7 +589,7 @@ const handleVideoError = (event: Event) => {
   const videoElement = event.target as HTMLVideoElement
   const error = videoElement.error
   let errorMessage = '未知錯誤'
-  
+
   if (error) {
     switch (error.code) {
       case error.MEDIA_ERR_ABORTED:
@@ -579,7 +608,7 @@ const handleVideoError = (event: Event) => {
         errorMessage = `錯誤代碼: ${error.code}`
     }
   }
-  
+
   videoError.value = errorMessage
   console.error('影片播放錯誤:', errorMessage, error)
 }
@@ -596,7 +625,7 @@ const handleVideoMetadata = (event: Event) => {
   console.log('影片元數據:', {
     duration: videoElement.duration,
     videoWidth: videoElement.videoWidth,
-    videoHeight: videoElement.videoHeight
+    videoHeight: videoElement.videoHeight,
   })
 }
 
@@ -631,19 +660,27 @@ const handleLike = async () => {
 
 const getStatusType = (status: string) => {
   switch (status) {
-    case 'ready': return 'success'
-    case 'processing': return 'warning'
-    case 'failed': return 'danger'
-    default: return 'info'
+    case 'ready':
+      return 'success'
+    case 'processing':
+      return 'warning'
+    case 'failed':
+      return 'danger'
+    default:
+      return 'info'
   }
 }
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'ready': return '已完成'
-    case 'processing': return '處理中'
-    case 'failed': return '失敗'
-    default: return status
+    case 'ready':
+      return '已完成'
+    case 'processing':
+      return '處理中'
+    case 'failed':
+      return '失敗'
+    default:
+      return status
   }
 }
 
@@ -661,7 +698,7 @@ onUnmounted(() => {
     hls.value.destroy()
     hls.value = null
   }
-  
+
   // 清理自動品質監控定時器
   if (autoQualityTimer.value) {
     clearInterval(autoQualityTimer.value)
@@ -854,4 +891,4 @@ onUnmounted(() => {
   color: #666;
   margin-bottom: 24px;
 }
-</style> 
+</style>

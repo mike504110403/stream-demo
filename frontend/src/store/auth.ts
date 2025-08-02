@@ -13,19 +13,22 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 動作
   const setAuth = (authToken: string, userData: User) => {
-    console.log('設置認證信息:', { token: !!authToken, user: userData?.username }) // 調試用
-    
+    console.log('設置認證信息:', {
+      token: !!authToken,
+      user: userData?.username,
+    }) // 調試用
+
     token.value = authToken
     user.value = userData
     localStorage.setItem('token', authToken)
     localStorage.setItem('user', JSON.stringify(userData))
-    
+
     // 驗證存儲是否成功
     const storedToken = localStorage.getItem('token')
     const storedUser = localStorage.getItem('user')
-    console.log('認證信息存儲驗證:', { 
+    console.log('認證信息存儲驗證:', {
       tokenStored: storedToken === authToken,
-      userStored: !!storedUser 
+      userStored: !!storedUser,
     }) // 調試用
   }
 
@@ -44,9 +47,12 @@ export const useAuthStore = defineStore('auth', () => {
   const initAuth = () => {
     const savedToken = localStorage.getItem('token')
     const savedUser = localStorage.getItem('user')
-    
-    console.log('初始化認證狀態:', { savedToken: !!savedToken, savedUser: !!savedUser }) // 調試用
-    
+
+    console.log('初始化認證狀態:', {
+      savedToken: !!savedToken,
+      savedUser: !!savedUser,
+    }) // 調試用
+
     if (savedToken && savedUser) {
       token.value = savedToken
       try {
@@ -74,6 +80,6 @@ export const useAuthStore = defineStore('auth', () => {
     setAuth,
     updateUser,
     logout,
-    initAuth
+    initAuth,
   }
-}) 
+})

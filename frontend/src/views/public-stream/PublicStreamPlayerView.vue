@@ -5,7 +5,12 @@
       <div class="nav-left">
         <el-button @click="goBack" class="back-btn">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 19l-7-7 7-7"
+            ></path>
           </svg>
           返回
         </el-button>
@@ -14,9 +19,7 @@
         <h1 class="stream-title">{{ streamInfo?.title }}</h1>
       </div>
       <div class="nav-right">
-        <div class="viewer-count">
-          👥 {{ streamInfo?.viewer_count || 0 }}
-        </div>
+        <div class="viewer-count">👥 {{ streamInfo?.viewer_count || 0 }}</div>
       </div>
     </div>
 
@@ -46,7 +49,7 @@
       <!-- 左側播放器區域 -->
       <div class="player-section">
         <!-- 播放器容器 -->
-        <div class="player-container" :class="{ 'fullscreen': isFullscreen }">
+        <div class="player-container" :class="{ fullscreen: isFullscreen }">
           <!-- 視頻播放器 -->
           <video
             v-if="streamInfo.status === 'active'"
@@ -62,38 +65,51 @@
 
           <!-- 播放器控制層 -->
           <div class="player-controls" v-show="showControls">
-                         <!-- 頂部控制 -->
-             <div class="top-controls">
-               <div class="live-badge">
-                 <span class="live-dot"></span>
-                 LIVE
-               </div>
-             </div>
+            <!-- 頂部控制 -->
+            <div class="top-controls">
+              <div class="live-badge">
+                <span class="live-dot"></span>
+                LIVE
+              </div>
+            </div>
 
             <!-- 底部控制 -->
             <div class="bottom-controls">
               <div class="control-left">
                 <button @click="toggleMute" class="control-btn">
                   <svg v-if="isMuted" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                    <path
+                      d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"
+                    />
                   </svg>
                   <svg v-else fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                    <path
+                      d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"
+                    />
                   </svg>
                 </button>
                 <div class="volume-slider">
-                  <el-slider v-model="volume" :min="0" :max="100" @change="changeVolume" />
+                  <el-slider
+                    v-model="volume"
+                    :min="0"
+                    :max="100"
+                    @change="changeVolume"
+                  />
                 </div>
               </div>
               <div class="control-right">
                 <button @click="toggleFullscreen" class="control-btn">
                   <svg fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                    <path
+                      d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"
+                    />
                   </svg>
                 </button>
                 <button @click="rotateScreen" class="control-btn">
                   <svg fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-6.25-.77c-.59-.59-1.54-.59-2.12 0L1.75 8.11c-.59.59-.59 1.54 0 2.12l12.02 12.02c.59.59 1.54.59 2.12 0l6.36-6.36c.59-.59.59-1.54 0-2.12L10.23 1.75zm4.6 19.44L2.81 9.17l6.36-6.36 12.02 12.02-6.36 6.36z"/>
+                    <path
+                      d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-6.25-.77c-.59-.59-1.54-.59-2.12 0L1.75 8.11c-.59.59-.59 1.54 0 2.12l12.02 12.02c.59.59 1.54.59 2.12 0l6.36-6.36c.59-.59.59-1.54 0-2.12L10.23 1.75zm4.6 19.44L2.81 9.17l6.36-6.36 12.02 12.02-6.36 6.36z"
+                    />
                   </svg>
                 </button>
               </div>
@@ -110,7 +126,7 @@
               <p>正在載入直播流...</p>
             </div>
           </div>
-          
+
           <!-- 緩衝提示 - 更柔和的顯示 -->
           <div v-if="hlsLoading" class="buffering-indicator">
             <div class="buffering-dots">
@@ -120,35 +136,83 @@
             </div>
             <p class="buffering-text">正在緩衝...</p>
           </div>
-          
+
           <!-- 直播狀態指示器 - 顯示正在載入新內容 -->
-          <div v-if="isLiveStreaming && !hlsLoading && !loadingPlaybackUrl" class="live-status-indicator">
+          <div
+            v-if="isLiveStreaming && !hlsLoading && !loadingPlaybackUrl"
+            class="live-status-indicator"
+          >
             <div class="live-dot"></div>
             <p class="live-text">直播中 - 正在更新內容</p>
           </div>
-          
+
           <!-- 播放按鈕 - 當影片暫停時顯示 -->
-          <div v-if="videoPlayer?.paused && !loadingPlaybackUrl" class="play-button-overlay">
+          <div
+            v-if="videoPlayer?.paused && !loadingPlaybackUrl"
+            class="play-button-overlay"
+          >
             <button @click="playVideo" class="play-button">
-              <svg fill="currentColor" viewBox="0 0 24 24" width="48" height="48">
-                <path d="M8 5v14l11-7z"/>
+              <svg
+                fill="currentColor"
+                viewBox="0 0 24 24"
+                width="48"
+                height="48"
+              >
+                <path d="M8 5v14l11-7z" />
               </svg>
             </button>
             <p class="play-text">點擊播放直播</p>
           </div>
-          
+
           <!-- 調試信息 -->
-          <div v-if="true" class="debug-info" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; font-size: 12px; z-index: 1000;">
+          <div
+            v-if="true"
+            class="debug-info"
+            style="
+              position: absolute;
+              top: 10px;
+              right: 10px;
+              background: rgba(0, 0, 0, 0.8);
+              color: white;
+              padding: 10px;
+              border-radius: 5px;
+              font-size: 12px;
+              z-index: 1000;
+            "
+          >
             <div>loadingPlaybackUrl: {{ loadingPlaybackUrl }}</div>
             <div>hlsLoading: {{ hlsLoading }}</div>
             <div>isLiveStreaming: {{ isLiveStreaming }}</div>
             <div>videoReadyState: {{ videoPlayer?.readyState }}</div>
             <div>videoPaused: {{ videoPlayer?.paused }}</div>
             <div>videoCurrentTime: {{ videoPlayer?.currentTime }}</div>
-            <button @click="hlsLoading = !hlsLoading" style="margin-top: 5px; padding: 5px; background: #3b82f6; color: white; border: none; border-radius: 3px; cursor: pointer;">
+            <button
+              @click="hlsLoading = !hlsLoading"
+              style="
+                margin-top: 5px;
+                padding: 5px;
+                background: #3b82f6;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                cursor: pointer;
+              "
+            >
               切換 Loading
             </button>
-            <button @click="isLiveStreaming = !isLiveStreaming" style="margin-top: 5px; margin-left: 5px; padding: 5px; background: #ef4444; color: white; border: none; border-radius: 3px; cursor: pointer;">
+            <button
+              @click="isLiveStreaming = !isLiveStreaming"
+              style="
+                margin-top: 5px;
+                margin-left: 5px;
+                padding: 5px;
+                background: #ef4444;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                cursor: pointer;
+              "
+            >
               切換 Live
             </button>
           </div>
@@ -160,17 +224,23 @@
             <h3>{{ streamInfo.title }}</h3>
             <p>{{ streamInfo.description }}</p>
             <div class="stream-meta">
-              <span class="category">{{ getCategoryLabel(streamInfo.category) }}</span>
-              <span class="update-time">{{ formatTime(streamInfo.last_update) }}</span>
+              <span class="category">{{
+                getCategoryLabel(streamInfo.category)
+              }}</span>
+              <span class="update-time">{{
+                formatTime(streamInfo.last_update)
+              }}</span>
             </div>
           </div>
         </div>
       </div>
 
-            <!-- 聊天室浮動按鈕 -->
+      <!-- 聊天室浮動按鈕 -->
       <div class="chat-toggle" @click="toggleChat">
         <svg fill="currentColor" viewBox="0 0 24 24">
-          <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+          <path
+            d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"
+          />
         </svg>
         <span class="chat-badge" v-if="unreadCount > 0">{{ unreadCount }}</span>
       </div>
@@ -180,17 +250,25 @@
         <div class="chat-header">
           <h3>聊天室</h3>
           <div class="chat-controls">
-            <span class="online-count">在線 {{ streamInfo.viewer_count || 0 }}</span>
+            <span class="online-count"
+              >在線 {{ streamInfo.viewer_count || 0 }}</span
+            >
             <button @click="toggleChat" class="close-btn">
               <svg fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                <path
+                  d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                />
               </svg>
             </button>
           </div>
         </div>
-        
+
         <div class="chat-messages" ref="chatMessagesRef">
-          <div v-for="(message, index) in chatMessages" :key="index" class="message">
+          <div
+            v-for="(message, index) in chatMessages"
+            :key="index"
+            class="message"
+          >
             <div class="message-avatar">
               <span>{{ message.username.charAt(0) }}</span>
             </div>
@@ -212,7 +290,10 @@
             :disabled="!isLoggedIn"
           >
             <template #append>
-              <el-button @click="sendMessage" :disabled="!newMessage.trim() || !isLoggedIn">
+              <el-button
+                @click="sendMessage"
+                :disabled="!newMessage.trim() || !isLoggedIn"
+              >
                 發送
               </el-button>
             </template>
@@ -280,8 +361,6 @@
   margin: 0;
 }
 
-
-
 .viewer-count {
   color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
@@ -342,11 +421,13 @@
 .player-controls {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, 
-    rgba(0, 0, 0, 0.7) 0%, 
-    transparent 20%, 
-    transparent 80%, 
-    rgba(0, 0, 0, 0.7) 100%);
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.7) 0%,
+    transparent 20%,
+    transparent 80%,
+    rgba(0, 0, 0, 0.7) 100%
+  );
   opacity: 0;
   transition: opacity 0.3s ease;
   display: flex;
@@ -657,7 +738,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -725,7 +807,9 @@
 }
 
 @keyframes buffering-pulse {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     transform: scale(0.8);
     opacity: 0.5;
   }
@@ -767,7 +851,8 @@
 }
 
 @keyframes live-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
@@ -824,45 +909,45 @@
   .main-content {
     flex-direction: column;
   }
-  
+
   .player-section {
     padding: 12px;
   }
-  
+
   .top-nav {
     padding: 12px 16px;
   }
-  
+
   .nav-left,
   .nav-right {
     width: 80px;
   }
-  
+
   .stream-info {
     padding: 0 10px;
   }
-  
+
   .stream-title {
     font-size: 1rem;
   }
-  
+
   .chat-panel {
     width: calc(100vw - 40px);
     height: 400px;
     right: -100vw;
   }
-  
+
   .chat-panel.chat-open {
     right: 20px;
   }
-  
+
   .chat-toggle {
     bottom: 16px;
     right: 16px;
     width: 48px;
     height: 48px;
   }
-  
+
   .chat-toggle svg {
     width: 20px;
     height: 20px;
@@ -882,7 +967,7 @@
   .player-section {
     padding: 24px;
   }
-  
+
   .stream-card {
     padding: 20px;
   }
@@ -893,15 +978,15 @@
   .top-nav {
     padding: 8px 16px;
   }
-  
+
   .stream-title {
     font-size: 0.9rem;
   }
-  
+
   .player-section {
     padding: 8px;
   }
-  
+
   .stream-card {
     padding: 12px;
   }
@@ -1063,7 +1148,12 @@
 .player-decoration {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1), rgba(236, 72, 153, 0.1));
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.1),
+    rgba(147, 51, 234, 0.1),
+    rgba(236, 72, 153, 0.1)
+  );
   border-radius: 16px;
   pointer-events: none;
 }
@@ -1092,9 +1182,15 @@
   border-radius: 50%;
 }
 
-.traffic-light.red { background: #ef4444; }
-.traffic-light.yellow { background: #f59e0b; }
-.traffic-light.green { background: #10b981; }
+.traffic-light.red {
+  background: #ef4444;
+}
+.traffic-light.yellow {
+  background: #f59e0b;
+}
+.traffic-light.green {
+  background: #10b981;
+}
 
 .stream-title {
   color: white;
@@ -1274,7 +1370,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -1296,19 +1393,19 @@
   .player-container {
     max-width: 95vw;
   }
-  
+
   .page-title {
     font-size: 1.5rem;
   }
-  
+
   .public-stream-player {
     padding: 16px;
   }
-  
+
   .control-info {
     gap: 8px;
   }
-  
+
   .info-item {
     font-size: 10px;
   }
@@ -1318,15 +1415,15 @@
   .player-container {
     max-width: 100vw;
   }
-  
+
   .page-title {
     font-size: 1.3rem;
   }
-  
+
   .traffic-lights {
     gap: 8px;
   }
-  
+
   .traffic-light {
     width: 10px;
     height: 10px;
@@ -1364,11 +1461,13 @@ const volume = ref(50)
 const showControls = ref(true)
 
 // 聊天室
-const chatMessages = ref<Array<{
-  username: string
-  text: string
-  timestamp: string
-}>>([])
+const chatMessages = ref<
+  Array<{
+    username: string
+    text: string
+    timestamp: string
+  }>
+>([])
 const newMessage = ref('')
 const chatMessagesRef = ref<HTMLElement | null>(null)
 const isLoggedIn = ref(true) // 簡化，實際應該從 auth store 獲取
@@ -1382,7 +1481,7 @@ const categoryLabels: Record<string, string> = {
   test: '測試',
   space: '太空',
   news: '新聞',
-  sports: '體育'
+  sports: '體育',
 }
 
 // 方法
@@ -1395,20 +1494,20 @@ const loadStreamInfo = async () => {
 
   loading.value = true
   error.value = ''
-  
+
   try {
     const response = await publicStreamApi.getStreamInfo(streamName)
-    
+
     // 添加防護性檢查
     if (!response) {
       console.error('API 響應為空')
       error.value = '載入流資訊失敗：API 響應為空'
       return
     }
-    
+
     console.log('流資訊載入成功:', response)
     streamInfo.value = response
-    
+
     // 如果流是活躍的，獲取播放 URL
     if (response.status === 'active') {
       console.log('流狀態為 active，開始載入播放 URL')
@@ -1429,24 +1528,24 @@ const loadStreamInfo = async () => {
 
 const loadPlaybackUrl = async (streamName: string, mode: 'hls' = 'hls') => {
   loadingPlaybackUrl.value = true
-  
+
   try {
     // 獲取播放 URL
     if (!streamURLs.value) {
       const response = await publicStreamApi.getStreamURLs(streamName)
       streamURLs.value = {
-        hls: response.urls.hls || ''
+        hls: response.urls.hls || '',
       }
     }
-    
+
     // 根據模式選擇 URL
     if (mode === 'hls') {
       playbackUrl.value = streamURLs.value!.hls
       console.log('HLS 播放 URL:', playbackUrl.value)
-      
+
       // 等待 videoPlayer 元素準備好
       await nextTick()
-      
+
       // 使用輪詢等待 videoPlayer 元素
       let attempts = 0
       while (!videoPlayer.value && attempts < 20) {
@@ -1454,20 +1553,20 @@ const loadPlaybackUrl = async (streamName: string, mode: 'hls' = 'hls') => {
         attempts++
         console.log(`等待 videoPlayer 元素... 嘗試 ${attempts}/20`)
       }
-      
+
       if (!videoPlayer.value) {
         console.error('videoPlayer 元素未準備好')
         error.value = '播放器元素未準備好，請重新整理頁面'
         return
       }
-      
+
       console.log('videoPlayer 元素已準備好:', !!videoPlayer.value)
       console.log('HLS.js 支援:', Hls.isSupported())
-      
+
       // 使用 HLS.js 載入流
       if (Hls.isSupported()) {
         console.log('使用 HLS.js 載入流')
-        
+
         // 清理之前的播放器
         if (hls.value) {
           hls.value.destroy()
@@ -1477,15 +1576,15 @@ const loadPlaybackUrl = async (streamName: string, mode: 'hls' = 'hls') => {
           flvPlayer.value.destroy()
           flvPlayer.value = null
         }
-        
+
         // 移除禁止播放標記
         if (videoPlayer.value) {
           videoPlayer.value.removeAttribute('data-no-play')
         }
-        
+
         // 顯示 HLS 載入狀態
         hlsLoading.value = true
-        
+
         // 創建新的 HLS 實例
         hls.value = new Hls({
           debug: true, // 開啟調試模式
@@ -1511,32 +1610,38 @@ const loadPlaybackUrl = async (streamName: string, mode: 'hls' = 'hls') => {
           manifestLoadingRetryDelay: 1000, // 播放列表載入重試延遲 1 秒
           manifestLoadingMaxRetryTimeout: 64000, // 播放列表載入最大重試超時 64 秒
         })
-        
+
         // 立即顯示載入狀態
         hlsLoading.value = true
-        
-                // 載入流
+
+        // 載入流
         hls.value.loadSource(playbackUrl.value)
         hls.value.attachMedia(videoPlayer.value)
-        
+
         // 監聽事件
         hls.value.on(Hls.Events.MANIFEST_PARSED, () => {
           console.log('HLS 流載入成功')
           // 不要立即隱藏載入狀態，等待片段載入
-          
+
           // 等待足夠的緩衝後再播放
           setTimeout(() => {
-            if (videoPlayer.value && !videoPlayer.value.hasAttribute('data-no-play')) {
+            if (
+              videoPlayer.value &&
+              !videoPlayer.value.hasAttribute('data-no-play')
+            ) {
               console.log('嘗試 HLS 自動播放')
               videoPlayer.value.play().catch(err => {
                 console.error('自動播放失敗:', err)
               })
             } else {
-              console.log('跳過 HLS 自動播放，禁止播放:', videoPlayer.value?.hasAttribute('data-no-play'))
+              console.log(
+                '跳過 HLS 自動播放，禁止播放:',
+                videoPlayer.value?.hasAttribute('data-no-play')
+              )
             }
           }, 4000) // 等待 4 秒確保有足夠緩衝
         })
-        
+
         hls.value.on(Hls.Events.ERROR, (_event, data) => {
           console.error('HLS 錯誤:', data)
           hlsLoading.value = false // 隱藏載入狀態
@@ -1544,57 +1649,55 @@ const loadPlaybackUrl = async (streamName: string, mode: 'hls' = 'hls') => {
             error.value = '播放器載入失敗，請重新整理頁面'
           }
         })
-        
+
         hls.value.on(Hls.Events.MEDIA_ATTACHED, () => {
           console.log('媒體元素已附加')
         })
-        
+
         // 監聽片段載入狀態
         hls.value.on(Hls.Events.BUFFER_APPENDING, () => {
           console.log('正在追加緩衝')
           hlsLoading.value = true
         })
-        
+
         hls.value.on(Hls.Events.BUFFER_APPENDED, () => {
           console.log('緩衝追加完成')
           hlsLoading.value = false
         })
-        
 
-        
         // 監聽播放列表更新
         hls.value.on(Hls.Events.MANIFEST_LOADING, () => {
           console.log('正在載入播放列表')
           hlsLoading.value = true
         })
-        
+
         // 添加定時器監控流狀態
         let lastFragmentTime = Date.now()
         let fragmentCount = 0
         let manifestCount = 0
         let isBuffering = false
-        
+
         // 監聽播放列表載入
         hls.value.on(Hls.Events.MANIFEST_LOADED, () => {
           manifestCount++
           console.log('m3u8 載入完成，計數:', manifestCount)
           // 不要立即隱藏 loading，等待片段載入
         })
-        
+
         // 監聽片段載入開始
         hls.value.on(Hls.Events.FRAG_LOADING, () => {
           console.log('正在載入片段')
           isBuffering = true
           hlsLoading.value = true
         })
-        
+
         // 監聽片段載入完成
         hls.value.on(Hls.Events.FRAG_LOADED, () => {
           console.log('片段載入完成')
           lastFragmentTime = Date.now()
           fragmentCount++
           console.log('片段載入完成，計數:', fragmentCount)
-          
+
           // 延遲隱藏 loading，確保有足夠緩衝
           setTimeout(() => {
             if (!isBuffering) {
@@ -1602,66 +1705,69 @@ const loadPlaybackUrl = async (streamName: string, mode: 'hls' = 'hls') => {
             }
           }, 2000) // 增加到 2 秒，確保有足夠緩衝
         })
-        
+
         // 監控流是否卡住
         streamMonitorInterval.value = window.setInterval(() => {
           if (videoPlayer.value && hls.value) {
             const currentTime = Date.now()
             const timeSinceLastFragment = currentTime - lastFragmentTime
-            
+
             // 如果超過 5 秒沒有新片段，但一直在載入 m3u8，顯示 loading
             if (timeSinceLastFragment > 5000 && manifestCount > fragmentCount) {
               console.log('有 m3u8 但沒有 .ts 片段，顯示載入狀態')
               hlsLoading.value = true
             }
-            
+
             // 如果超過 8 秒沒有新片段，且影片正在等待，顯示 loading
-            if (timeSinceLastFragment > 8000 && videoPlayer.value.readyState < 3) {
+            if (
+              timeSinceLastFragment > 8000 &&
+              videoPlayer.value.readyState < 3
+            ) {
               console.log('流可能卡住，顯示載入狀態')
               hlsLoading.value = true
             }
-            
+
             // 檢查是否正在直播（有持續的片段載入）
             if (fragmentCount > 0 && timeSinceLastFragment < 10000) {
               isLiveStreaming.value = true
             } else {
               isLiveStreaming.value = false
             }
-            
+
             // 重置緩衝狀態
             isBuffering = false
           }
         }, 2000) // 每 2 秒檢查一次
-        
+
         // 監聽影片播放狀態
         if (videoPlayer.value) {
           videoPlayer.value.addEventListener('waiting', () => {
             console.log('影片等待中，顯示載入狀態')
             hlsLoading.value = true
           })
-          
+
           videoPlayer.value.addEventListener('canplay', () => {
             console.log('影片可以播放，隱藏載入狀態')
             setTimeout(() => {
               hlsLoading.value = false
             }, 1000)
           })
-          
+
           videoPlayer.value.addEventListener('stalled', () => {
             console.log('影片停滯，顯示載入狀態')
             hlsLoading.value = true
           })
-          
+
           videoPlayer.value.addEventListener('suspend', () => {
             console.log('影片暫停載入，顯示載入狀態')
             hlsLoading.value = true
           })
-          
+
           videoPlayer.value.addEventListener('loadstart', () => {
             console.log('影片開始載入')
             hlsLoading.value = true
           })
-          
+
           videoPlayer.value.addEventListener('loadeddata', () => {
             console.log('影片數據載入完成')
             setTimeout(() => {
@@ -1669,26 +1775,27 @@ const loadPlaybackUrl = async (streamName: string, mode: 'hls' = 'hls') => {
             }, 1000)
           })
         }
-        
+
         // 監聽播放狀態
         if (videoPlayer.value) {
           videoPlayer.value.addEventListener('waiting', () => {
             console.log('影片等待數據，顯示載入狀態')
             hlsLoading.value = true
           })
-          
+
           videoPlayer.value.addEventListener('canplay', () => {
             console.log('影片可以播放，隱藏載入狀態')
             hlsLoading.value = false
           })
-          
+
           videoPlayer.value.addEventListener('stalled', () => {
             console.log('影片停滯，顯示載入狀態')
             hlsLoading.value = true
           })
         }
-        
-      } else if (videoPlayer.value.canPlayType('application/vnd.apple.mpegurl')) {
+      } else if (
+        videoPlayer.value.canPlayType('application/vnd.apple.mpegurl')
+      ) {
         console.log('使用瀏覽器原生 HLS 支援')
         // Safari 原生支援 HLS
         videoPlayer.value.src = playbackUrl.value
@@ -1699,14 +1806,16 @@ const loadPlaybackUrl = async (streamName: string, mode: 'hls' = 'hls') => {
               console.error('自動播放失敗:', err)
             })
           } else {
-            console.log('跳過 Safari 原生 HLS 自動播放，禁止播放:', videoPlayer.value?.hasAttribute('data-no-play'))
+            console.log(
+              '跳過 Safari 原生 HLS 自動播放，禁止播放:',
+              videoPlayer.value?.hasAttribute('data-no-play')
+            )
           }
         })
       } else {
         console.error('瀏覽器不支援 HLS')
         error.value = '您的瀏覽器不支援 HLS 播放'
       }
-
     }
   } catch (err) {
     console.error('獲取播放 URL 失敗:', err)
@@ -1794,7 +1903,9 @@ const handleFullscreenChange = () => {
 const rotateScreen = () => {
   if (videoPlayer.value) {
     const currentRotation = videoPlayer.value.style.transform
-    const newRotation = currentRotation.includes('rotate(90deg)') ? '' : 'rotate(90deg)'
+    const newRotation = currentRotation.includes('rotate(90deg)')
+      ? ''
+      : 'rotate(90deg)'
     videoPlayer.value.style.transform = newRotation
   }
 }
@@ -1812,10 +1923,10 @@ const sendMessage = () => {
     chatMessages.value.push({
       username: '用戶',
       text: newMessage.value,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     })
     newMessage.value = ''
-    
+
     // 滾動到底部
     nextTick(() => {
       if (chatMessagesRef.value) {
@@ -1825,14 +1936,10 @@ const sendMessage = () => {
   }
 }
 
-
-
-
-
 // 生命週期
 onMounted(async () => {
   await loadStreamInfo()
-  
+
   // 添加全螢幕事件監聽器
   document.addEventListener('fullscreenchange', handleFullscreenChange)
   document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
@@ -1846,13 +1953,13 @@ onUnmounted(() => {
   document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
   document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
   document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
-  
+
   // 清理 HLS 實例
   if (hls.value) {
     hls.value.destroy()
     hls.value = null
   }
-  
+
   // 清理定時器
   if (streamMonitorInterval.value) {
     clearInterval(streamMonitorInterval.value)
@@ -1866,13 +1973,13 @@ onUnmounted(() => {
     videoPlayer.value.pause()
     videoPlayer.value.src = ''
   }
-  
+
   // 清理 HLS 實例
   if (hls.value) {
     hls.value.destroy()
     hls.value = null
   }
-  
+
   // 清理 FLV 實例
   if (flvPlayer.value) {
     flvPlayer.value.destroy()
@@ -1893,7 +2000,8 @@ video::-webkit-media-controls-panel {
 
 /* 自定義動畫 */
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -1945,4 +2053,4 @@ video::-webkit-media-controls-panel {
 .transform:active {
   transform: scale(0.95);
 }
-</style> 
+</style>

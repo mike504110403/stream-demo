@@ -6,9 +6,21 @@
           <!-- 標題欄 -->
           <div class="modal-header">
             <div class="flex items-center gap-3">
-              <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              <div
+                class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center"
+              >
+                <svg
+                  class="w-4 h-4 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
                 </svg>
               </div>
               <h3 class="modal-title">{{ title }}</h3>
@@ -19,8 +31,18 @@
               type="button"
               aria-label="關閉"
             >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              <svg
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                ></path>
               </svg>
             </button>
           </div>
@@ -55,7 +77,7 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   title: '對話框',
-  closeOnOverlay: true
+  closeOnOverlay: true,
 })
 
 const emit = defineEmits<Emits>()
@@ -78,15 +100,19 @@ const handleEscKey = (event: KeyboardEvent) => {
 }
 
 // 監聽 show 屬性變化，添加/移除 ESC 鍵監聽
-watch(() => props.show, (newValue) => {
-  if (newValue) {
-    document.addEventListener('keydown', handleEscKey)
-    document.body.style.overflow = 'hidden'
-  } else {
-    document.removeEventListener('keydown', handleEscKey)
-    document.body.style.overflow = ''
-  }
-}, { immediate: true })
+watch(
+  () => props.show,
+  newValue => {
+    if (newValue) {
+      document.addEventListener('keydown', handleEscKey)
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.removeEventListener('keydown', handleEscKey)
+      document.body.style.overflow = ''
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>
@@ -96,7 +122,11 @@ watch(() => props.show, (newValue) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(59, 130, 246, 0.3));
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.8),
+    rgba(59, 130, 246, 0.3)
+  );
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
@@ -112,7 +142,7 @@ watch(() => props.show, (newValue) => {
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 1.5rem;
-  box-shadow: 
+  box-shadow:
     0 25px 50px -12px rgba(0, 0, 0, 0.25),
     0 0 0 1px rgba(255, 255, 255, 0.1);
   max-width: 90vw;
@@ -127,7 +157,7 @@ watch(() => props.show, (newValue) => {
 
 .modal-container:hover {
   transform: translateY(-2px);
-  box-shadow: 
+  box-shadow:
     0 32px 64px -12px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(255, 255, 255, 0.15);
 }
@@ -137,7 +167,11 @@ watch(() => props.show, (newValue) => {
   align-items: center;
   justify-content: space-between;
   padding: 1.5rem 2rem;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.1),
+    rgba(139, 92, 246, 0.1)
+  );
   border-bottom: 1px solid rgba(59, 130, 246, 0.2);
 }
 
@@ -187,7 +221,11 @@ watch(() => props.show, (newValue) => {
   justify-content: flex-end;
   gap: 1rem;
   padding: 1.5rem 2rem;
-  background: linear-gradient(135deg, rgba(249, 250, 251, 0.8), rgba(243, 244, 246, 0.8));
+  background: linear-gradient(
+    135deg,
+    rgba(249, 250, 251, 0.8),
+    rgba(243, 244, 246, 0.8)
+  );
   border-top: 1px solid rgba(59, 130, 246, 0.1);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -256,7 +294,11 @@ watch(() => props.show, (newValue) => {
   }
 
   .modal-header {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+    background: linear-gradient(
+      135deg,
+      rgba(59, 130, 246, 0.2),
+      rgba(139, 92, 246, 0.2)
+    );
     border-bottom-color: rgba(59, 130, 246, 0.3);
   }
 
@@ -265,7 +307,11 @@ watch(() => props.show, (newValue) => {
   }
 
   .modal-footer {
-    background: linear-gradient(135deg, rgba(31, 41, 55, 0.8), rgba(55, 65, 81, 0.8));
+    background: linear-gradient(
+      135deg,
+      rgba(31, 41, 55, 0.8),
+      rgba(55, 65, 81, 0.8)
+    );
     border-top-color: rgba(59, 130, 246, 0.2);
   }
 }

@@ -1,9 +1,5 @@
 import request from '@/utils/request'
-import type { 
-  Live, 
-  CreateLiveRequest, 
-  UpdateLiveRequest 
-} from '@/types'
+import type { Live, CreateLiveRequest, UpdateLiveRequest } from '@/types'
 
 // 獲取直播列表
 export const getLives = (params?: { offset?: number; limit?: number }) => {

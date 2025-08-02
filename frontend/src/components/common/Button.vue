@@ -18,7 +18,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   text: 'Button',
   type: 'primary',
-  disabled: false
+  disabled: false,
 })
 
 const emit = defineEmits<{

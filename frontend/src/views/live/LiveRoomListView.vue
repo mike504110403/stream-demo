@@ -18,14 +18,16 @@
           創建第一個直播間
         </el-button>
       </div>
-      
+
       <el-row :gutter="20" v-else>
         <el-col :span="8" v-for="room in rooms" :key="room.id">
           <el-card class="room-card" shadow="hover">
             <div class="room-info">
               <h3 class="room-title">{{ room.title }}</h3>
-              <p class="room-description">{{ room.description || '暫無描述' }}</p>
-              
+              <p class="room-description">
+                {{ room.description || '暫無描述' }}
+              </p>
+
               <div class="room-meta">
                 <div class="meta-item">
                   <span class="meta-label">狀態：</span>
@@ -47,35 +49,36 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="room-actions">
-              <el-button 
-                v-if="room.status === 'cancelled'" 
-                size="small" 
-                type="info" 
+              <el-button
+                v-if="room.status === 'cancelled'"
+                size="small"
+                type="info"
                 @click="viewRoom(room.id)"
               >
                 查看回放
               </el-button>
-              <el-button 
-                v-else 
-                size="small" 
-                @click="viewRoom(room.id)"
-              >
+              <el-button v-else size="small" @click="viewRoom(room.id)">
                 進入直播間
               </el-button>
-              <el-button 
-                v-if="room.creator_id === currentUserId && (room.status === 'created' || room.status === 'ended')" 
-                size="small" 
-                type="success" 
+              <el-button
+                v-if="
+                  room.creator_id === currentUserId &&
+                  (room.status === 'created' || room.status === 'ended')
+                "
+                size="small"
+                type="success"
                 @click="startLive(room.id)"
               >
                 {{ room.status === 'ended' ? '重新開始直播' : '開始直播' }}
               </el-button>
-              <el-button 
-                v-if="room.creator_id === currentUserId && room.status === 'live'" 
-                size="small" 
-                type="warning" 
+              <el-button
+                v-if="
+                  room.creator_id === currentUserId && room.status === 'live'
+                "
+                size="small"
+                type="warning"
                 @click="endLive(room.id)"
               >
                 結束直播
@@ -92,7 +95,11 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getAllRooms, startLive as startLiveAPI, endLive as endLiveAPI } from '@/api/live-room'
+import {
+  getAllRooms,
+  startLive as startLiveAPI,
+  endLive as endLiveAPI,
+} from '@/api/live-room'
 import { useAuthStore } from '@/store/auth'
 import type { LiveRoomInfo } from '@/types'
 
@@ -149,21 +156,31 @@ const endLive = async (roomId: string) => {
 
 const getStatusType = (status: string) => {
   switch (status) {
-    case 'created': return 'info'
-    case 'live': return 'success'
-    case 'ended': return 'danger'
-    case 'cancelled': return 'warning'
-    default: return 'info'
+    case 'created':
+      return 'info'
+    case 'live':
+      return 'success'
+    case 'ended':
+      return 'danger'
+    case 'cancelled':
+      return 'warning'
+    default:
+      return 'info'
   }
 }
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'created': return '已創建'
-    case 'live': return '直播中'
-    case 'ended': return '已結束'
-    case 'cancelled': return '已取消'
-    default: return status
+    case 'created':
+      return '已創建'
+    case 'live':
+      return '直播中'
+    case 'ended':
+      return '已結束'
+    case 'cancelled':
+      return '已取消'
+    default:
+      return status
   }
 }
 
@@ -261,4 +278,4 @@ onMounted(() => {
   gap: 10px;
   flex-wrap: wrap;
 }
-</style> 
+</style>

@@ -48,5 +48,5 @@ export const closeRoom = (roomId: string) => {
 
 // 獲取用戶在房間中的角色
 export const getUserRole = (roomId: string) => {
-  return request.get<{role: string}>(`/live-rooms/${roomId}/role`)
-} 
+  return request.get<{ role: string }>(`/live-rooms/${roomId}/role`)
+}

@@ -19,9 +19,7 @@
           </el-icon>
           <h3>直播載入失敗</h3>
           <p>{{ error }}</p>
-          <el-button type="primary" @click="retryLoad">
-            重新載入
-          </el-button>
+          <el-button type="primary" @click="retryLoad"> 重新載入 </el-button>
         </div>
       </div>
 
@@ -73,11 +71,7 @@
             @click="retryLoad"
             :disabled="loading"
           />
-          <el-button
-            icon="FullScreen"
-            circle
-            @click="toggleFullscreen"
-          />
+          <el-button icon="FullScreen" circle @click="toggleFullscreen" />
         </div>
       </div>
     </div>
@@ -114,7 +108,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  autoPlay: true
+  autoPlay: true,
 })
 
 // 響應式數據
@@ -177,7 +171,7 @@ const setupHLSPlayer = () => {
       nudgeMaxRetry: 5,
       maxFragLookUpTolerance: 0.25,
       liveSyncDurationCount: 3,
-      liveMaxLatencyDurationCount: 10
+      liveMaxLatencyDurationCount: 10,
     })
 
     hls.value.loadSource(props.streamUrl)
@@ -187,7 +181,7 @@ const setupHLSPlayer = () => {
       console.log('HLS 清單解析完成')
       loading.value = false
       isLive.value = true
-      
+
       if (props.autoPlay) {
         videoElement.value?.play().catch(e => {
           console.error('自動播放失敗:', e)
@@ -204,7 +198,6 @@ const setupHLSPlayer = () => {
       // 直播流正常載入
       isLive.value = true
     })
-
   } else {
     // 瀏覽器原生支援 HLS
     console.log('使用瀏覽器原生 HLS 支援')
@@ -258,9 +251,9 @@ const handleCanPlay = () => {
 const handleError = (event: Event) => {
   const video = event.target as HTMLVideoElement
   const videoError = video.error
-  
+
   console.error('影片播放錯誤:', videoError)
-  
+
   if (videoError) {
     switch (videoError.code) {
       case videoError.MEDIA_ERR_ABORTED:
@@ -281,7 +274,7 @@ const handleError = (event: Event) => {
   } else {
     error.value = '直播流載入失敗'
   }
-  
+
   loading.value = false
 }
 
@@ -364,11 +357,11 @@ const stopTimeUpdate = () => {
 // 工具函數
 const formatTime = (seconds: number): string => {
   if (!seconds || isNaN(seconds)) return '00:00'
-  
+
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
   const secs = Math.floor(seconds % 60)
-  
+
   if (hours > 0) {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
@@ -388,11 +381,14 @@ const formatStartTime = (dateString: string): string => {
 }
 
 // 監聽串流 URL 變化
-watch(() => props.streamUrl, (newUrl) => {
-  if (newUrl) {
-    initPlayer()
+watch(
+  () => props.streamUrl,
+  newUrl => {
+    if (newUrl) {
+      initPlayer()
+    }
   }
-})
+)
 
 // 生命週期
 onMounted(() => {
@@ -407,9 +403,9 @@ onUnmounted(() => {
     hls.value.destroy()
     hls.value = null
   }
-  
+
   stopTimeUpdate()
-  
+
   if (retryTimer.value) {
     clearTimeout(retryTimer.value)
   }
@@ -560,13 +556,22 @@ onUnmounted(() => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* 響應式設計 */
@@ -574,23 +579,23 @@ onUnmounted(() => {
   .player-container {
     aspect-ratio: 16 / 10;
   }
-  
+
   .live-indicator {
     top: 8px;
     left: 8px;
     padding: 6px 10px;
     font-size: 12px;
   }
-  
+
   .player-controls {
     padding: 16px 12px 12px;
   }
-  
+
   .control-left,
   .control-right {
     gap: 8px;
   }
-  
+
   .time-display {
     font-size: 12px;
   }

@@ -7,7 +7,7 @@
         <span v-if="latency" class="latency">延遲: {{ latency }}ms</span>
       </div>
     </div>
-    
+
     <div class="video-container">
       <video
         ref="videoRef"
@@ -22,19 +22,19 @@
         @waiting="onWaiting"
         @error="onError"
       ></video>
-      
+
       <div v-if="loading" class="loading-overlay">
         <div class="loading-spinner"></div>
         <p>正在載入直播流...</p>
       </div>
-      
+
       <div v-if="error" class="error-overlay">
         <div class="error-icon">⚠️</div>
         <p>{{ error }}</p>
         <button @click="retry" class="retry-btn">重試</button>
       </div>
     </div>
-    
+
     <div class="player-info">
       <div class="info-row">
         <span>解析度:</span>
@@ -77,7 +77,7 @@ interface VideoInfo {
 const props = withDefaults(defineProps<Props>(), {
   title: '直播',
   autoPlay: true,
-  muted: true
+  muted: true,
 })
 
 const videoRef = ref<HTMLVideoElement>()
@@ -90,16 +90,21 @@ const videoInfo = ref<VideoInfo>({
   resolution: '未知',
   bitrate: '未知',
   fps: '未知',
-  buffered: '0s'
+  buffered: '0s',
 })
 
 const statusText = computed(() => {
   switch (status.value) {
-    case 'idle': return '待機'
-    case 'loading': return '載入中'
-    case 'playing': return '播放中'
-    case 'error': return '錯誤'
-    default: return '未知'
+    case 'idle':
+      return '待機'
+    case 'loading':
+      return '載入中'
+    case 'playing':
+      return '播放中'
+    case 'error':
+      return '錯誤'
+    default:
+      return '未知'
   }
 })
 
@@ -109,23 +114,23 @@ let infoTimer: number | null = null
 // 初始化 HLS
 const initHLS = () => {
   if (!videoRef.value) return
-  
+
   // 檢查瀏覽器支援
   if (!Hls.isSupported()) {
     error.value = '瀏覽器不支援 HLS'
     status.value = 'error'
     return
   }
-  
+
   // 創建 HLS 實例
   hls.value = new Hls({
     // LL-HLS 配置
     lowLatencyMode: true,
-    liveSyncDurationCount: 1,     // 1個片段同步
+    liveSyncDurationCount: 1, // 1個片段同步
     liveMaxLatencyDurationCount: 3, // 最大3個片段延遲
     liveDurationInfinity: true,
     enableSoftwareAES: true,
-    
+
     // LL-HLS 特定配置
     enableDateRangeMetadataCues: true,
     enableEmsgMetadataCues: true,
@@ -133,47 +138,47 @@ const initHLS = () => {
     enableWebVTT: true,
     enableIMSC1: true,
     enableCEA708Captions: true,
-    
+
     // 性能優化
     maxBufferLength: 3,
     maxMaxBufferLength: 5,
     maxBufferSize: 2 * 1000 * 1000, // 2MB
     maxBufferHole: 0.1,
-    
+
     // 錯誤處理
     maxFragLookUpTolerance: 0.25,
     maxStarvationDelay: 4,
     maxLoadingDelay: 4,
-    
+
     // 自適應
     abrEwmaFastLive: 3,
     abrEwmaSlowLive: 9,
     abrEwmaFastVoD: 3,
     abrEwmaSlowVoD: 9,
-    
+
     // 重試配置
     // maxRetries: 3,  // 暫時註釋掉不支援的屬性
     // retryDelayMs: 1000,  // 暫時註釋掉不支援的屬性
     // maxRetryDelayMs: 5000,  // 暫時註釋掉不支援的屬性
   })
-  
+
   // 綁定事件
   hls.value.on(Hls.Events.MEDIA_ATTACHED, () => {
     console.log('HLS 媒體已附加')
     hls.value?.loadSource(props.streamUrl)
   })
-  
+
   hls.value.on(Hls.Events.MANIFEST_LOADED, () => {
     console.log('HLS 清單已載入')
     loading.value = false
     status.value = 'playing'
   })
-  
+
   hls.value.on(Hls.Events.LEVEL_LOADED, (_event, data) => {
     console.log('HLS 品質等級已載入:', data.level)
     updateVideoInfo()
   })
-  
+
   hls.value.on(Hls.Events.ERROR, (_event, data) => {
     console.error('HLS 錯誤:', data)
     if (data.fatal) {
@@ -181,7 +186,7 @@ const initHLS = () => {
       status.value = 'error'
     }
   })
-  
+
   hls.value.on(Hls.Events.FRAG_LOADED, () => {
     // 計算延遲
     if (videoRef.value) {
@@ -193,7 +198,7 @@ const initHLS = () => {
       }
     }
   })
-  
+
   // 附加到視頻元素
   hls.value.attachMedia(videoRef.value)
 }
@@ -201,14 +206,14 @@ const initHLS = () => {
 // 更新視頻信息
 const updateVideoInfo = () => {
   if (!videoRef.value) return
-  
+
   const video = videoRef.value
-  
+
   // 解析度
   if (video.videoWidth && video.videoHeight) {
     videoInfo.value.resolution = `${video.videoWidth}x${video.videoHeight}`
   }
-  
+
   // 比特率 (如果 HLS 提供)
   if (hls.value && hls.value.levels.length > 0) {
     const currentLevel = hls.value.levels[hls.value.currentLevel]
@@ -216,16 +221,17 @@ const updateVideoInfo = () => {
       videoInfo.value.bitrate = `${Math.round(currentLevel.bitrate / 1000)}kbps`
     }
   }
-  
+
   // FPS (估算)
-          if ((video as any).webkitVideoDecodedByteCount !== undefined) {
+  if ((video as any).webkitVideoDecodedByteCount !== undefined) {
     // 這是一個粗略的估算
     videoInfo.value.fps = '30'
   }
-  
+
   // 緩衝狀態
   if (video.buffered.length > 0) {
-    const buffered = video.buffered.end(video.buffered.length - 1) - video.currentTime
+    const buffered =
+      video.buffered.end(video.buffered.length - 1) - video.currentTime
     videoInfo.value.buffered = `${buffered.toFixed(1)}s`
   }
 }
@@ -235,12 +241,12 @@ const retry = () => {
   error.value = ''
   status.value = 'idle'
   loading.value = true
-  
+
   if (hls.value) {
     hls.value.destroy()
     hls.value = null
   }
-  
+
   setTimeout(() => {
     initHLS()
   }, 1000)
@@ -280,7 +286,7 @@ const onError = (e: Event) => {
 // 開始延遲監控
 const startLatencyMonitoring = () => {
   if (latencyTimer) clearInterval(latencyTimer)
-  
+
   latencyTimer = window.setInterval(() => {
     if (videoRef.value && hls.value) {
       const currentTime = videoRef.value.currentTime
@@ -296,7 +302,7 @@ const startLatencyMonitoring = () => {
 // 開始信息監控
 const startInfoMonitoring = () => {
   if (infoTimer) clearInterval(infoTimer)
-  
+
   infoTimer = window.setInterval(() => {
     updateVideoInfo()
   }, 2000)
@@ -308,12 +314,12 @@ const cleanup = () => {
     clearInterval(latencyTimer)
     latencyTimer = null
   }
-  
+
   if (infoTimer) {
     clearInterval(infoTimer)
     infoTimer = null
   }
-  
+
   if (hls.value) {
     hls.value.destroy()
     hls.value = null
@@ -321,11 +327,14 @@ const cleanup = () => {
 }
 
 // 監聽 URL 變化
-watch(() => props.streamUrl, (newUrl) => {
-  if (newUrl && hls.value) {
-    hls.value.loadSource(newUrl)
+watch(
+  () => props.streamUrl,
+  newUrl => {
+    if (newUrl && hls.value) {
+      hls.value.loadSource(newUrl)
+    }
   }
-})
+)
 
 onMounted(() => {
   initHLS()
@@ -435,8 +444,12 @@ onUnmounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-icon {
@@ -484,4 +497,4 @@ onUnmounted(() => {
   font-family: monospace;
   color: #17a2b8;
 }
-</style> 
+</style>

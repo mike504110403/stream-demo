@@ -1,9 +1,9 @@
 import request from '@/utils/request'
-import type { 
-  Payment, 
-  CreatePaymentRequest, 
+import type {
+  Payment,
+  CreatePaymentRequest,
   ProcessPaymentRequest,
-  RefundPaymentRequest 
+  RefundPaymentRequest,
 } from '@/types'
 
 // 獲取支付列表
@@ -34,4 +34,4 @@ export const processPayment = (id: number, data: ProcessPaymentRequest) => {
 // 退款
 export const refundPayment = (id: number, data: RefundPaymentRequest) => {
   return request.post<Payment>(`/payments/${id}/refund`, data)
-} 
+}

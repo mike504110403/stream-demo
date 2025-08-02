@@ -10,13 +10,23 @@
     <div class="action-bar">
       <el-button @click="showAddDialog = true" type="primary" class="add-btn">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 4v16m8-8H4"
+          ></path>
         </svg>
         新增直播源
       </el-button>
       <el-button @click="refreshStreams" type="info" class="refresh-btn">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          ></path>
         </svg>
         重新載入
       </el-button>
@@ -30,12 +40,7 @@
 
     <!-- 錯誤狀態 -->
     <div v-else-if="error" class="error-container">
-      <el-alert
-        :title="error"
-        type="error"
-        :closable="false"
-        show-icon
-      />
+      <el-alert :title="error" type="error" :closable="false" show-icon />
       <el-button @click="loadStreams" type="primary" class="retry-button">
         重新載入
       </el-button>
@@ -48,12 +53,14 @@
           <template #default="{ row }">
             <div class="stream-name">
               <span class="name-text">{{ row.name }}</span>
-              <el-tag v-if="row.enabled" type="success" size="small">啟用</el-tag>
+              <el-tag v-if="row.enabled" type="success" size="small"
+                >啟用</el-tag
+              >
               <el-tag v-else type="info" size="small">停用</el-tag>
             </div>
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="title" label="標題" width="200">
           <template #default="{ row }">
             <div class="stream-title">
@@ -62,7 +69,7 @@
             </div>
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="url" label="URL" width="300">
           <template #default="{ row }">
             <div class="stream-url">
@@ -76,37 +83,50 @@
             </div>
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="type" label="類型" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.type === 'rtmp' ? 'danger' : 'primary'" size="small">
+            <el-tag
+              :type="row.type === 'rtmp' ? 'danger' : 'primary'"
+              size="small"
+            >
               {{ row.type.toUpperCase() }}
             </el-tag>
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="category" label="分類" width="120">
           <template #default="{ row }">
-            <el-tag type="warning" size="small">{{ getCategoryLabel(row.category) }}</el-tag>
+            <el-tag type="warning" size="small">{{
+              getCategoryLabel(row.category)
+            }}</el-tag>
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="status" label="狀態" width="120">
           <template #default="{ row }">
             <div class="status-indicator">
-              <span class="status-dot" :class="{ 'active': row.status === 'active' }">●</span>
+              <span
+                class="status-dot"
+                :class="{ active: row.status === 'active' }"
+                >●</span
+              >
               {{ row.status === 'active' ? '運行中' : '已停止' }}
             </div>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button @click="editStream(row)" size="small" type="primary">
                 編輯
               </el-button>
-              <el-button @click="toggleStream(row)" size="small" :type="row.enabled ? 'warning' : 'success'">
+              <el-button
+                @click="toggleStream(row)"
+                size="small"
+                :type="row.enabled ? 'warning' : 'success'"
+              >
                 {{ row.enabled ? '停用' : '啟用' }}
               </el-button>
             </div>
@@ -124,28 +144,36 @@
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="名稱" prop="name">
-          <el-input v-model="form.name" placeholder="輸入唯一的名稱" :disabled="!!editingStream" />
+          <el-input
+            v-model="form.name"
+            placeholder="輸入唯一的名稱"
+            :disabled="!!editingStream"
+          />
         </el-form-item>
-        
+
         <el-form-item label="標題" prop="title">
           <el-input v-model="form.title" placeholder="輸入顯示標題" />
         </el-form-item>
-        
+
         <el-form-item label="描述" prop="description">
-          <el-input v-model="form.description" type="textarea" placeholder="輸入描述" />
+          <el-input
+            v-model="form.description"
+            type="textarea"
+            placeholder="輸入描述"
+          />
         </el-form-item>
-        
+
         <el-form-item label="URL" prop="url">
           <el-input v-model="form.url" placeholder="輸入直播源 URL" />
         </el-form-item>
-        
+
         <el-form-item label="類型" prop="type">
           <el-select v-model="form.type" placeholder="選擇流類型">
             <el-option label="HLS" value="hls" />
             <el-option label="RTMP" value="rtmp" />
           </el-select>
         </el-form-item>
-        
+
         <el-form-item label="分類" prop="category">
           <el-select v-model="form.category" placeholder="選擇分類">
             <el-option label="測試" value="test" />
@@ -155,12 +183,12 @@
             <el-option label="娛樂" value="entertainment" />
           </el-select>
         </el-form-item>
-        
+
         <el-form-item label="啟用狀態" prop="enabled">
           <el-switch v-model="form.enabled" />
         </el-form-item>
       </el-form>
-      
+
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="showAddDialog = false">取消</el-button>
@@ -195,29 +223,30 @@ const form = ref({
   url: '',
   type: 'hls',
   category: 'test',
-  enabled: true
+  enabled: true,
 })
 
 // 表單驗證規則
 const rules: any = {
   name: [
     { required: true, message: '請輸入名稱', trigger: 'blur' },
-    { min: 2, max: 50, message: '名稱長度在 2 到 50 個字符', trigger: 'blur' }
+    { min: 2, max: 50, message: '名稱長度在 2 到 50 個字符', trigger: 'blur' },
   ],
   title: [
     { required: true, message: '請輸入標題', trigger: 'blur' },
-    { min: 2, max: 100, message: '標題長度在 2 到 100 個字符', trigger: 'blur' }
+    {
+      min: 2,
+      max: 100,
+      message: '標題長度在 2 到 100 個字符',
+      trigger: 'blur',
+    },
   ],
   url: [
     { required: true, message: '請輸入 URL', trigger: 'blur' },
-    { type: 'url', message: '請輸入有效的 URL', trigger: 'blur' }
+    { type: 'url', message: '請輸入有效的 URL', trigger: 'blur' },
   ],
-  type: [
-    { required: true, message: '請選擇類型', trigger: 'change' }
-  ],
-  category: [
-    { required: true, message: '請選擇分類', trigger: 'change' }
-  ]
+  type: [{ required: true, message: '請選擇類型', trigger: 'change' }],
+  category: [{ required: true, message: '請選擇分類', trigger: 'change' }],
 }
 
 // 分類標籤映射
@@ -226,25 +255,25 @@ const categoryLabels: Record<string, string> = {
   space: '太空',
   news: '新聞',
   sports: '體育',
-  entertainment: '娛樂'
+  entertainment: '娛樂',
 }
 
 // 方法
 const loadStreams = async () => {
   loading.value = true
   error.value = ''
-  
+
   try {
     // 通過 Vite 代理調用 Stream-Puller 的 API，獲取資料庫中的所有資料
     const response = await fetch('/stream-puller/api/public-streams')
     const data = await response.json()
-    
+
     console.log('Stream-Puller API 響應:', data) // 調試用
-    
+
     if (data.success && data.data && data.data.streams) {
       streams.value = data.data.streams.map((stream: any) => ({
         ...stream,
-        status: stream.enabled ? 'active' : 'inactive'
+        status: stream.enabled ? 'active' : 'inactive',
       }))
     } else {
       throw new Error('響應格式不正確')
@@ -270,27 +299,27 @@ const editStream = (stream: any) => {
 const toggleStream = async (stream: any) => {
   try {
     console.log('切換流狀態:', stream) // 調試用
-    
+
     if (!stream.name) {
       ElMessage.error('流名稱不能為空')
       return
     }
-    
+
     const newEnabled = !stream.enabled
     const formData = new URLSearchParams()
     formData.append('name', stream.name)
     formData.append('enabled', newEnabled.toString())
-    
+
     console.log('發送資料:', { name: stream.name, enabled: newEnabled }) // 調試用
-    
+
     const response = await fetch(`/stream-puller/api/public-streams`, {
       method: 'PUT',
       body: formData,
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
     })
-    
+
     if (response.ok) {
       stream.enabled = newEnabled
       stream.status = newEnabled ? 'active' : 'inactive'
@@ -310,25 +339,28 @@ const toggleStream = async (stream: any) => {
 
 const saveStream = async () => {
   if (!formRef.value) return
-  
+
   try {
     await formRef.value.validate()
     saving.value = true
-    
+
     const formData = new URLSearchParams()
     Object.keys(form.value).forEach(key => {
-      formData.append(key, form.value[key as keyof typeof form.value].toString())
+      formData.append(
+        key,
+        form.value[key as keyof typeof form.value].toString()
+      )
     })
-    
+
     const method = editingStream.value ? 'PUT' : 'POST'
     const response = await fetch(`/stream-puller/api/public-streams`, {
       method,
       body: formData,
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
     })
-    
+
     if (response.ok) {
       ElMessage.success(editingStream.value ? '更新成功' : '新增成功')
       showAddDialog.value = false
@@ -353,7 +385,7 @@ const resetForm = () => {
     url: '',
     type: 'hls',
     category: 'test',
-    enabled: true
+    enabled: true,
   }
   if (formRef.value) {
     formRef.value.resetFields()
@@ -495,7 +527,8 @@ onMounted(() => {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -512,17 +545,17 @@ onMounted(() => {
   .public-stream-manage {
     padding: 16px;
   }
-  
+
   .page-title {
     font-size: 2rem;
   }
-  
+
   .action-bar {
     flex-direction: column;
   }
-  
+
   .stream-table-container {
     overflow-x: auto;
   }
 }
-</style> 
+</style>

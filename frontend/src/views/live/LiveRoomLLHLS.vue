@@ -3,46 +3,41 @@
     <div class="page-header">
       <h1>{{ roomInfo?.title || '直播間' }}</h1>
       <div class="header-actions">
-        
         <!-- 主播專用按鈕 -->
         <template v-if="isCreator">
-          <el-button 
-            v-if="roomInfo?.status === 'created' || roomInfo?.status === 'ended'" 
-            type="success" 
+          <el-button
+            v-if="
+              roomInfo?.status === 'created' || roomInfo?.status === 'ended'
+            "
+            type="success"
             @click="handleStartLive"
             :loading="startingLive"
           >
             {{ roomInfo?.status === 'ended' ? '重新開始直播' : '開始直播' }}
           </el-button>
-          <el-button 
-            v-if="roomInfo?.status === 'live'" 
-            type="warning" 
+          <el-button
+            v-if="roomInfo?.status === 'live'"
+            type="warning"
             @click="handleEndLive"
             :loading="endingLive"
           >
             結束直播
           </el-button>
-          <el-button 
-            type="primary" 
-            @click="showStreamInfo = true"
-          >
+          <el-button type="primary" @click="showStreamInfo = true">
             串流資訊
           </el-button>
-          <el-button 
-            type="danger" 
+          <el-button
+            type="danger"
             @click="handleCloseRoom"
             :loading="closingRoom"
           >
             關閉直播間
           </el-button>
         </template>
-        
+
         <!-- 觀眾專用按鈕 -->
         <template v-if="isViewer">
-          <el-button 
-            type="info" 
-            @click="handleLeaveRoom"
-          >
+          <el-button type="info" @click="handleLeaveRoom">
             離開直播間
           </el-button>
         </template>
@@ -54,15 +49,9 @@
     </div>
 
     <div v-else-if="error" class="error-container">
-      <el-result
-        icon="error"
-        :title="error"
-        sub-title="無法載入直播間資訊"
-      >
+      <el-result icon="error" :title="error" sub-title="無法載入直播間資訊">
         <template #extra>
-          <el-button type="primary" @click="loadRoomInfo">
-            重新載入
-          </el-button>
+          <el-button type="primary" @click="loadRoomInfo"> 重新載入 </el-button>
         </template>
       </el-result>
     </div>
@@ -85,11 +74,21 @@
             <div v-else class="offline-message">
               <div class="offline-icon">📺</div>
               <div class="offline-text">
-                {{ roomInfo.status === 'created' ? '直播尚未開始' : '直播已結束' }}
+                {{
+                  roomInfo.status === 'created' ? '直播尚未開始' : '直播已結束'
+                }}
               </div>
-              <div v-if="isCreator && (roomInfo.status === 'created' || roomInfo.status === 'ended')" class="offline-action">
+              <div
+                v-if="
+                  isCreator &&
+                  (roomInfo.status === 'created' || roomInfo.status === 'ended')
+                "
+                class="offline-action"
+              >
                 <el-button type="primary" @click="handleStartLive">
-                  {{ roomInfo.status === 'ended' ? '重新開始直播' : '開始直播' }}
+                  {{
+                    roomInfo.status === 'ended' ? '重新開始直播' : '開始直播'
+                  }}
                 </el-button>
               </div>
             </div>
@@ -98,7 +97,7 @@
 
         <!-- 右側：聊天室 -->
         <div class="chat-section">
-          <LiveChat 
+          <LiveChat
             :live-id="parseInt(roomId)"
             :current-user-id="userId || 0"
             :current-username="authStore.user?.username || 'Anonymous'"
@@ -109,69 +108,49 @@
     </div>
 
     <!-- 串流資訊對話框 -->
-    <el-dialog
-      v-model="showStreamInfo"
-      title="串流資訊"
-      width="600px"
-    >
+    <el-dialog v-model="showStreamInfo" title="串流資訊" width="600px">
       <div class="stream-info">
         <div class="info-item">
           <label>推流地址:</label>
           <div class="stream-url">
             <code>{{ getRtmpPushUrl(roomInfo?.stream_key) }}</code>
-            <el-button 
-              size="small" 
-              @click="copyStreamUrl"
-              type="primary"
-            >
+            <el-button size="small" @click="copyStreamUrl" type="primary">
               複製
             </el-button>
           </div>
         </div>
-        
+
         <div class="info-item">
           <label>串流金鑰:</label>
           <div class="stream-key">
             <code>{{ roomInfo?.stream_key }}</code>
-            <el-button 
-              size="small" 
-              @click="copyStreamKey"
-              type="primary"
-            >
+            <el-button size="small" @click="copyStreamKey" type="primary">
               複製
             </el-button>
           </div>
         </div>
-        
+
         <div class="info-item">
           <label>播放地址 (LL-HLS):</label>
           <div class="play-url">
             <code>{{ llhlsStreamUrl }}</code>
-            <el-button 
-              size="small" 
-              @click="copyPlayUrl"
-              type="primary"
-            >
+            <el-button size="small" @click="copyPlayUrl" type="primary">
               複製
             </el-button>
           </div>
         </div>
-        
+
         <div class="info-item">
           <label>播放地址 (標準 HLS):</label>
           <div class="play-url">
             <code>{{ standardStreamUrl }}</code>
-            <el-button 
-              size="small" 
-              @click="copyStandardUrl"
-              type="primary"
-            >
+            <el-button size="small" @click="copyStandardUrl" type="primary">
               複製
             </el-button>
           </div>
         </div>
       </div>
-      
+
       <template #footer>
         <el-button @click="showStreamInfo = false">關閉</el-button>
       </template>
@@ -241,10 +220,10 @@ const isViewer = computed(() => {
 // 載入直播間資訊
 const loadRoomInfo = async () => {
   if (!roomId.value) return
-  
+
   loading.value = true
   error.value = ''
-  
+
   try {
     // const room = await liveStore.getLiveRoom(roomId.value)  // 暫時註釋掉不存在的 store
     // roomInfo.value = room
@@ -259,7 +238,7 @@ const loadRoomInfo = async () => {
       stream_key: actualStreamKey,
       creator_id: 1,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     }
   } catch (err: any) {
     error.value = err.message || '載入直播間失敗'
@@ -272,7 +251,7 @@ const loadRoomInfo = async () => {
 // 開始直播
 const handleStartLive = async () => {
   if (!roomInfo.value) return
-  
+
   startingLive.value = true
   try {
     // await liveStore.startLive(roomInfo.value.id)  // 暫時註釋掉不存在的 store
@@ -288,7 +267,7 @@ const handleStartLive = async () => {
 // 結束直播
 const handleEndLive = async () => {
   if (!roomInfo.value) return
-  
+
   endingLive.value = true
   try {
     // await liveStore.endLive(roomInfo.value.id)  // 暫時註釋掉不存在的 store
@@ -304,7 +283,7 @@ const handleEndLive = async () => {
 // 關閉直播間
 const handleCloseRoom = async () => {
   if (!roomInfo.value) return
-  
+
   closingRoom.value = true
   try {
     // await liveStore.closeLiveRoom(roomInfo.value.id)  // 暫時註釋掉不存在的 store
@@ -322,12 +301,12 @@ const handleLeaveRoom = () => {
   router.push('/live')
 }
 
-  // 複製功能
-  const copyStreamUrl = () => {
-    const url = getRtmpPushUrl(roomInfo.value?.stream_key)
-    navigator.clipboard.writeText(url)
-    ElMessage.success('推流地址已複製')
-  }
+// 複製功能
+const copyStreamUrl = () => {
+  const url = getRtmpPushUrl(roomInfo.value?.stream_key)
+  navigator.clipboard.writeText(url)
+  ElMessage.success('推流地址已複製')
+}
 
 const copyStreamKey = () => {
   if (roomInfo.value?.stream_key) {
@@ -484,7 +463,7 @@ onUnmounted(() => {
   .live-layout {
     grid-template-columns: 1fr;
   }
-  
+
   .chat-section {
     border-left: none;
     border-top: 1px solid #e4e7ed;
@@ -497,14 +476,14 @@ onUnmounted(() => {
     gap: 16px;
     align-items: stretch;
   }
-  
+
   .header-actions {
     justify-content: center;
     flex-wrap: wrap;
   }
-  
+
   .live-room-llhls {
     padding: 12px;
   }
 }
-</style> 
+</style>

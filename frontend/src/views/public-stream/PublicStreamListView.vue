@@ -14,12 +14,7 @@
 
     <!-- 錯誤狀態 -->
     <div v-else-if="error" class="error-container">
-      <el-alert
-        :title="error"
-        type="error"
-        :closable="false"
-        show-icon
-      />
+      <el-alert :title="error" type="error" :closable="false" show-icon />
       <el-button @click="loadStreams" type="primary" class="retry-button">
         重新載入
       </el-button>
@@ -38,38 +33,48 @@
           <div class="preview-image">
             <div class="preview-icon">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 002 2z"></path>
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 002 2z"
+                ></path>
               </svg>
             </div>
             <p class="preview-text">直播中</p>
           </div>
-          
+
           <!-- 播放按鈕覆蓋層 -->
           <div class="play-overlay">
             <div class="play-button">
               <svg fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z"/>
+                <path d="M8 5v14l11-7z" />
               </svg>
             </div>
           </div>
 
           <!-- 狀態標籤 -->
-          <div class="status-badge" :class="stream.status === 'active' ? 'active' : 'inactive'">
-            <span class="status-dot" :class="{ 'pulse': stream.status === 'active' }">●</span>
+          <div
+            class="status-badge"
+            :class="stream.status === 'active' ? 'active' : 'inactive'"
+          >
+            <span
+              class="status-dot"
+              :class="{ pulse: stream.status === 'active' }"
+              >●</span
+            >
             {{ stream.status === 'active' ? '直播中' : '離線' }}
           </div>
 
           <!-- 觀看者數量 -->
-          <div class="viewer-count">
-            👥 {{ stream.viewer_count }}
-          </div>
+          <div class="viewer-count">👥 {{ stream.viewer_count }}</div>
         </div>
 
         <!-- 流資訊 -->
         <div class="stream-info">
           <h3 class="stream-title">{{ stream.title }}</h3>
           <p class="stream-description">{{ stream.description }}</p>
-          
+
           <!-- 分類標籤 -->
           <div class="category-tag">
             {{ getCategoryLabel(stream.category) }}
@@ -78,7 +83,12 @@
           <!-- 最後更新時間 -->
           <p class="update-time">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              ></path>
             </svg>
             {{ formatTime(stream.last_update) }}
           </p>
@@ -91,7 +101,12 @@
             class="watch-button"
           >
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              ></path>
             </svg>
             {{ stream.status === 'active' ? '立即觀看' : '離線' }}
           </el-button>
@@ -125,7 +140,7 @@ const categories = [
   { value: 'test', label: '測試', icon: '🧪' },
   { value: 'space', label: '太空', icon: '🚀' },
   { value: 'news', label: '新聞', icon: '📰' },
-  { value: 'sports', label: '體育', icon: '⚽' }
+  { value: 'sports', label: '體育', icon: '⚽' },
 ]
 
 // 計算屬性
@@ -137,7 +152,7 @@ const filteredStreams = computed(() => {
 const loadStreams = async () => {
   loading.value = true
   error.value = ''
-  
+
   try {
     const response = await publicStreamApi.getAvailableStreams()
     streams.value = response.streams
@@ -411,7 +426,8 @@ onMounted(() => {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -425,11 +441,11 @@ onMounted(() => {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 16px;
   }
-  
+
   .page-title {
     font-size: 2rem;
   }
-  
+
   .public-stream-list {
     padding: 16px;
   }
@@ -439,9 +455,9 @@ onMounted(() => {
   .stream-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .page-title {
     font-size: 1.8rem;
   }
 }
-</style> 
+</style>

@@ -1,15 +1,24 @@
 <template>
   <div class="debug-container">
     <h1>🔧 調試頁面</h1>
-    
+
     <div class="debug-section">
       <h2>認證狀態</h2>
       <div class="debug-info">
-        <p><strong>Token:</strong> {{ authStore.token ? '已設置' : '未設置' }}</p>
-        <p><strong>用戶:</strong> {{ authStore.user ? JSON.stringify(authStore.user, null, 2) : '未設置' }}</p>
-        <p><strong>已認證:</strong> {{ authStore.isAuthenticated ? '是' : '否' }}</p>
+        <p>
+          <strong>Token:</strong> {{ authStore.token ? '已設置' : '未設置' }}
+        </p>
+        <p>
+          <strong>用戶:</strong>
+          {{
+            authStore.user ? JSON.stringify(authStore.user, null, 2) : '未設置'
+          }}
+        </p>
+        <p>
+          <strong>已認證:</strong> {{ authStore.isAuthenticated ? '是' : '否' }}
+        </p>
       </div>
-      
+
       <div class="debug-actions">
         <el-button @click="refreshAuth">刷新認證狀態</el-button>
         <el-button @click="clearAuth" type="danger">清除認證</el-button>
@@ -32,9 +41,13 @@
         <p><strong>測試房間創建者ID:</strong> {{ testCreatorId }}</p>
         <p><strong>是否為創建者:</strong> {{ isCreatorTest ? '是' : '否' }}</p>
       </div>
-      
+
       <div class="debug-actions">
-        <el-input v-model="testCreatorId" placeholder="輸入測試房間創建者ID" style="width: 200px; margin-right: 10px;" />
+        <el-input
+          v-model="testCreatorId"
+          placeholder="輸入測試房間創建者ID"
+          style="width: 200px; margin-right: 10px"
+        />
         <el-button @click="testRole">測試角色判斷</el-button>
       </div>
     </div>
@@ -45,7 +58,7 @@
         <el-button @click="testGetUserInfo">測試獲取用戶信息</el-button>
         <el-button @click="testCreateRoom">測試創建直播間</el-button>
       </div>
-      
+
       <div v-if="apiResult" class="debug-info">
         <h3>API 結果:</h3>
         <pre>{{ apiResult }}</pre>
@@ -99,9 +112,9 @@ const testLogin = async () => {
       avatar: '',
       bio: '',
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     }
-    
+
     authStore.setAuth('test_token', testUser)
     loadLocalStorage()
     ElMessage.success('測試登入成功')
@@ -121,7 +134,7 @@ const testGetUserInfo = async () => {
     ElMessage.error('請先登入')
     return
   }
-  
+
   try {
     const response = await getUserInfo(authStore.user.id)
     apiResult.value = JSON.stringify(response, null, 2)
@@ -137,11 +150,11 @@ const testCreateRoom = async () => {
     ElMessage.error('請先登入')
     return
   }
-  
+
   try {
     const response = await createRoom({
       title: `測試直播間 ${Date.now()}`,
-      description: '這是調試用的測試直播間'
+      description: '這是調試用的測試直播間',
     })
     apiResult.value = JSON.stringify(response, null, 2)
     ElMessage.success('創建直播間成功')
@@ -213,4 +226,4 @@ onMounted(() => {
   flex-wrap: wrap;
   align-items: center;
 }
-</style> 
+</style>

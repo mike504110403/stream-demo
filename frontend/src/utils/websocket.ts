@@ -19,7 +19,8 @@ export class LiveRoomWebSocket {
   private maxReconnectAttempts = 5
   private reconnectInterval = 3000
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null
-  private messageHandlers: Map<string, (message: LiveRoomMessage) => void> = new Map()
+  private messageHandlers: Map<string, (message: LiveRoomMessage) => void> =
+    new Map()
 
   constructor(roomId: string, token: string) {
     this.roomId = roomId
@@ -42,7 +43,7 @@ export class LiveRoomWebSocket {
           resolve()
         }
 
-        this.ws.onmessage = (event) => {
+        this.ws.onmessage = event => {
           try {
             const message: LiveRoomMessage = JSON.parse(event.data)
             this.handleMessage(message)
@@ -51,13 +52,13 @@ export class LiveRoomWebSocket {
           }
         }
 
-        this.ws.onclose = (event) => {
+        this.ws.onclose = event => {
           console.log('WebSocket 連接關閉:', event.code, event.reason)
           this.stopHeartbeat()
           this.handleReconnect()
         }
 
-        this.ws.onerror = (error) => {
+        this.ws.onerror = error => {
           console.error('WebSocket 錯誤:', error)
           reject(error)
         }
@@ -88,7 +89,7 @@ export class LiveRoomWebSocket {
       room_id: this.roomId,
       content,
       data,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }
 
     this.ws.send(JSON.stringify(message))
@@ -169,8 +170,10 @@ export class LiveRoomWebSocket {
   private handleReconnect(): void {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++
-      console.log(`嘗試重連 (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`)
-      
+      console.log(
+        `嘗試重連 (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`
+      )
+
       setTimeout(() => {
         this.connect().catch(error => {
           console.error('重連失敗:', error)
@@ -206,4 +209,4 @@ export class LiveRoomWebSocket {
   isConnected(): boolean {
     return this.ws ? this.ws.readyState === WebSocket.OPEN : false
   }
-} 
+}

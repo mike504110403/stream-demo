@@ -5,7 +5,7 @@
       <el-header v-if="showNavbar">
         <NavBar />
       </el-header>
-      
+
       <!-- 主要內容區域 -->
       <el-main>
         <router-view />
