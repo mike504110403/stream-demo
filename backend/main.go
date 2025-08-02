@@ -16,10 +16,9 @@ import (
 func main() {
 	// 命令行參數解析
 	var (
-		configFile = flag.String("config", "config/config.local.yaml", "配置文件路徑")
-		env        = flag.String("env", "local", "運行環境")
-		dbType     = flag.String("db", "", "資料庫類型 (mysql|postgresql)，不指定則使用配置文件默認值")
-		showHelp   = flag.Bool("help", false, "顯示幫助信息")
+		env      = flag.String("env", "local", "運行環境")
+		dbType   = flag.String("db", "postgresql", "資料庫類型 (mysql|postgresql)")
+		showHelp = flag.Bool("help", false, "顯示幫助信息")
 	)
 	flag.Parse()
 
@@ -32,10 +31,9 @@ func main() {
 	// 初始化日誌系統
 	utils.InitLogger()
 
-	// 初始化配置
-	cfg := config.NewConfig(*configFile, *env, *dbType)
+	// 初始化配置（使用環境變數）
+	cfg := config.NewConfig(*env, *dbType)
 	utils.LogInfo("🚀 串流平台後端服務啟動")
-	utils.LogInfo("📂 配置文件: %s", *configFile)
 	utils.LogInfo("🌍 運行環境: %s", *env)
 	utils.LogInfo("🗄️  當前資料庫: %s", cfg.ActiveDatabase)
 
@@ -104,12 +102,10 @@ func showHelpInfo() {
 	fmt.Printf("  %s [選項]\n", os.Args[0])
 	fmt.Println("")
 	fmt.Println("選項:")
-	fmt.Println("  -config string")
-	fmt.Println("        配置文件路徑 (默認: config/config.local.yaml)")
 	fmt.Println("  -env string")
 	fmt.Println("        運行環境 (默認: local)")
 	fmt.Println("  -db string")
-	fmt.Println("        資料庫類型 mysql|postgresql (默認: 使用配置文件設定)")
+	fmt.Println("        資料庫類型 mysql|postgresql (默認: postgresql)")
 	fmt.Println("  -help")
 	fmt.Println("        顯示幫助信息")
 	fmt.Println("")
@@ -117,9 +113,10 @@ func showHelpInfo() {
 	fmt.Println("  go run main.go                    # 使用默認配置")
 	fmt.Println("  go run main.go -db mysql          # 強制使用 MySQL")
 	fmt.Println("  go run main.go -db postgresql     # 強制使用 PostgreSQL")
-	fmt.Println("  go run main.go -config custom.yaml # 使用自定義配置文件")
+	fmt.Println("  go run main.go -env staging       # 設定運行環境為 staging")
 	fmt.Println("")
 	fmt.Println("環境變數:")
 	fmt.Println("  DATABASE_TYPE=mysql|postgresql    # 設定資料庫類型")
+	fmt.Println("  RUN_ENV=local|staging|production # 設定運行環境")
 	fmt.Println("")
 }

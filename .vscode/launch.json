@@ -2,24 +2,22 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "🚀 啟動後端 (PostgreSQL)",
+      "name": "🚀 啟動後端 (PostgreSQL + .env)",
       "type": "go",
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/backend/main.go",
       "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/backend/.env",
       "env": {
         "APP_ENV": "local",
-        "GIN_MODE": "debug",
-        "SERVER_PORT": "8080",
-        "SERVER_HOST": "127.0.0.1",
         "DATABASE_TYPE": "postgresql",
         "FRONTEND_HOST": "host.docker.internal",
         "FRONTEND_PORT": "5173",
         "BACKEND_HOST": "host.docker.internal",
         "BACKEND_PORT": "8080"
       },
-      "args": ["-config", "config/config.local.yaml", "-env", "local", "-db", "postgresql"],
+      "args": ["-env", "local", "-db", "postgresql"],
       "showLog": true,
       "console": "integratedTerminal",
       "presentation": {
@@ -29,24 +27,22 @@
       }
     },
     {
-      "name": "🚀 啟動後端 (MySQL)",
+      "name": "🚀 啟動後端 (MySQL + .env)",
       "type": "go",
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/backend/main.go",
       "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/backend/.env",
       "env": {
         "APP_ENV": "local",
-        "GIN_MODE": "debug",
-        "SERVER_PORT": "8080",
-        "SERVER_HOST": "127.0.0.1",
         "DATABASE_TYPE": "mysql",
         "FRONTEND_HOST": "host.docker.internal",
         "FRONTEND_PORT": "5173",
         "BACKEND_HOST": "host.docker.internal",
         "BACKEND_PORT": "8080"
       },
-      "args": ["-config", "config/config.local.yaml", "-env", "local", "-db", "mysql"],
+      "args": ["-env", "local", "-db", "mysql"],
       "showLog": true,
       "console": "integratedTerminal",
       "presentation": {
@@ -56,23 +52,21 @@
       }
     },
     {
-      "name": "🚀 啟動後端 (默認配置)",
+      "name": "🚀 啟動後端 (默認配置 + .env)",
       "type": "go",
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/backend/main.go",
       "cwd": "${workspaceFolder}/backend",
+      "envFile": "${workspaceFolder}/backend/.env",
       "env": {
         "APP_ENV": "local",
-        "GIN_MODE": "debug",
-        "SERVER_PORT": "8080",
-        "SERVER_HOST": "127.0.0.1",
         "FRONTEND_HOST": "host.docker.internal",
         "FRONTEND_PORT": "5173",
         "BACKEND_HOST": "host.docker.internal",
         "BACKEND_PORT": "8080"
       },
-      "args": ["-config", "config/config.local.yaml", "-env", "local"],
+      "args": ["-env", "local"],
       "showLog": true,
       "console": "integratedTerminal",
       "presentation": {

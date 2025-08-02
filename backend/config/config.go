@@ -7,6 +7,7 @@ import (
 	"stream-demo/backend/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
@@ -244,39 +245,59 @@ type Config struct {
 }
 
 // NewConfig 創建系統配置（支援 MySQL 和 PostgreSQL）
-func NewConfig(configPath string, env string, dbType string) *Config {
+func NewConfig(env string, dbType string) *Config {
 	var config Configurations
-	viper.SetConfigFile(configPath)
-	viper.SetConfigType("yml")
-	viper.AutomaticEnv()
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "__"))
 
-	if err := viper.ReadInConfig(); err != nil {
-		utils.LogFatal("Error reading config file, ", err)
+	// 載入 .env 檔案
+	if err := godotenv.Load(); err != nil {
+		utils.LogInfo("未找到 .env 檔案，使用系統環境變數")
 	}
 
+	// 啟用環境變數支援
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	// 設定環境變數前綴
+	viper.SetEnvPrefix("STREAM_DEMO")
+
+	// 綁定環境變數到配置結構
+	bindEnvironmentVariables()
+
+	// 設定預設值
+	setDefaultValues(&config)
+
+	// 從環境變數載入配置
 	err := viper.Unmarshal(&config)
 	if err != nil {
-		utils.LogFatal("Unable to decode into struct, ", err)
+		utils.LogFatal("Unable to decode into struct: %v", err)
 	}
+
+	// 處理環境變數覆蓋
+	overrideWithEnvironmentVariables(&config)
 
 	var conf Config
 	conf.Configurations = &config
 	gin.SetMode(config.Gin.Mode)
 
-	// 決定使用哪個資料庫（優先級：參數 > 環境變數 > 默認）
-	selectedDB := determineDatabase(dbType, config.Databases)
+	// 決定使用哪個資料庫
+	selectedDB := dbType
+	if selectedDB == "" {
+		selectedDB = "postgresql" // 默認使用 PostgreSQL
+	}
 	conf.ActiveDatabase = selectedDB
 
 	// 驗證選擇的資料庫配置是否存在
 	dbConfig, exists := config.Databases[selectedDB]
 	if !exists {
-		utils.LogFatal("Database configuration not found for type: ", selectedDB)
+		utils.LogFatal("Database configuration not found for type: %s", selectedDB)
 	}
+
+	// 確保資料庫類型正確設定
+	dbConfig.Type = selectedDB
 
 	// 驗證資料庫類型
 	if err := ValidateDatabaseType(dbConfig.Type); err != nil {
-		utils.LogFatal("Database configuration error: ", err)
+		utils.LogFatal("Database configuration error: %v", err)
 	}
 
 	// 創建資料庫工廠
@@ -289,7 +310,7 @@ func NewConfig(configPath string, env string, dbType string) *Config {
 	// 主資料庫
 	masterDB, err := conf.DatabaseFactory.CreateDatabase(false)
 	if err != nil {
-		utils.LogFatal("Failed to create master database connection: ", err)
+		utils.LogFatal("Failed to create master database connection: %v", err)
 	}
 	conf.DB["master"] = masterDB
 
@@ -298,7 +319,7 @@ func NewConfig(configPath string, env string, dbType string) *Config {
 		dbConfig.Slave.DBName != dbConfig.Master.DBName {
 		slaveDB, err := conf.DatabaseFactory.CreateDatabase(true)
 		if err != nil {
-			utils.LogWarn("Failed to create slave database connection, using master: ", err)
+			utils.LogWarn("Failed to create slave database connection, using master: %v", err)
 			conf.DB["slave"] = masterDB
 		} else {
 			conf.DB["slave"] = slaveDB
@@ -322,6 +343,387 @@ func NewConfig(configPath string, env string, dbType string) *Config {
 	}
 
 	return &conf
+}
+
+// bindEnvironmentVariables 綁定環境變數到配置
+func bindEnvironmentVariables() {
+	// 伺服器配置
+	viper.BindEnv("gin.host", "STREAM_DEMO_HOST")
+	viper.BindEnv("gin.port", "STREAM_DEMO_PORT")
+	viper.BindEnv("gin.mode", "STREAM_DEMO_MODE")
+
+	// 資料庫配置
+	viper.BindEnv("databases.postgresql.master.host", "STREAM_DEMO_DB_HOST")
+	viper.BindEnv("databases.postgresql.master.port", "STREAM_DEMO_DB_PORT")
+	viper.BindEnv("databases.postgresql.master.username", "STREAM_DEMO_DB_USER")
+	viper.BindEnv("databases.postgresql.master.password", "STREAM_DEMO_DB_PASSWORD")
+	viper.BindEnv("databases.postgresql.master.dbname", "STREAM_DEMO_DB_NAME")
+	viper.BindEnv("databases.postgresql.master.sslmode", "STREAM_DEMO_DB_SSL_MODE")
+
+	// 資料庫連接池配置
+	viper.BindEnv("databases.postgresql.pool.max_open_conns", "STREAM_DEMO_DB_MAX_OPEN_CONNS")
+	viper.BindEnv("databases.postgresql.pool.max_idle_conns", "STREAM_DEMO_DB_MAX_IDLE_CONNS")
+	viper.BindEnv("databases.postgresql.pool.conn_max_lifetime", "STREAM_DEMO_DB_CONN_MAX_LIFETIME")
+	viper.BindEnv("databases.postgresql.pool.conn_max_idle_time", "STREAM_DEMO_DB_CONN_MAX_IDLE_TIME")
+
+	// Redis 配置
+	viper.BindEnv("redis.master.host", "STREAM_DEMO_REDIS_HOST")
+	viper.BindEnv("redis.master.port", "STREAM_DEMO_REDIS_PORT")
+	viper.BindEnv("redis.master.password", "STREAM_DEMO_REDIS_PASSWORD")
+	viper.BindEnv("redis.master.db", "STREAM_DEMO_REDIS_DB")
+
+	// Redis 連接池配置
+	viper.BindEnv("redis.pool.max_active", "STREAM_DEMO_REDIS_MAX_ACTIVE")
+	viper.BindEnv("redis.pool.max_idle", "STREAM_DEMO_REDIS_MAX_IDLE")
+	viper.BindEnv("redis.pool.idle_timeout", "STREAM_DEMO_REDIS_IDLE_TIMEOUT")
+	viper.BindEnv("redis.pool.connect_timeout", "STREAM_DEMO_REDIS_CONNECT_TIMEOUT")
+	viper.BindEnv("redis.pool.read_timeout", "STREAM_DEMO_REDIS_READ_TIMEOUT")
+	viper.BindEnv("redis.pool.write_timeout", "STREAM_DEMO_REDIS_WRITE_TIMEOUT")
+
+	// 緩存配置
+	viper.BindEnv("cache.type", "STREAM_DEMO_CACHE_TYPE")
+	viper.BindEnv("cache.db", "STREAM_DEMO_CACHE_DB")
+	viper.BindEnv("cache.default_expiration", "STREAM_DEMO_CACHE_DEFAULT_EXPIRATION")
+	viper.BindEnv("cache.key_prefix", "STREAM_DEMO_CACHE_KEY_PREFIX")
+
+	// 訊息佇列配置
+	viper.BindEnv("messaging.type", "STREAM_DEMO_MESSAGING_TYPE")
+	viper.BindEnv("messaging.db", "STREAM_DEMO_MESSAGING_DB")
+
+	// JWT 配置
+	viper.BindEnv("jwt.secret", "STREAM_DEMO_JWT_SECRET")
+	viper.BindEnv("jwt.expires_in", "STREAM_DEMO_JWT_EXPIRES_IN")
+
+	// S3 配置
+	viper.BindEnv("storage.s3.region", "STREAM_DEMO_S3_REGION")
+	viper.BindEnv("storage.s3.bucket", "STREAM_DEMO_S3_BUCKET")
+	viper.BindEnv("storage.s3.access_key", "STREAM_DEMO_S3_ACCESS_KEY")
+	viper.BindEnv("storage.s3.secret_key", "STREAM_DEMO_S3_SECRET_KEY")
+	viper.BindEnv("storage.s3.endpoint", "STREAM_DEMO_S3_ENDPOINT")
+	viper.BindEnv("storage.s3.cdn_domain", "STREAM_DEMO_S3_CDN_DOMAIN")
+
+	// 轉碼配置
+	viper.BindEnv("transcode.type", "STREAM_DEMO_TRANSCODE_TYPE")
+	viper.BindEnv("transcode.ffmpeg.enabled", "STREAM_DEMO_FFMPEG_ENABLED")
+	viper.BindEnv("transcode.ffmpeg.container_name", "STREAM_DEMO_FFMPEG_CONTAINER_NAME")
+
+	// AWS MediaConvert 配置
+	viper.BindEnv("media_convert.enabled", "STREAM_DEMO_MEDIACONVERT_ENABLED")
+	viper.BindEnv("media_convert.region", "STREAM_DEMO_MEDIACONVERT_REGION")
+	viper.BindEnv("media_convert.endpoint", "STREAM_DEMO_MEDIACONVERT_ENDPOINT")
+	viper.BindEnv("media_convert.role_arn", "STREAM_DEMO_MEDIACONVERT_ROLE_ARN")
+	viper.BindEnv("media_convert.output_bucket", "STREAM_DEMO_MEDIACONVERT_OUTPUT_BUCKET")
+
+	// 影片配置
+	viper.BindEnv("video.max_file_size", "STREAM_DEMO_VIDEO_MAX_FILE_SIZE")
+	viper.BindEnv("video.min_file_size", "STREAM_DEMO_VIDEO_MIN_FILE_SIZE")
+	viper.BindEnv("video.allowed_formats", "STREAM_DEMO_VIDEO_ALLOWED_FORMATS")
+
+	// 直播配置
+	viper.BindEnv("live.enabled", "STREAM_DEMO_LIVE_ENABLED")
+	viper.BindEnv("live.type", "STREAM_DEMO_LIVE_TYPE")
+
+	// 本地直播配置
+	viper.BindEnv("live.local.enabled", "STREAM_DEMO_LIVE_LOCAL_ENABLED")
+	viper.BindEnv("live.local.rtmp_server", "STREAM_DEMO_LIVE_LOCAL_RTMP_SERVER")
+	viper.BindEnv("live.local.rtmp_server_port", "STREAM_DEMO_LIVE_LOCAL_RTMP_SERVER_PORT")
+	viper.BindEnv("live.local.transcoder_enabled", "STREAM_DEMO_LIVE_LOCAL_TRANSCODER_ENABLED")
+	viper.BindEnv("live.local.hls_output_dir", "STREAM_DEMO_LIVE_LOCAL_HLS_OUTPUT_DIR")
+	viper.BindEnv("live.local.http_port", "STREAM_DEMO_LIVE_LOCAL_HTTP_PORT")
+
+	// 雲端直播配置
+	viper.BindEnv("live.cloud.provider", "STREAM_DEMO_LIVE_CLOUD_PROVIDER")
+	viper.BindEnv("live.cloud.rtmp_ingest_url", "STREAM_DEMO_LIVE_CLOUD_RTMP_INGEST_URL")
+	viper.BindEnv("live.cloud.hls_playback_url", "STREAM_DEMO_LIVE_CLOUD_HLS_PLAYBACK_URL")
+	viper.BindEnv("live.cloud.api_key", "STREAM_DEMO_LIVE_API_KEY")
+	viper.BindEnv("live.cloud.api_secret", "STREAM_DEMO_LIVE_API_SECRET")
+	viper.BindEnv("live.cloud.transcode_enabled", "STREAM_DEMO_LIVE_CLOUD_TRANSCODE_ENABLED")
+
+	// 混合直播配置
+	viper.BindEnv("live.hybrid.local_enabled", "STREAM_DEMO_LIVE_HYBRID_LOCAL_ENABLED")
+	viper.BindEnv("live.hybrid.cloud_enabled", "STREAM_DEMO_LIVE_HYBRID_CLOUD_ENABLED")
+	viper.BindEnv("live.hybrid.fallback_to_local", "STREAM_DEMO_LIVE_HYBRID_FALLBACK_TO_LOCAL")
+	viper.BindEnv("live.hybrid.cloud_provider", "STREAM_DEMO_LIVE_HYBRID_CLOUD_PROVIDER")
+}
+
+// setDefaultValues 設定預設配置值
+func setDefaultValues(config *Configurations) {
+	// 伺服器預設值
+	if config.Gin.Host == "" {
+		config.Gin.Host = "127.0.0.1"
+	}
+	if config.Gin.Port == 0 {
+		config.Gin.Port = 8080
+	}
+	if config.Gin.Mode == "" {
+		config.Gin.Mode = "debug"
+	}
+
+	// 資料庫預設值
+	if config.Databases == nil {
+		config.Databases = make(map[string]DatabaseConfiguration)
+	}
+
+	// PostgreSQL 預設值
+	if _, exists := config.Databases["postgresql"]; !exists {
+		config.Databases["postgresql"] = DatabaseConfiguration{
+			Type: "postgresql",
+			Master: DatabaseConnectionConfig{
+				Host:     "localhost",
+				Port:     5432,
+				Username: "stream_user",
+				Password: "stream_password",
+				DBName:   "stream_demo",
+				SSLMode:  "disable",
+			},
+			Slave: DatabaseConnectionConfig{
+				Host:     "localhost",
+				Port:     5432,
+				Username: "stream_user",
+				Password: "stream_password",
+				DBName:   "stream_demo",
+				SSLMode:  "disable",
+			},
+			Pool: DatabasePoolConfiguration{
+				MaxOpenConns:    25,
+				MaxIdleConns:    10,
+				ConnMaxLifetime: 3600,
+				ConnMaxIdleTime: 900,
+			},
+		}
+	}
+
+	// MySQL 預設值
+	if _, exists := config.Databases["mysql"]; !exists {
+		config.Databases["mysql"] = DatabaseConfiguration{
+			Type: "mysql",
+			Master: DatabaseConnectionConfig{
+				Host:     "localhost",
+				Port:     3306,
+				Username: "stream_user",
+				Password: "stream_password",
+				DBName:   "stream_demo",
+				SSLMode:  "false",
+			},
+			Slave: DatabaseConnectionConfig{
+				Host:     "localhost",
+				Port:     3306,
+				Username: "stream_user",
+				Password: "stream_password",
+				DBName:   "stream_demo",
+				SSLMode:  "false",
+			},
+			Pool: DatabasePoolConfiguration{
+				MaxOpenConns:    25,
+				MaxIdleConns:    10,
+				ConnMaxLifetime: 3600,
+				ConnMaxIdleTime: 900,
+			},
+		}
+	}
+
+	// Redis 預設值
+	if config.Redis.Master.Host == "" {
+		config.Redis.Master.Host = "localhost"
+	}
+	if config.Redis.Master.Port == 0 {
+		config.Redis.Master.Port = 6379
+	}
+	if config.Redis.Pool.MaxActive == 0 {
+		config.Redis.Pool.MaxActive = 100
+	}
+	if config.Redis.Pool.MaxIdle == 0 {
+		config.Redis.Pool.MaxIdle = 20
+	}
+
+	// 緩存預設值
+	if config.Cache.Type == "" {
+		config.Cache.Type = "redis"
+	}
+	if config.Cache.DB == 0 {
+		config.Cache.DB = 1
+	}
+	if config.Cache.DefaultExpiration == 0 {
+		config.Cache.DefaultExpiration = 3600
+	}
+	if config.Cache.KeyPrefix == "" {
+		config.Cache.KeyPrefix = "cache:"
+	}
+
+	// 訊息佇列預設值
+	if config.Messaging.Type == "" {
+		config.Messaging.Type = "redis"
+	}
+	if config.Messaging.DB == 0 {
+		config.Messaging.DB = 2
+	}
+
+	// JWT 預設值
+	if config.JWT.Secret == "" {
+		config.JWT.Secret = "local_secret"
+	}
+	if config.JWT.ExpiresIn == 0 {
+		config.JWT.ExpiresIn = 86400
+	}
+
+	// S3 預設值
+	if config.Storage.S3.Region == "" {
+		config.Storage.S3.Region = "us-east-1"
+	}
+	if config.Storage.S3.Bucket == "" {
+		config.Storage.S3.Bucket = "stream-demo-videos"
+	}
+	if config.Storage.S3.AccessKey == "" {
+		config.Storage.S3.AccessKey = "minioadmin"
+	}
+	if config.Storage.S3.SecretKey == "" {
+		config.Storage.S3.SecretKey = "minioadmin"
+	}
+	if config.Storage.S3.Endpoint == "" {
+		config.Storage.S3.Endpoint = "http://localhost:9000"
+	}
+
+	// 轉碼預設值
+	if config.Transcode.Type == "" {
+		config.Transcode.Type = "ffmpeg"
+	}
+	if !config.Transcode.FFmpeg.Enabled {
+		config.Transcode.FFmpeg.Enabled = true
+	}
+	if config.Transcode.FFmpeg.ContainerName == "" {
+		config.Transcode.FFmpeg.ContainerName = "stream-demo-transcoder"
+	}
+
+	// 影片預設值
+	if config.Video.MaxFileSize == 0 {
+		config.Video.MaxFileSize = 1073741824 // 1GB
+	}
+	if config.Video.MinFileSize == 0 {
+		config.Video.MinFileSize = 1048576 // 1MB
+	}
+	if len(config.Video.AllowedFormats) == 0 {
+		config.Video.AllowedFormats = []string{"mp4", "avi", "mov", "mkv", "webm"}
+	}
+
+	// 直播預設值
+	if !config.Live.Enabled {
+		config.Live.Enabled = true
+	}
+	if config.Live.Type == "" {
+		config.Live.Type = "local"
+	}
+	if !config.Live.Local.Enabled {
+		config.Live.Local.Enabled = true
+	}
+	if config.Live.Local.RTMPServer == "" {
+		config.Live.Local.RTMPServer = "localhost"
+	}
+	if config.Live.Local.RTMPServerPort == 0 {
+		config.Live.Local.RTMPServerPort = 1935
+	}
+	if !config.Live.Local.TranscoderEnabled {
+		config.Live.Local.TranscoderEnabled = true
+	}
+	if config.Live.Local.HLSOutputDir == "" {
+		config.Live.Local.HLSOutputDir = "/tmp/live"
+	}
+	if config.Live.Local.HTTPPort == 0 {
+		config.Live.Local.HTTPPort = 8081
+	}
+}
+
+// overrideWithEnvironmentVariables 用環境變數覆蓋配置
+func overrideWithEnvironmentVariables(config *Configurations) {
+	// 資料庫配置覆蓋
+	if postgresqlConfig, exists := config.Databases["postgresql"]; exists {
+		if host := viper.GetString("STREAM_DEMO_DB_HOST"); host != "" {
+			if postgresqlConfig.Master.Host == "" {
+				postgresqlConfig.Master.Host = host
+			}
+		}
+		if port := viper.GetInt("STREAM_DEMO_DB_PORT"); port != 0 {
+			if postgresqlConfig.Master.Port == 0 {
+				postgresqlConfig.Master.Port = port
+			}
+		}
+		if username := viper.GetString("STREAM_DEMO_DB_USER"); username != "" {
+			if postgresqlConfig.Master.Username == "" {
+				postgresqlConfig.Master.Username = username
+			}
+		}
+		if password := viper.GetString("STREAM_DEMO_DB_PASSWORD"); password != "" {
+			postgresqlConfig.Master.Password = password
+		}
+		if dbname := viper.GetString("STREAM_DEMO_DB_NAME"); dbname != "" {
+			if postgresqlConfig.Master.DBName == "" {
+				postgresqlConfig.Master.DBName = dbname
+			}
+		}
+		config.Databases["postgresql"] = postgresqlConfig
+	}
+
+	// Redis 配置覆蓋
+	if host := viper.GetString("STREAM_DEMO_REDIS_HOST"); host != "" {
+		if config.Redis.Master.Host == "" {
+			config.Redis.Master.Host = host
+		}
+	}
+	if port := viper.GetInt("STREAM_DEMO_REDIS_PORT"); port != 0 {
+		if config.Redis.Master.Port == 0 {
+			config.Redis.Master.Port = port
+		}
+	}
+	if password := viper.GetString("STREAM_DEMO_REDIS_PASSWORD"); password != "" {
+		config.Redis.Master.Password = password
+	}
+
+	// JWT 配置覆蓋
+	if secret := viper.GetString("STREAM_DEMO_JWT_SECRET"); secret != "" {
+		config.JWT.Secret = secret
+	}
+
+	// S3 配置覆蓋
+	if region := viper.GetString("STREAM_DEMO_S3_REGION"); region != "" {
+		if config.Storage.S3.Region == "" {
+			config.Storage.S3.Region = region
+		}
+	}
+	if bucket := viper.GetString("STREAM_DEMO_S3_BUCKET"); bucket != "" {
+		if config.Storage.S3.Bucket == "" {
+			config.Storage.S3.Bucket = bucket
+		}
+	}
+	if accessKey := viper.GetString("STREAM_DEMO_S3_ACCESS_KEY"); accessKey != "" {
+		config.Storage.S3.AccessKey = accessKey
+	}
+	if secretKey := viper.GetString("STREAM_DEMO_S3_SECRET_KEY"); secretKey != "" {
+		config.Storage.S3.SecretKey = secretKey
+	}
+
+	// 直播配置覆蓋
+	if apiKey := viper.GetString("STREAM_DEMO_LIVE_API_KEY"); apiKey != "" {
+		config.Live.Cloud.APIKey = apiKey
+	}
+	if apiSecret := viper.GetString("STREAM_DEMO_LIVE_API_SECRET"); apiSecret != "" {
+		config.Live.Cloud.APISecret = apiSecret
+	}
+
+	// 伺服器配置覆蓋
+	if host := viper.GetString("STREAM_DEMO_HOST"); host != "" {
+		if config.Gin.Host == "" {
+			config.Gin.Host = host
+		}
+	}
+	if port := viper.GetInt("STREAM_DEMO_PORT"); port != 0 {
+		if config.Gin.Port == 0 {
+			config.Gin.Port = port
+		}
+	}
+	if mode := viper.GetString("STREAM_DEMO_MODE"); mode != "" {
+		if config.Gin.Mode == "" {
+			config.Gin.Mode = mode
+		}
+	}
 }
 
 // determineDatabase 決定使用哪個資料庫
@@ -388,20 +790,20 @@ func (c *Config) ReconnectDatabases() {
 	for name, db := range c.DB {
 		sqlDB, err := db.DB()
 		if err != nil {
-			utils.LogError("Failed to get underlying sql.DB for", name, ":", err)
+			utils.LogError("Failed to get underlying sql.DB for %s: %v", name, err)
 			continue
 		}
 
 		if err := sqlDB.Ping(); err != nil {
-			utils.LogInfo("Reconnecting database:", name)
+			utils.LogInfo("Reconnecting database: %s", name)
 
 			isSlave := name == "slave"
 			newDB, err := c.DatabaseFactory.CreateDatabase(isSlave)
 			if err != nil {
-				utils.LogError("Failed to reconnect database", name, ":", err)
+				utils.LogError("Failed to reconnect database %s: %v", name, err)
 			} else {
 				c.DB[name] = newDB
-				utils.LogInfo("Database reconnected:", name)
+				utils.LogInfo("Database reconnected: %s", name)
 			}
 		}
 	}
@@ -414,16 +816,16 @@ func (c *Config) CheckDatabaseConnections() bool {
 	for name, db := range c.DB {
 		sqlDB, err := db.DB()
 		if err != nil {
-			utils.LogError("Failed to get underlying sql.DB for", name, ":", err)
+			utils.LogError("Failed to get underlying sql.DB for %s: %v", name, err)
 			allConnected = false
 			continue
 		}
 
 		if err := sqlDB.Ping(); err != nil {
-			utils.LogError("Database connection failed for", name, ":", err)
+			utils.LogError("Database connection failed for %s: %v", name, err)
 			allConnected = false
 		} else {
-			utils.LogInfo("Database connection OK for", name)
+			utils.LogInfo("Database connection OK for %s", name)
 		}
 	}
 
@@ -478,7 +880,7 @@ func (c *Config) SwitchDatabase(dbType string) error {
 		dbConfig.Slave.DBName != dbConfig.Master.DBName {
 		slaveDB, err := c.DatabaseFactory.CreateDatabase(true)
 		if err != nil {
-			utils.LogWarn("Failed to create slave database connection, using master: ", err)
+			utils.LogWarn("Failed to create slave database connection, using master: %v", err)
 			c.DB["slave"] = masterDB
 		} else {
 			c.DB["slave"] = slaveDB

@@ -173,7 +173,7 @@ const autoQualityInfo = ref({
   reason: ''
 })
 const showAutoQualityDetails = ref(false)
-const autoQualityTimer = ref<number | null>(null)
+const autoQualityTimer = ref<ReturnType<typeof setInterval> | null>(null)
 const bufferingCount = ref(0)
 
 const loadVideo = async () => {

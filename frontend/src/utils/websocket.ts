@@ -18,7 +18,7 @@ export class LiveRoomWebSocket {
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
   private reconnectInterval = 3000
-  private heartbeatInterval: number | null = null
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null
   private messageHandlers: Map<string, (message: LiveRoomMessage) => void> = new Map()
 
   constructor(roomId: string, token: string) {

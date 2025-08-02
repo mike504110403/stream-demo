@@ -67,11 +67,11 @@ func (r *RedisClient) Get(key string) (string, error) {
 	result, err := r.Client.Get(r.ctx, key).Result()
 	if err == redis.Nil {
 		errMsg := "key does not exist"
-		return "", fmt.Errorf(errMsg)
+		return "", fmt.Errorf("%s", errMsg)
 	}
 
 	if err != nil {
-		log.Println("[Redis] get error: %v", err)
+		log.Printf("[Redis] get error: %v", err)
 	}
 	return result, nil
 }
@@ -85,7 +85,7 @@ func (r *RedisClient) HGet(key, field string) (string, error) {
 	if err == redis.Nil {
 		errMsg := "key does not exist"
 		log.Println(errMsg + ": " + key)
-		return "", fmt.Errorf(errMsg)
+		return "", fmt.Errorf("%s", errMsg)
 	}
 	return result, nil
 }

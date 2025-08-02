@@ -11,10 +11,10 @@ import (
 )
 
 type LiveHandler struct {
-	liveService *services.LiveService
+	liveService services.LiveServiceInterface
 }
 
-func NewLiveHandler(liveService *services.LiveService) *LiveHandler {
+func NewLiveHandler(liveService services.LiveServiceInterface) *LiveHandler {
 	return &LiveHandler{liveService: liveService}
 }
 

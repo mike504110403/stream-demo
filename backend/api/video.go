@@ -12,10 +12,10 @@ import (
 )
 
 type VideoHandler struct {
-	videoService *services.VideoService
+	videoService services.VideoServiceInterface
 }
 
-func NewVideoHandler(videoService *services.VideoService) *VideoHandler {
+func NewVideoHandler(videoService services.VideoServiceInterface) *VideoHandler {
 	return &VideoHandler{videoService: videoService}
 }
 

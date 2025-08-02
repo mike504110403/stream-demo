@@ -55,9 +55,9 @@ func (f *DatabaseFactory) CreateDatabase(isSlave bool) (*gorm.DB, error) {
 // createMySQLConnection 創建 MySQL 連接
 func (f *DatabaseFactory) createMySQLConnection(config DatabaseConnectionConfig, isSlave bool) (*gorm.DB, error) {
 	utils.LogInfo("=== MySQL Connection Info ===")
-	utils.LogInfo(fmt.Sprintf("Host: %s:%d", config.Host, config.Port))
-	utils.LogInfo(fmt.Sprintf("Database: %s", config.DBName))
-	utils.LogInfo(fmt.Sprintf("User: %s", config.Username))
+	utils.LogInfo("Host: %s:%d", config.Host, config.Port)
+	utils.LogInfo("Database: %s", config.DBName)
+	utils.LogInfo("User: %s", config.Username)
 
 	// 構建 MySQL DSN
 	dsn := fmt.Sprintf(
@@ -108,9 +108,9 @@ func (f *DatabaseFactory) createMySQLConnection(config DatabaseConnectionConfig,
 // createPostgreSQLConnection 創建 PostgreSQL 連接
 func (f *DatabaseFactory) createPostgreSQLConnection(config DatabaseConnectionConfig, isSlave bool) (*gorm.DB, error) {
 	utils.LogInfo("=== PostgreSQL Connection Info ===")
-	utils.LogInfo(fmt.Sprintf("Host: %s:%d", config.Host, config.Port))
-	utils.LogInfo(fmt.Sprintf("Database: %s", config.DBName))
-	utils.LogInfo(fmt.Sprintf("User: %s", config.Username))
+	utils.LogInfo("Host: %s:%d", config.Host, config.Port)
+	utils.LogInfo("Database: %s", config.DBName)
+	utils.LogInfo("User: %s", config.Username)
 
 	// 構建 PostgreSQL DSN
 	dsn := fmt.Sprintf(

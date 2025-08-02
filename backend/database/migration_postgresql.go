@@ -27,19 +27,19 @@ func MigratePostgreSQL(conf *config.Config) error {
 	)
 
 	if err != nil {
-		utils.LogError("資料庫遷移失敗:", err)
+		utils.LogError("資料庫遷移失敗: %v", err)
 		return err
 	}
 
 	// 創建PostgreSQL特定的索引和優化
 	if err := createPostgreSQLIndexes(db); err != nil {
-		utils.LogError("創建索引失敗:", err)
+		utils.LogError("創建索引失敗: %v", err)
 		return err
 	}
 
 	// 創建PostgreSQL擴展
 	if err := createPostgreSQLExtensions(db); err != nil {
-		utils.LogError("創建擴展失敗:", err)
+		utils.LogError("創建擴展失敗: %v", err)
 		return err
 	}
 
@@ -93,7 +93,7 @@ func createPostgreSQLIndexes(db *gorm.DB) error {
 
 	for _, index := range indexes {
 		if err := db.Exec(index).Error; err != nil {
-			utils.LogError("創建索引失敗:", index, err)
+			utils.LogError("創建索引失敗: %s - %v", index, err)
 			return err
 		}
 	}
@@ -112,7 +112,7 @@ func createPostgreSQLExtensions(db *gorm.DB) error {
 
 	for _, ext := range extensions {
 		if err := db.Exec(ext).Error; err != nil {
-			utils.LogWarn("創建擴展失敗（可能需要超級用戶權限）:", ext, err)
+			utils.LogWarn("創建擴展失敗（可能需要超級用戶權限）: %s - %v", ext, err)
 			// 擴展創建失敗不應該中斷遷移，只記錄警告
 		}
 	}
@@ -135,7 +135,7 @@ func CreateTriggersAndFunctions(db *gorm.DB) error {
 	`
 
 	if err := db.Exec(updateFunction).Error; err != nil {
-		utils.LogError("創建更新函數失敗:", err)
+		utils.LogError("創建更新函數失敗: %v", err)
 		return err
 	}
 
@@ -151,7 +151,7 @@ func CreateTriggersAndFunctions(db *gorm.DB) error {
 		`, table, table, table, table)
 
 		if err := db.Exec(trigger).Error; err != nil {
-			utils.LogError("創建觸發器失敗:", table, err)
+			utils.LogError("創建觸發器失敗: %s - %v", table, err)
 			return err
 		}
 	}

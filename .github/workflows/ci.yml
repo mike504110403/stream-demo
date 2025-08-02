@@ -1,0 +1,154 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  # 後端 Go 測試
+  backend-test:
+    runs-on: ubuntu-latest
+    name: Backend Tests
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24'
+    
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Install dependencies
+      working-directory: ./backend
+      run: go mod download
+    
+    - name: Run tests
+      working-directory: ./backend
+      env:
+        STREAM_DEMO_DB_HOST: localhost
+        STREAM_DEMO_DB_PORT: 5432
+        STREAM_DEMO_DB_USER: postgres
+        STREAM_DEMO_DB_PASSWORD: postgres
+        STREAM_DEMO_DB_NAME: stream_demo_test
+        STREAM_DEMO_REDIS_HOST: localhost
+        STREAM_DEMO_REDIS_PORT: 6379
+        STREAM_DEMO_JWT_SECRET: test_jwt_secret_for_ci
+        STREAM_DEMO_S3_ACCESS_KEY: test_access_key
+        STREAM_DEMO_S3_SECRET_KEY: test_secret_key
+        STREAM_DEMO_LIVE_API_KEY: test_live_api_key
+        STREAM_DEMO_LIVE_API_SECRET: test_live_api_secret
+      run: |
+        go test -v -race -coverprofile=coverage.out ./test/...
+        go tool cover -func=coverage.out
+    
+    - name: Check test coverage
+      working-directory: ./backend
+      run: |
+        COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+        echo "Current coverage: $COVERAGE%"
+        if (( $(echo "$COVERAGE < 30" | bc -l) )); then
+          echo "❌ Coverage is below 30% threshold (current: $COVERAGE%)"
+          exit 1
+        else
+          echo "✅ Coverage is above 30% threshold (current: $COVERAGE%)"
+        fi
+    
+    - name: Run linter
+      working-directory: ./backend
+      run: |
+        go vet ./...
+        go fmt ./...
+    
+    - name: Build backend
+      working-directory: ./backend
+      run: |
+        go build -o stream-demo-backend main.go
+        go build -o stream-puller ./cmd/stream_puller/main.go
+
+  # 前端建置測試
+  frontend-build:
+    runs-on: ubuntu-latest
+    name: Frontend Build Test
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+    
+    - name: Run linting
+      working-directory: ./frontend
+      run: npm run lint
+    
+    - name: Run type checking
+      working-directory: ./frontend
+      run: npm run build
+    
+    - name: Check formatting
+      working-directory: ./frontend
+      run: npx prettier --check src/
+
+  # 程式碼品質檢查
+  code-quality:
+    runs-on: ubuntu-latest
+    name: Code Quality
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check for sensitive files
+      run: |
+        # 檢查是否有硬編碼的密碼
+        if grep -r "password.*=" backend/ --include="*.go" | grep -v "password.*=.*\$\{" | grep -v "test"; then
+          echo "❌ Hardcoded passwords found"
+          exit 1
+        fi
+        
+        # 檢查是否有 .env 檔案被提交
+        if [ -f "backend/.env" ]; then
+          echo "❌ .env file found in repository (should be in .gitignore)"
+          exit 1
+        fi
+        
+        echo "✅ No sensitive files found"
+    
+    - name: Check file permissions
+      run: |
+        # 檢查腳本是否有執行權限
+        if [ -f "scripts/test.sh" ] && [ ! -x "scripts/test.sh" ]; then
+          echo "❌ Test script is not executable"
+          exit 1
+        fi
+        
+        echo "✅ File permissions check passed"
+    
+    - name: Validate YAML files
+      run: |
+        # 檢查 YAML 文件語法
+        for file in $(find . -name "*.yml" -o -name "*.yaml"); do
+          if [ -f "$file" ]; then
+            python3 -c "import yaml; yaml.safe_load(open('$file'))" || exit 1
+          fi
+        done
+        
+        echo "✅ YAML validation passed" 

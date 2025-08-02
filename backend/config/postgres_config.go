@@ -52,12 +52,12 @@ func InitPostgreSQL(dbConfig DatabaseConnectionConfig, isSlave bool) *gorm.DB {
 	})
 
 	if err != nil {
-		utils.LogFatal("Failed to connect to PostgreSQL database:", err)
+		utils.LogFatal("Failed to connect to PostgreSQL database: %v", err)
 	}
 
 	sqlDB, err := db.DB()
 	if err != nil {
-		utils.LogFatal("Failed to get underlying sql.DB:", err)
+		utils.LogFatal("Failed to get underlying sql.DB: %v", err)
 	}
 
 	// 設置連接池參數
@@ -68,7 +68,7 @@ func InitPostgreSQL(dbConfig DatabaseConnectionConfig, isSlave bool) *gorm.DB {
 
 	// 測試連接
 	if err := sqlDB.Ping(); err != nil {
-		utils.LogFatal("Failed to ping PostgreSQL database:", err)
+		utils.LogFatal("Failed to ping PostgreSQL database: %v", err)
 	}
 
 	utils.LogInfo("PostgreSQL connected successfully")
@@ -117,7 +117,7 @@ func InitCacheTable(db *gorm.DB, tableName string) {
 	`, tableName, tableName, tableName, tableName, tableName, tableName, tableName)
 
 	if err := db.Exec(sql).Error; err != nil {
-		utils.LogError("Failed to create cache table:", err)
+		utils.LogError("Failed to create cache table: %v", err)
 	} else {
 		utils.LogInfo("Cache table initialized successfully")
 	}

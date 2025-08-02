@@ -1,23 +1,20 @@
 node_modules
 
+# 環境變數檔案
+.env
+backend/.env
+*.env
+
+# 舊的配置檔案 (已移除)
 backend/config/config.dev.yaml
-
 backend/config/config.prod.yaml
-
-backend/logs/
 
 # 編譯產物
 backend/__debug_bin*
 backend/stream-demo-backend
-backend/backend.log
 
 # 前端構建產物
 frontend/dist/
-
-# 日誌文件
-logs/
-backend/logs/
-backend/cmd/stream_puller/stream-puller.log
 
 # IDE 文件
 .vscode/
@@ -29,7 +26,46 @@ backend/cmd/stream_puller/stream-puller.log
 .DS_Store
 Thumbs.db
 
-# 日誌文件
-logs/
-*.log
-*.pid
+# 日誌文件 (已禁用，只輸出到控制台)
+# logs/
+# *.log
+# *.pid
+
+# 測試覆蓋率文件
+coverage/
+coverage.out
+coverage.html
+
+# TypeScript 構建文件
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# 依賴鎖定文件 (可選，根據團隊需求)
+# yarn.lock
+# package-lock.json
+# go.sum
+
+# 臨時文件
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# 系統文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE 文件
+.vscode/settings.json.bak
+.idea/
+*.sublime-*
+
+# 快取文件
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+dist/
+build/
