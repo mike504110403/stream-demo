@@ -66,13 +66,10 @@ axiosInstance.interceptors.response.use(
       } else if ('data' in res && 'message' in res) {
         // 格式: {message, data} - 直播間 API 使用的格式
         return res.data
-      } else if ('data' in res && 'code' in res) {
-        // 格式: {code, message, data} - 用戶 API 使用的格式
-        return res.data
       } else if ('message' in res && Object.keys(res).length === 2) {
         // 格式: {message, xxx} - 其他 API 使用的格式（如 {message, room_id}）
         // 返回除了 message 之外的其他字段
-        const { message, ...otherFields } = res
+        const { message: _message, ...otherFields } = res
         return otherFields
       }
     }

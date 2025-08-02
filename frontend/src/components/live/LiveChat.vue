@@ -6,8 +6,8 @@
       <div class="chat-status">
         <span class="online-count">{{ onlineUsers }} 人在線</span>
         <el-switch
-          v-model="chatEnabled"
-          @change="toggleChat"
+          :model-value="chatEnabled"
+          @update:model-value="toggleChat"
           active-text="聊天開啟"
           inactive-text="聊天關閉"
         />

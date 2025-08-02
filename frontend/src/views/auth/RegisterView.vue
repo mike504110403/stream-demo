@@ -133,7 +133,7 @@ const handleRegister = async () => {
     if (valid) {
       loading.value = true
       try {
-        const { confirmPassword, ...registerData } = registerForm
+        const { confirmPassword: _confirmPassword, ...registerData } = registerForm
         await register(registerData)
         ElMessage.success('註冊成功！請登入')
         router.push('/login')
