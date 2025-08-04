@@ -7,7 +7,7 @@
       "command": "npm",
       "args": ["install"],
       "options": {
-        "cwd": "${workspaceFolder}/frontend"
+        "cwd": "${workspaceFolder}/services/frontend"
       },
       "group": "build",
       "presentation": {
@@ -24,7 +24,7 @@
       "command": "go",
       "args": ["mod", "tidy"],
       "options": {
-        "cwd": "${workspaceFolder}/backend"
+        "cwd": "${workspaceFolder}/services/api"
       },
       "group": "build",
       "presentation": {
@@ -41,7 +41,7 @@
       "command": "npm",
       "args": ["run", "build"],
       "options": {
-        "cwd": "${workspaceFolder}/frontend"
+        "cwd": "${workspaceFolder}/services/frontend"
       },
       "group": "build",
       "presentation": {
@@ -50,58 +50,12 @@
         "focus": false,
         "panel": "shared"
       },
-      "problemMatcher": []
-    },
-    {
-      "label": "dev-frontend",
-      "type": "shell",
-      "command": "npm",
-      "args": ["run", "dev", "--", "--port", "5173", "--host", "0.0.0.0"],
-      "options": {
-        "cwd": "${workspaceFolder}/frontend",
-        "env": {
-          "VITE_API_BASE_URL": "http://localhost:8080/api",
-          "VITE_DEV_PORT": "5173"
-        }
-      },
-      "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared"
-      },
-      "isBackground": true,
-      "problemMatcher": []
-    },
-    {
-      "label": "run-backend",
-      "type": "shell",
-      "command": "go",
-      "args": ["run", "main.go"],
-      "options": {
-        "cwd": "${workspaceFolder}/backend",
-        "env": {
-          "APP_ENV": "local",
-          "GIN_MODE": "debug",
-          "SERVER_PORT": "8080",
-          "SERVER_HOST": "127.0.0.1"
-        }
-      },
-      "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared"
-      },
-      "isBackground": true,
       "problemMatcher": []
     },
     {
       "label": "檢查開發環境",
       "type": "shell",
-      "command": "./cmd/start.sh",
+      "command": "./deploy/scripts/start.sh",
       "args": ["status"],
       "options": {
         "cwd": "${workspaceFolder}"
@@ -116,26 +70,9 @@
       "problemMatcher": []
     },
     {
-      "label": "啟動周邊服務",
-      "type": "shell",
-      "command": "./cmd/start.sh",
-      "args": ["start"],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "group": "build",
-              "presentation": {
-          "echo": true,
-          "reveal": "always",
-          "focus": false,
-          "panel": "shared"
-        },
-      "problemMatcher": []
-    },
-    {
       "label": "🎯 智能啟動開發環境",
       "type": "shell",
-      "command": "./cmd/start.sh",
+      "command": "./deploy/scripts/start.sh",
       "args": ["start"],
       "options": {
         "cwd": "${workspaceFolder}"

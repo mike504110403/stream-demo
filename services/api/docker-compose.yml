@@ -1,0 +1,57 @@
+services:
+  # 後端 API 服務
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"    # 後端 API 端口
+    networks:
+      - stream-demo-network
+    environment:
+      # 資料庫配置 (使用 viper 的環境變數命名規則)
+      - DATABASES__POSTGRESQL__MASTER__HOST=postgresql
+      - DATABASES__POSTGRESQL__MASTER__PORT=5432
+      - DATABASES__POSTGRESQL__MASTER__USERNAME=stream_user
+      - DATABASES__POSTGRESQL__MASTER__PASSWORD=stream_password
+      - DATABASES__POSTGRESQL__MASTER__DBNAME=stream_demo
+      - DATABASES__POSTGRESQL__SLAVE__HOST=postgresql
+      - DATABASES__POSTGRESQL__SLAVE__PORT=5432
+      - DATABASES__POSTGRESQL__SLAVE__USERNAME=stream_user
+      - DATABASES__POSTGRESQL__SLAVE__PASSWORD=stream_password
+      - DATABASES__POSTGRESQL__SLAVE__DBNAME=stream_demo
+      # Redis 配置
+      - REDIS__MASTER__HOST=redis
+      - REDIS__MASTER__PORT=6379
+      - REDIS__MASTER__PASSWORD=
+      - REDIS__MASTER__DB=0
+      - REDIS__SLAVE__HOST=redis
+      - REDIS__SLAVE__PORT=6379
+      - REDIS__SLAVE__PASSWORD=
+      - REDIS__SLAVE__DB=0
+      # MinIO 配置
+      - STORAGE__S3__ENDPOINT=http://minio:9000
+      - STORAGE__S3__ACCESS_KEY=minioadmin
+      - STORAGE__S3__SECRET_KEY=minioadmin
+      - STORAGE__S3__BUCKET=stream-demo-videos
+      # 服務配置
+      - GIN__HOST=0.0.0.0
+      - GIN__PORT=8080
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# 網路定義
+networks:
+  stream-demo-network:
+    external: true 

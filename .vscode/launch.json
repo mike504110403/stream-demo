@@ -2,21 +2,13 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "🚀 啟動後端 (PostgreSQL + .env)",
+      "name": "🚀 啟動後端 (本地環境)",
       "type": "go",
       "request": "launch",
       "mode": "auto",
-      "program": "${workspaceFolder}/backend/main.go",
-      "cwd": "${workspaceFolder}/backend",
-      "envFile": "${workspaceFolder}/backend/.env",
-      "env": {
-        "APP_ENV": "local",
-        "DATABASE_TYPE": "postgresql",
-        "FRONTEND_HOST": "host.docker.internal",
-        "FRONTEND_PORT": "5173",
-        "BACKEND_HOST": "host.docker.internal",
-        "BACKEND_PORT": "8080"
-      },
+      "program": "${workspaceFolder}/services/api/main.go",
+      "cwd": "${workspaceFolder}/services/api",
+      "envFile": "${workspaceFolder}/services/api/.env",
       "args": ["-env", "local", "-db", "postgresql"],
       "showLog": true,
       "console": "integratedTerminal",
@@ -27,130 +19,26 @@
       }
     },
     {
-      "name": "🚀 啟動後端 (MySQL + .env)",
-      "type": "go",
-      "request": "launch",
-      "mode": "auto",
-      "program": "${workspaceFolder}/backend/main.go",
-      "cwd": "${workspaceFolder}/backend",
-      "envFile": "${workspaceFolder}/backend/.env",
-      "env": {
-        "APP_ENV": "local",
-        "DATABASE_TYPE": "mysql",
-        "FRONTEND_HOST": "host.docker.internal",
-        "FRONTEND_PORT": "5173",
-        "BACKEND_HOST": "host.docker.internal",
-        "BACKEND_PORT": "8080"
-      },
-      "args": ["-env", "local", "-db", "mysql"],
-      "showLog": true,
-      "console": "integratedTerminal",
-      "presentation": {
-        "hidden": false,
-        "group": "開發",
-        "order": 2
-      }
-    },
-    {
-      "name": "🚀 啟動後端 (默認配置 + .env)",
-      "type": "go",
-      "request": "launch",
-      "mode": "auto",
-      "program": "${workspaceFolder}/backend/main.go",
-      "cwd": "${workspaceFolder}/backend",
-      "envFile": "${workspaceFolder}/backend/.env",
-      "env": {
-        "APP_ENV": "local",
-        "FRONTEND_HOST": "host.docker.internal",
-        "FRONTEND_PORT": "5173",
-        "BACKEND_HOST": "host.docker.internal",
-        "BACKEND_PORT": "8080"
-      },
-      "args": ["-env", "local"],
-      "showLog": true,
-      "console": "integratedTerminal",
-      "presentation": {
-        "hidden": false,
-        "group": "開發",
-        "order": 3
-      }
-    },
-    {
-      "name": "🎨 啟動前端 (開發模式)",
+      "name": "🎨 啟動前端 (本地環境)",
       "type": "node-terminal",
       "request": "launch",
       "command": "npm run dev -- --port 5173 --host 0.0.0.0",
-      "cwd": "${workspaceFolder}/frontend",
-      "env": {
-        "NODE_ENV": "development",
-        "VITE_API_BASE_URL": "http://localhost:8080/api",
-        "VITE_DEV_PORT": "5173"
-      },
+      "cwd": "${workspaceFolder}/services/frontend",
+      "envFile": "${workspaceFolder}/services/frontend/.env",
       "presentation": {
         "hidden": false,
         "group": "開發",
-        "order": 4
-      }
-    },
-    {
-      "name": "🧪 後端除錯模式 (PostgreSQL)",
-      "type": "go",
-      "request": "launch",
-      "mode": "debug",
-      "program": "${workspaceFolder}/backend/main.go",
-      "cwd": "${workspaceFolder}/backend",
-      "env": {
-        "APP_ENV": "local",
-        "GIN_MODE": "debug",
-        "SERVER_PORT": "8080",
-        "SERVER_HOST": "127.0.0.1",
-        "DATABASE_TYPE": "postgresql"
-      },
-      "args": ["-config", "config/config.local.yaml", "-env", "local", "-db", "postgresql"],
-      "showLog": true,
-      "console": "integratedTerminal",
-      "stopOnEntry": false,
-      "presentation": {
-        "hidden": false,
-        "group": "除錯",
-        "order": 1
-      }
-    },
-    {
-      "name": "🧪 後端除錯模式 (MySQL)",
-      "type": "go",
-      "request": "launch",
-      "mode": "debug",
-      "program": "${workspaceFolder}/backend/main.go",
-      "cwd": "${workspaceFolder}/backend",
-      "env": {
-        "APP_ENV": "local",
-        "GIN_MODE": "debug",
-        "SERVER_PORT": "8080",
-        "SERVER_HOST": "127.0.0.1",
-        "DATABASE_TYPE": "mysql"
-      },
-      "args": ["-config", "config/config.local.yaml", "-env", "local", "-db", "mysql"],
-      "showLog": true,
-      "console": "integratedTerminal",
-      "stopOnEntry": false,
-      "presentation": {
-        "hidden": false,
-        "group": "除錯",
         "order": 2
       }
     },
     {
-      "name": "🧪 運行後端測試 (PostgreSQL)",
+      "name": "🧪 運行後端測試",
       "type": "go",
       "request": "launch",
       "mode": "test",
-      "program": "${workspaceFolder}/backend",
-      "cwd": "${workspaceFolder}/backend",
-      "env": {
-        "APP_ENV": "test",
-        "DATABASE_TYPE": "postgresql"
-      },
+      "program": "${workspaceFolder}/services/api",
+      "cwd": "${workspaceFolder}/services/api",
+      "envFile": "${workspaceFolder}/services/api/.env",
       "args": ["-v"],
       "showLog": true,
       "console": "integratedTerminal",
@@ -158,35 +46,15 @@
         "hidden": false,
         "group": "測試",
         "order": 1
-      }
-    },
-    {
-      "name": "🧪 運行後端測試 (MySQL)",
-      "type": "go",
-      "request": "launch",
-      "mode": "test",
-      "program": "${workspaceFolder}/backend",
-      "cwd": "${workspaceFolder}/backend",
-      "env": {
-        "APP_ENV": "test",
-        "DATABASE_TYPE": "mysql"
-      },
-      "args": ["-v"],
-      "showLog": true,
-      "console": "integratedTerminal",
-      "presentation": {
-        "hidden": false,
-        "group": "測試",
-        "order": 2
       }
     }
   ],
   "compounds": [
     {
-      "name": "🚀 F5 一鍵啟動 (推薦)",
+      "name": "🚀 F5 一鍵啟動 (本地環境)",
       "configurations": [
-        "🚀 啟動後端 (PostgreSQL)",
-        "🎨 啟動前端 (開發模式)"
+        "🚀 啟動後端 (本地環境)",
+        "🎨 啟動前端 (本地環境)"
       ],
       "stopAll": true,
       "preLaunchTask": "🎯 智能啟動開發環境",
@@ -194,87 +62,6 @@
         "hidden": false,
         "group": "開發",
         "order": 1
-      }
-    },
-    {
-      "name": "🎯 智能啟動完整環境 (PostgreSQL)",
-      "configurations": [
-        "🚀 啟動後端 (PostgreSQL)",
-        "🎨 啟動前端 (開發模式)"
-      ],
-      "stopAll": true,
-      "preLaunchTask": "🎯 智能啟動開發環境",
-      "presentation": {
-        "hidden": false,
-        "group": "開發",
-        "order": 2
-      }
-    },
-    {
-      "name": "🎯 智能啟動完整環境 (MySQL)",
-      "configurations": [
-        "🚀 啟動後端 (MySQL)",
-        "🎨 啟動前端 (開發模式)"
-      ],
-      "stopAll": true,
-      "preLaunchTask": "🎯 智能啟動開發環境",
-      "presentation": {
-        "hidden": false,
-        "group": "開發",
-        "order": 2
-      }
-    },
-    {
-      "name": "🎯 智能啟動完整環境 (默認)",
-      "configurations": [
-        "🚀 啟動後端 (默認配置)",
-        "🎨 啟動前端 (開發模式)"
-      ],
-      "stopAll": true,
-      "preLaunchTask": "🎯 智能啟動開發環境",
-      "presentation": {
-        "hidden": false,
-        "group": "開發",
-        "order": 3
-      }
-    },
-    {
-      "name": "🎬 一鍵啟動前後端 (PostgreSQL)",
-      "configurations": [
-        "🚀 啟動後端 (PostgreSQL)",
-        "🎨 啟動前端 (開發模式)"
-      ],
-      "stopAll": true,
-      "presentation": {
-        "hidden": false,
-        "group": "開發",
-        "order": 4
-      }
-    },
-    {
-      "name": "🎬 一鍵啟動前後端 (MySQL)",
-      "configurations": [
-        "🚀 啟動後端 (MySQL)",
-        "🎨 啟動前端 (開發模式)"
-      ],
-      "stopAll": true,
-      "presentation": {
-        "hidden": false,
-        "group": "開發",
-        "order": 5
-      }
-    },
-    {
-      "name": "🎬 一鍵啟動前後端 (默認)",
-      "configurations": [
-        "🚀 啟動後端 (默認配置)",
-        "🎨 啟動前端 (開發模式)"
-      ],
-      "stopAll": true,
-      "presentation": {
-        "hidden": false,
-        "group": "開發",
-        "order": 6
       }
     }
   ]

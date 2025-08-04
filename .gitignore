@@ -2,19 +2,17 @@ node_modules
 
 # 環境變數檔案
 .env
-backend/.env
+deploy/env/.env
 *.env
 
-# 舊的配置檔案 (已移除)
-backend/config/config.dev.yaml
-backend/config/config.prod.yaml
-
 # 編譯產物
-backend/__debug_bin*
-backend/stream-demo-backend
+services/api/__debug_bin*
+services/api/stream-demo-backend
+services/api/cmd/stream_puller/stream-puller
 
 # 前端構建產物
-frontend/dist/
+services/frontend/dist/
+services/frontend/node_modules/
 
 # IDE 文件
 .vscode/

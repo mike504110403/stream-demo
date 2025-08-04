@@ -1,0 +1,35 @@
+services:
+  # FFmpeg 影片轉碼服務
+  media:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: converter
+    restart: unless-stopped
+    volumes:
+      - ffmpeg_temp:/tmp/transcoding
+    networks:
+      - stream-demo-network
+    environment:
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET=stream-demo-videos
+      - MINIO_PROCESSED_BUCKET=stream-demo-processed
+    depends_on:
+      - minio
+    healthcheck:
+      test: ["CMD", "ffmpeg", "-version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# 資料卷定義
+volumes:
+  ffmpeg_temp:
+    driver: local
+
+# 網路定義
+networks:
+  stream-demo-network:
+    external: true 

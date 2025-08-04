@@ -1,0 +1,290 @@
+services:
+  # 基礎設施服務
+  postgresql:
+    image: postgres:15-alpine
+    container_name: stream-demo-postgresql
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: stream_demo
+      POSTGRES_USER: stream_user
+      POSTGRES_PASSWORD: stream_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../infrastructure/postgresql/init:/docker-entrypoint-initdb.d
+    networks:
+      - stream-demo-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stream_user -d stream_demo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mysql:
+    image: mysql:8.0
+    container_name: stream-demo-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: stream_demo
+      MYSQL_USER: stream_user
+      MYSQL_PASSWORD: stream_password
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ../infrastructure/mysql/init:/docker-entrypoint-initdb.d
+      - ../infrastructure/mysql/conf:/etc/mysql/conf.d
+    networks:
+      - stream-demo-network
+    command: 
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+      - --innodb-buffer-pool-size=256M
+      - --max-connections=200
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "stream_user", "-pstream_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: stream-demo-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ../infrastructure/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - stream-demo-network
+    command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: stream-demo-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_SERVER_URL: http://localhost:9000
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+      - ../infrastructure/minio/policies:/policies
+    networks:
+      - stream-demo-network
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # 業務服務
+  api:
+    build:
+      context: ../services/api
+      dockerfile: Dockerfile
+    image: stream-demo-api:latest
+    container_name: stream-demo-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    networks:
+      - stream-demo-network
+    environment:
+      - DATABASES__POSTGRESQL__MASTER__HOST=postgresql
+      - DATABASES__POSTGRESQL__MASTER__PORT=5432
+      - DATABASES__POSTGRESQL__MASTER__USERNAME=stream_user
+      - DATABASES__POSTGRESQL__MASTER__PASSWORD=stream_password
+      - DATABASES__POSTGRESQL__MASTER__DBNAME=stream_demo
+      - DATABASES__POSTGRESQL__SLAVE__HOST=postgresql
+      - DATABASES__POSTGRESQL__SLAVE__PORT=5432
+      - DATABASES__POSTGRESQL__SLAVE__USERNAME=stream_user
+      - DATABASES__POSTGRESQL__SLAVE__PASSWORD=stream_password
+      - DATABASES__POSTGRESQL__SLAVE__DBNAME=stream_demo
+      - REDIS__MASTER__HOST=redis
+      - REDIS__MASTER__PORT=6379
+      - REDIS__MASTER__PASSWORD=
+      - REDIS__MASTER__DB=0
+      - REDIS__SLAVE__HOST=redis
+      - REDIS__SLAVE__PORT=6379
+      - REDIS__SLAVE__PASSWORD=
+      - REDIS__SLAVE__DB=0
+      - STORAGE__S3__ENDPOINT=http://minio:9000
+      - STORAGE__S3__ACCESS_KEY=minioadmin
+      - STORAGE__S3__SECRET_KEY=minioadmin
+      - STORAGE__S3__BUCKET=stream-demo-videos
+      - GIN__HOST=0.0.0.0
+      - GIN__PORT=8080
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ../services/frontend
+      dockerfile: Dockerfile
+    container_name: stream-demo-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    networks:
+      - stream-demo-network
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  receiver:
+    build:
+      context: ../services/receiver
+      dockerfile: Dockerfile
+    image: stream-demo-receiver:latest
+    container_name: stream-demo-receiver
+    restart: unless-stopped
+    ports:
+      - "1935:1935"
+    volumes:
+      - hls_streams:/tmp/hls
+      - hls_standard:/tmp/hls_standard
+    networks:
+      - stream-demo-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  puller:
+    build:
+      context: ../services/puller
+      dockerfile: Dockerfile.optimized
+    container_name: stream-demo-puller
+    restart: unless-stopped
+    ports:
+      - "8083:8081"
+    volumes:
+      - public_streams:/tmp/public_streams
+    networks:
+      - stream-demo-network
+    environment:
+      - OUTPUT_DIR=/tmp/public_streams
+      - HTTP_PORT=8081
+      - DB_HOST=postgresql
+      - DB_PORT=5432
+      - DB_USER=stream_user
+      - DB_PASS=stream_password
+      - DB_NAME=stream_demo
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  converter:
+    build:
+      context: ../services/converter
+      dockerfile: Dockerfile
+    container_name: stream-demo-converter
+    restart: unless-stopped
+    volumes:
+      - ffmpeg_temp:/tmp/transcoding
+    networks:
+      - stream-demo-network
+    environment:
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET=stream-demo-videos
+      - MINIO_PROCESSED_BUCKET=stream-demo-processed
+    depends_on:
+      - minio
+    healthcheck:
+      test: ["CMD", "ffmpeg", "-version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  gateway:
+    build:
+      context: ../services/gateway
+      dockerfile: Dockerfile.reverse-proxy
+    container_name: stream-demo-gateway
+    restart: unless-stopped
+    ports:
+      - "8084:80"
+    networks:
+      - stream-demo-network
+    depends_on:
+      - frontend
+      - api
+      - receiver
+      - puller
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# 資料卷定義
+volumes:
+  postgres_data:
+    driver: local
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+  ffmpeg_temp:
+    driver: local
+  public_streams:
+    driver: local
+  hls_streams:
+    driver: local
+  hls_standard:
+    driver: local
+
+# 網路定義
+networks:
+  stream-demo-network:
+    driver: bridge
+    name: stream-demo-network
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1 

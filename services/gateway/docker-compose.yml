@@ -1,0 +1,27 @@
+services:
+  # Nginx 反向代理服務
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.reverse-proxy-prod
+    container_name: gateway
+    restart: unless-stopped
+    ports:
+      - "8084:80"      # 統一入口端口 (避免與後端 8080 衝突)
+    networks:
+      - stream-demo-network
+    depends_on:
+      - frontend
+      - api
+      - rtmp
+      - stream-puller
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# 網路定義
+networks:
+  stream-demo-network:
+    external: true 
