@@ -5,7 +5,7 @@ services:
   # PostgreSQL 資料庫服務
   postgresql:
     image: postgres:15-alpine
-    container_name: postgres
+    container_name: stream-demo-postgresql
     restart: unless-stopped
     environment:
       POSTGRES_DB: stream_demo
@@ -28,7 +28,7 @@ services:
   # MySQL 資料庫服務
   mysql:
     image: mysql:8.0
-    container_name: mysql
+    container_name: stream-demo-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root_password
@@ -60,7 +60,7 @@ services:
   # Redis 緩存和訊息服務
   redis:
     image: redis:7-alpine
-    container_name: redis
+    container_name: stream-demo-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -79,7 +79,7 @@ services:
   # MinIO 對象存儲服務 (S3 兼容)
   minio:
     image: minio/minio:latest
-    container_name: minio
+    container_name: stream-demo-minio
     restart: unless-stopped
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -108,7 +108,7 @@ services:
     build:
       context: ./ffmpeg
       dockerfile: Dockerfile
-    container_name: ffmpeg-transcoder
+    container_name: stream-demo-ffmpeg-transcoder
     restart: unless-stopped
     volumes:
       - ffmpeg_temp:/tmp/transcoding
@@ -133,7 +133,7 @@ services:
     build:
       context: ../backend
       dockerfile: cmd/stream_puller/Dockerfile.optimized
-    container_name: stream-puller
+    container_name: stream-demo-stream-puller
     restart: unless-stopped
     ports:
       - "8083:8081"  # HLS 播放服務端口
@@ -163,7 +163,7 @@ services:
   # NGINX RTMP 服務器 (LL-HLS 版本) - 處理 RTMP 推流和 HLS 生成
   nginx-rtmp:
     image: tiangolo/nginx-rtmp
-    container_name: nginx-rtmp
+    container_name: stream-demo-nginx-rtmp
     restart: unless-stopped
     ports:
       - "1935:1935"  # RTMP 推流端口 (對外開放，用於 OBS 等推流工具)
@@ -184,7 +184,7 @@ services:
     build:
       context: ./nginx
       dockerfile: Dockerfile.reverse-proxy
-    container_name: nginx-reverse-proxy
+    container_name: stream-demo-nginx-reverse-proxy
     restart: unless-stopped
     ports:
       - "8084:80"      # 統一入口端口
@@ -229,6 +229,8 @@ volumes:
 networks:
   stream-demo-network:
     driver: bridge
+    name: stream-demo-network
     ipam:
       config:
-        - subnet: 172.20.0.0/16 
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1 

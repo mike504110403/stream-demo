@@ -1,8 +1,27 @@
 # 🎬 串流平台專案
 
+## 📋 目錄
+
+- [📋 專案概述](#-專案概述)
+- [🏗️ 技術架構](#️-技術架構)
+- [🚀 快速開始](#-快速開始)
+- [📺 直播間使用](#-直播間使用)
+- [🎬 影片管理](#-影片管理)
+- [🌐 公開直播](#-公開直播)
+- [🔧 開發調試](#-開發調試)
+- [📊 功能完成度](#-功能完成度)
+- [📚 文檔](#-文檔)
+
 ## 📋 專案概述
 
 現代化全棧串流平台，提供影片上傳、自動轉碼、直播間管理和公開直播功能。採用 **PostgreSQL + Redis 混合架構**，整合 **MinIO 對象存儲** 和 **FFmpeg 本地轉碼**。
+
+### 📊 專案統計
+- **總檔案數**: 204 個核心檔案 (不含 node_modules)
+- **後端**: 117 個 Go 檔案，29 個測試檔案
+- **前端**: 37 個 Vue 組件，26 個 TypeScript 檔案
+- **專案大小**: 373MB (包含依賴)
+- **文檔**: 7 個詳細技術文檔
 
 ### 🎯 核心特色
 - ✅ **混合架構**: PostgreSQL 主資料庫 + Redis 緩存與訊息
@@ -20,23 +39,103 @@
 ## 🏗️ 技術架構
 
 ### 整體架構
-```
-前端 (Vue 3) → 後端 (Go/Gin) → 資料庫 (PostgreSQL + Redis) → 存儲 (MinIO) → 轉碼 (FFmpeg)
+
+```mermaid
+graph TB
+    subgraph "前端層"
+        A[Vue 3 前端] --> B[Element Plus UI]
+        A --> C[hls.js 播放器]
+    end
+    
+    subgraph "API 層"
+        D[Go/Gin 後端] --> E[JWT 認證]
+        D --> F[WebSocket 服務]
+    end
+    
+    subgraph "資料層"
+        G[PostgreSQL] --> H[用戶數據]
+        G --> I[影片數據]
+        G --> J[直播數據]
+        K[Redis] --> L[緩存]
+        K --> M[即時訊息]
+    end
+    
+    subgraph "存儲層"
+        N[MinIO] --> O[原始影片]
+        N --> P[轉碼後檔案]
+    end
+    
+    subgraph "轉碼層"
+        Q[FFmpeg] --> R[HLS 轉碼]
+        Q --> S[MP4 轉碼]
+    end
+    
+    subgraph "直播層"
+        T[nginx-rtmp] --> U[RTMP 推流]
+        V[stream-puller] --> W[HLS 生成]
+    end
+    
+    A --> D
+    D --> G
+    D --> K
+    D --> N
+    D --> Q
+    T --> V
+    V --> Q
+    Q --> N
 ```
 
 ### 直播架構
+
+```mermaid
+sequenceDiagram
+    participant OBS as OBS/推流軟體
+    participant RTMP as nginx-rtmp
+    participant Puller as stream-puller
+    participant FFmpeg as FFmpeg
+    participant HLS as HLS 文件
+    participant Player as 前端播放器
+    
+    OBS->>RTMP: RTMP 推流
+    RTMP->>RTMP: on_publish 事件
+    RTMP->>Puller: 觸發轉換
+    Puller->>FFmpeg: 啟動轉碼
+    FFmpeg->>HLS: 生成 HLS 文件
+    Player->>HLS: 請求播放
+    HLS->>Player: 返回串流
 ```
-OBS/推流軟體 → nginx-rtmp (1935) → on_publish 事件 → stream-puller (8083) → FFmpeg 轉換 → HLS 文件 → 前端播放器 (hls.js)
+
+### 開發/生產模式
+
+```mermaid
+graph LR
+    subgraph "開發模式"
+        A1[IDE 啟動前端] --> B1[localhost:5173]
+        A2[IDE 啟動後端] --> B2[localhost:8080]
+        C1[Docker 周邊服務] --> D1[資料庫/Redis/MinIO]
+    end
+    
+    subgraph "生產模式"
+        E1[容器化前端] --> F1[localhost:8084]
+        E2[容器化後端] --> F2[localhost:8084/api]
+        G1[完整容器化] --> H1[所有服務容器化]
+    end
+    
+    B1 --> D1
+    B2 --> D1
+    F1 --> H1
+    F2 --> H1
 ```
 
 ### 技術棧
-- **前端**: Vue 3, TypeScript, Element Plus, hls.js
-- **後端**: Go 1.24.3, Gin, GORM, JWT, 依賴注入
+- **前端**: Vue 3.4.15, TypeScript 5.3, Element Plus 2.5.3, hls.js 1.6.7, Pinia 2.1.7
+- **後端**: Go 1.24.3, Gin 1.10.1, GORM 1.30.0, JWT 5.2.2, 依賴注入
 - **資料庫**: PostgreSQL 15, Redis 7, MySQL 8.0
 - **存儲**: MinIO (S3 兼容)
 - **轉碼**: FFmpeg 6.0.1
 - **直播**: nginx-rtmp, stream-puller
 - **容器**: Docker & Docker Compose
+- **開發工具**: Vite 5.0.11, ESLint, Prettier, Vue TSC
 
 ## 🚀 快速開始
 
@@ -51,7 +150,7 @@ OBS/推流軟體 → nginx-rtmp (1935) → on_publish 事件 → stream-puller (
 #### 方式二：手動啟動
 ```bash
 # 1. 啟動周邊服務
-./cmd/manage.sh start-dev
+./cmd/start.sh
 
 # 2. 初始化服務
 ./cmd/manage.sh init      # 初始化 MinIO 桶
@@ -75,7 +174,7 @@ OBS/推流軟體 → nginx-rtmp (1935) → on_publish 事件 → stream-puller (
 
 #### 1. 啟動所有服務
 ```bash
-./cmd/manage.sh start
+./cmd/deploy.sh
 ```
 
 #### 2. 初始化服務
@@ -93,7 +192,7 @@ OBS/推流軟體 → nginx-rtmp (1935) → on_publish 事件 → stream-puller (
 - **RTMP 推流**: rtmp://localhost:1935/live
 - **HLS 播放**: http://localhost:8083/[stream_key]/index.m3u8
 
-> 💡 **開發模式優勢**: 前後端由 IDE 啟動，支援熱重載，適合本地開發。詳細說明請參考 [QUICKSTART.md](./QUICKSTART.md)
+> 💡 **開發模式優勢**: 前後端由 IDE 啟動，支援熱重載，適合本地開發。詳細說明請參考 [開發指南](./docs/DEVELOPMENT.md)
 
 ### 🔧 環境配置說明
 
@@ -192,21 +291,30 @@ closed (完全刪除)
 
 ```bash
 # 查看服務狀態
-./docker-manage.sh status
+./cmd/manage.sh status
 
 # 查看日誌
-./docker-manage.sh logs [service]
+./cmd/manage.sh logs [service]
 
 # 管理直播流服務
-./docker-manage.sh stream-puller start
-./docker-manage.sh stream-puller status
-./docker-manage.sh stream-puller test
+./cmd/manage.sh stream-puller start
+./cmd/manage.sh stream-puller status
+./cmd/manage.sh stream-puller test
 
 # 查看直播狀態
-./docker-manage.sh live-status
+./cmd/manage.sh live-status
 
 # 運行測試
-./docker-manage.sh test
+./cmd/manage.sh test
+
+# 快速診斷
+./cmd/diagnose.sh all      # 完整診斷
+./cmd/diagnose.sh ports    # 檢查端口衝突
+./cmd/diagnose.sh fix      # 自動修復問題
+
+# 健康檢查
+./cmd/start.sh health      # 檢查服務健康狀態
+./cmd/start.sh ports       # 檢查端口佔用
 ```
 
 ### 自動化流程驗證
@@ -223,37 +331,43 @@ docker-compose logs stream-puller --tail=20
 
 ## 📊 功能完成度
 
-### 高優先級
-- [x] **直播間基礎功能**: 創建、加入、開始/結束直播 ✅
-- [x] **直播間聊天系統**: 實時聊天、用戶加入/離開通知 ✅
-- [x] **角色權限管理**: 創建者/觀眾權限區分 ✅
-- [x] **實時通知系統**: WebSocket 實時通知直播狀態變化 ✅
-- [x] **統一踢出功能**: 關閉直播間時自動踢出所有用戶 ✅
-- [x] **離開直播間功能**: 用戶離開時自動跳轉回列表 ✅
-- [x] **直播間持久化**: 結束直播時保留直播間，只有關閉才刪除 ✅
-- [x] **直播間生命週期**: 開始/結束直播為狀態切換，創建/關閉為生命週期 ✅
-- [x] **重新開始直播**: 已結束的直播間可以重新開始 ✅
-- [x] **RTMP 推流支援**: nginx-rtmp 接收推流，stream-puller 轉換 HLS ✅
-- [x] **自動化推流處理**: RTMP 推流自動觸發 HLS 轉換 ✅
-- [x] **前端 HLS 播放**: hls.js 整合，支援自動重試和低延遲 ✅
-- [x] **服務管理整合**: docker-manage.sh 統一管理所有服務 ✅
-- [x] **數據清理機制**: 關閉直播間時自動清除 Redis 數據 ✅
-- [x] **公開直播系統**: 外部直播源自動拉取和轉換 ✅
+### 高優先級 ✅ 已完成
+- [x] **直播間基礎功能**: 創建、加入、開始/結束直播
+- [x] **直播間聊天系統**: 實時聊天、用戶加入/離開通知
+- [x] **角色權限管理**: 創建者/觀眾權限區分
+- [x] **實時通知系統**: WebSocket 實時通知直播狀態變化
+- [x] **統一踢出功能**: 關閉直播間時自動踢出所有用戶
+- [x] **離開直播間功能**: 用戶離開時自動跳轉回列表
+- [x] **直播間持久化**: 結束直播時保留直播間，只有關閉才刪除
+- [x] **直播間生命週期**: 開始/結束直播為狀態切換，創建/關閉為生命週期
+- [x] **重新開始直播**: 已結束的直播間可以重新開始
+- [x] **RTMP 推流支援**: nginx-rtmp 接收推流，stream-puller 轉換 HLS
+- [x] **自動化推流處理**: RTMP 推流自動觸發 HLS 轉換
+- [x] **前端 HLS 播放**: hls.js 整合，支援自動重試和低延遲
+- [x] **服務管理整合**: docker-manage.sh 統一管理所有服務
+- [x] **數據清理機制**: 關閉直播間時自動清除 Redis 數據
+- [x] **公開直播系統**: 外部直播源自動拉取和轉換
 
-### 中優先級
-- [x] **影片上傳**: 支援多格式上傳 ✅
-- [x] **自動轉碼**: 背景服務自動處理 ✅
-- [x] **多品質播放**: HLS 自適應串流 ✅
-- [x] **用戶認證**: JWT 登入註冊 ✅
-- [x] **檔案管理**: 影片列表和刪除 ✅
+### 中優先級 ✅ 已完成
+- [x] **影片上傳**: 支援多格式上傳
+- [x] **自動轉碼**: 背景服務自動處理
+- [x] **多品質播放**: HLS 自適應串流
+- [x] **用戶認證**: JWT 登入註冊
+- [x] **檔案管理**: 影片列表和刪除
 - [ ] **播放統計**: 觀看次數和時長統計
 - [ ] **搜尋功能**: 影片標題和標籤搜尋
 
-### 低優先級
+### 低優先級 🔄 待開發
 - [ ] **表情系統**: 聊天表情和禮物
 - [ ] **錄製功能**: 直播錄製和回放
 - [ ] **CDN 整合**: 外部 CDN 支援
 - [ ] **多語言**: 國際化支援
+
+### 📈 開發進度
+- **核心功能**: 100% 完成 (15/15)
+- **基礎功能**: 83% 完成 (5/6)
+- **進階功能**: 0% 完成 (0/4)
+- **整體進度**: 85% 完成 (20/25)
 
 ## 🐛 已知問題
 
@@ -268,6 +382,18 @@ docker-compose logs stream-puller --tail=20
 - **前端播放**: 整合 hls.js，支援自動重試和低延遲播放
 - **服務管理**: 統一整合到 docker-manage.sh，一鍵管理所有服務
 - **HLS 路由**: 修復 stream-puller 的 HLS 文件服務路由
+- **專案結構優化**: 清理重複的 docker 資料夾，整合檔案結構
+- **IDE 設定**: 修復 VS Code 檔案總管中 docker 資料夾隱藏問題
+
+## 📚 文檔
+
+- **[開發指南](./docs/DEVELOPMENT.md)** - 詳細的開發環境設置和調試指南
+- **[部署指南](./docs/DEPLOYMENT.md)** - 生產環境部署和維護指南
+- **[配置說明](./docs/CONFIGURATION.md)** - 環境變數和配置選項說明
+- **[專案結構](./docs/PROJECT_STRUCTURE.md)** - 專案目錄結構說明
+- **[GitHub CI 設置](./docs/GITHUB_CI_SETUP.md)** - CI/CD 流程配置
+- **[分支保護](./docs/BRANCH_PROTECTION.md)** - 分支保護規則設置
+- **[前端建置測試](./docs/FRONTEND_BUILD_TEST.md)** - 前端測試和建置指南
 
 ## 📝 開發筆記
 
@@ -279,3 +405,5 @@ docker-compose logs stream-puller --tail=20
 - 前端使用 hls.js 播放 HLS 流，支援自動重試和低延遲
 - 自動化流程：RTMP 推流 → on_publish 事件 → FFmpeg 轉換 → HLS 生成 → 前端播放
 - 關閉直播間時會清除所有相關的 Redis 數據，確保系統清潔
+- 專案採用模組化架構，前後端分離，支援獨立開發和部署
+- 完整的 Docker 容器化支援，一鍵啟動開發和生產環境

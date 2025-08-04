@@ -2,7 +2,7 @@ services:
   # PostgreSQL 資料庫服務
   postgresql:
     image: postgres:15-alpine
-    container_name: stream-demo-postgres
+    container_name: stream-demo-postgresql
     restart: unless-stopped
     environment:
       POSTGRES_DB: stream_demo
@@ -105,7 +105,7 @@ services:
     build:
       context: ./docker/ffmpeg
       dockerfile: Dockerfile
-    container_name: stream-demo-transcoder
+    container_name: stream-demo-ffmpeg-transcoder
     restart: unless-stopped
     volumes:
       - ffmpeg_temp:/tmp/transcoding
@@ -293,6 +293,8 @@ volumes:
 networks:
   stream-demo-network:
     driver: bridge
+    name: stream-demo-network
     ipam:
       config:
-        - subnet: 172.20.0.0/16 
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1 
