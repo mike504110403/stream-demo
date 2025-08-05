@@ -32,29 +32,29 @@ cd stream-demo
 #### 2. 配置環境變數
 ```bash
 # 複製環境變數範例
-cp docker/env.example docker/.env
+cp deploy/env/env.example deploy/env/.env
 
 # 編輯環境變數
-nano docker/.env
+nano deploy/env/.env
 ```
 
 #### 3. 啟動服務
 ```bash
 # 使用部署腳本
-./cmd/deploy.sh
+./deploy/scripts/deploy.sh
 
 # 或手動啟動
-cd docker
+cd infrastructure
 docker-compose -f docker-compose.yml up -d
 ```
 
 #### 4. 初始化服務
 ```bash
 # 初始化 MinIO 桶
-./cmd/manage.sh init
+./deploy/scripts/docker-manage.sh init
 
 # 初始化直播服務
-./cmd/manage.sh init-live
+./deploy/scripts/docker-manage.sh init-live
 ```
 
 ### 生產環境配置
@@ -110,50 +110,50 @@ REDIS_PASSWORD=<strong_redis_password>
 #### 啟動服務
 ```bash
 # 啟動所有服務
-./cmd/manage.sh start
+./deploy/scripts/docker-manage.sh start
 
 # 啟動特定服務
-./cmd/manage.sh start postgresql
-./cmd/manage.sh start redis
-./cmd/manage.sh start minio
+./deploy/scripts/docker-manage.sh start postgresql
+./deploy/scripts/docker-manage.sh start redis
+./deploy/scripts/docker-manage.sh start minio
 ```
 
 #### 停止服務
 ```bash
 # 停止所有服務
-./cmd/manage.sh stop
+./deploy/scripts/docker-manage.sh stop
 
 # 停止特定服務
-./cmd/manage.sh stop backend
-./cmd/manage.sh stop frontend
+./deploy/scripts/docker-manage.sh stop api
+./deploy/scripts/docker-manage.sh stop frontend
 ```
 
 #### 重啟服務
 ```bash
 # 重啟所有服務
-./cmd/manage.sh restart
+./deploy/scripts/docker-manage.sh restart
 
 # 重啟特定服務
-./cmd/manage.sh restart backend
+./deploy/scripts/docker-manage.sh restart api
 ```
 
 #### 查看狀態
 ```bash
 # 查看所有服務狀態
-./cmd/manage.sh status
+./deploy/scripts/docker-manage.sh status
 
 # 查看特定服務狀態
-./cmd/manage.sh status backend
+./deploy/scripts/docker-manage.sh status api
 ```
 
 #### 查看日誌
 ```bash
 # 查看所有服務日誌
-./cmd/manage.sh logs
+./deploy/scripts/docker-manage.sh logs
 
 # 查看特定服務日誌
-./cmd/manage.sh logs backend
-./cmd/manage.sh logs postgresql
+./deploy/scripts/docker-manage.sh logs api
+./deploy/scripts/docker-manage.sh logs postgresql
 ```
 
 ## 🔒 安全配置
@@ -260,7 +260,7 @@ nethogs
 curl http://localhost:8080/api/health
 
 # 服務狀態檢查
-./cmd/manage.sh status
+./deploy/scripts/docker-manage.sh status
 ```
 
 ### 備份策略
@@ -291,7 +291,7 @@ docker exec stream-demo-mysql mysqldump -u stream_user -pstream_password stream_
 mc mirror minio/stream-demo-videos /backup/storage
 
 # 配置檔案備份
-tar -czf config_backup_$(date +%Y%m%d_%H%M%S).tar.gz docker/
+tar -czf config_backup_$(date +%Y%m%d_%H%M%S).tar.gz deploy/ infrastructure/
 ```
 
 ## 🔄 更新和維護
@@ -311,7 +311,7 @@ docker-compose up -d
 ### 資料庫遷移
 ```bash
 # 執行資料庫遷移
-cd backend
+cd services/api
 go run main.go migrate
 ```
 
@@ -340,7 +340,7 @@ docker network prune -f
 docker ps -a
 
 # 查看服務日誌
-./cmd/manage.sh logs
+./deploy/scripts/docker-manage.sh logs
 
 # 檢查端口衝突
 netstat -tulpn | grep :8080
@@ -365,7 +365,7 @@ curl http://localhost:1935/stat
 curl http://localhost:8083/test/index.m3u8
 
 # 查看 stream-puller 日誌
-./cmd/manage.sh logs stream-puller
+./deploy/scripts/docker-manage.sh logs puller
 ```
 
 ### 性能問題
@@ -434,7 +434,7 @@ docker-compose up -d --scale backend=3
 sudo journalctl -u docker.service
 
 # 收集應用日誌
-./cmd/manage.sh logs > app_logs.txt
+./deploy/scripts/docker-manage.sh logs > app_logs.txt
 
 # 收集系統信息
 uname -a > system_info.txt

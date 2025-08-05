@@ -7,8 +7,8 @@
 ## 服務架構
 
 ### 後端服務 (Go)
-- **主要服務**: `backend/main.go`
-- **串流拉取器**: `backend/cmd/stream_puller/main.go`
+- **主要服務**: `services/api/main.go`
+- **串流拉取器**: `services/puller/main.go`
 - **測試命令**: `go test -v -race ./...`
 
 ### 前端服務 (Vue.js + TypeScript)
@@ -113,11 +113,11 @@ cd docker
 ./docker-manage.sh start
 
 # 啟動後端服務
-cd backend
+cd services/api
 go run main.go
 
 # 啟動前端服務
-cd frontend
+cd services/frontend
 npm run dev
 
 # 執行 API 測試
@@ -129,14 +129,14 @@ curl http://localhost:5173
 
 ### 後端覆蓋率
 ```bash
-cd backend
+cd services/api
 go test -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out -o coverage.html
 ```
 
 ### 前端覆蓋率
 ```bash
-cd frontend
+cd services/frontend
 npm run test:coverage
 ```
 

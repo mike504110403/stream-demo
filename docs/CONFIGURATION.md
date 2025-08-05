@@ -215,23 +215,23 @@
 
 ```bash
 # 複製配置範例
-cp docker/env.example docker/.env
+cp deploy/env/env.example deploy/env/.env
 
 # 啟動開發環境
-./cmd/start.sh start
+./deploy/scripts/docker-manage.sh start
 ```
 
 ### 生產環境
 
 ```bash
 # 複製配置範例
-cp docker/env.example docker/.env
+cp deploy/env/env.example deploy/env/.env
 
 # 編輯配置
-nano docker/.env
+nano deploy/env/.env
 
 # 部署生產環境
-./cmd/deploy.sh deploy
+./deploy/scripts/deploy.sh deploy
 ```
 
 ## 🔧 配置驗證
@@ -240,10 +240,10 @@ nano docker/.env
 
 ```bash
 # 檢查環境變數
-./cmd/start.sh check
+./deploy/scripts/docker-manage.sh check
 
 # 檢查服務狀態
-./cmd/manage.sh status
+./deploy/scripts/docker-manage.sh status
 
 # 檢查網路連接
 docker network ls | grep stream-demo

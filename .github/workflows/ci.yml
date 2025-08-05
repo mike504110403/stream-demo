@@ -26,16 +26,16 @@ jobs:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-go-${{ hashFiles('services/api/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
     
     - name: Install dependencies
-      working-directory: ./backend
+      working-directory: ./services/api
       run: go mod download
     
     - name: Run tests
-      working-directory: ./backend
+      working-directory: ./services/api
       env:
         STREAM_DEMO_DB_HOST: localhost
         STREAM_DEMO_DB_PORT: 5432
@@ -54,7 +54,7 @@ jobs:
         go tool cover -func=coverage.out
     
     - name: Check test coverage
-      working-directory: ./backend
+      working-directory: ./services/api
       run: |
         COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
         echo "Current coverage: $COVERAGE%"
@@ -66,16 +66,15 @@ jobs:
         fi
     
     - name: Run linter
-      working-directory: ./backend
+      working-directory: ./services/api
       run: |
         go vet ./...
         go fmt ./...
     
     - name: Build backend
-      working-directory: ./backend
+      working-directory: ./services/api
       run: |
         go build -o stream-demo-backend main.go
-        go build -o stream-puller ./cmd/stream_puller/main.go
 
   # 前端建置測試
   frontend-build:
@@ -90,22 +89,22 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
+        cache-dependency-path: services/frontend/package-lock.json
     
     - name: Install dependencies
-      working-directory: ./frontend
+      working-directory: ./services/frontend
       run: npm ci
     
     - name: Run linting
-      working-directory: ./frontend
+      working-directory: ./services/frontend
       run: npm run lint
     
     - name: Run type checking
-      working-directory: ./frontend
+      working-directory: ./services/frontend
       run: npm run build
     
     - name: Check formatting
-      working-directory: ./frontend
+      working-directory: ./services/frontend
       run: npx prettier --check src/
 
   # 程式碼品質檢查
@@ -119,13 +118,13 @@ jobs:
     - name: Check for sensitive files
       run: |
         # 檢查是否有硬編碼的密碼
-        if grep -r "password.*=" backend/ --include="*.go" | grep -v "password.*=.*\$\{" | grep -v "test"; then
+        if grep -r "password.*=" services/api/ --include="*.go" | grep -v "password.*=.*\$\{" | grep -v "test"; then
           echo "❌ Hardcoded passwords found"
           exit 1
         fi
         
         # 檢查是否有 .env 檔案被提交
-        if [ -f "backend/.env" ]; then
+        if [ -f "services/api/.env" ]; then
           echo "❌ .env file found in repository (should be in .gitignore)"
           exit 1
         fi
@@ -135,7 +134,7 @@ jobs:
     - name: Check file permissions
       run: |
         # 檢查腳本是否有執行權限
-        if [ -f "scripts/test.sh" ] && [ ! -x "scripts/test.sh" ]; then
+        if [ -f "services/api/scripts/test.sh" ] && [ ! -x "services/api/scripts/test.sh" ]; then
           echo "❌ Test script is not executable"
           exit 1
         fi

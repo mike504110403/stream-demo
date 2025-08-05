@@ -46,7 +46,7 @@ npm --version
 #### 方式二：命令行啟動
 ```bash
 # 啟動周邊服務
-./cmd/start.sh
+./deploy/scripts/docker-manage.sh start
 
 # 在 IDE 中啟動前後端
 # 後端: 使用 launch.json 配置
@@ -56,8 +56,8 @@ npm --version
 ### 2. 開發模式配置
 
 #### 後端配置
-- **配置文件**: `backend/config/config.local.yaml`
-- **環境變數**: `backend/.env`
+- **配置文件**: `services/api/config/config.local.yaml`
+- **環境變數**: `services/api/.env`
 - **支援資料庫**: PostgreSQL、MySQL
 - **熱重載**: 支援，修改代碼後自動重啟
 
@@ -90,11 +90,11 @@ npm --version
 #### 日誌調試
 ```bash
 # 查看後端日誌
-./cmd/manage.sh logs backend
+./deploy/scripts/docker-manage.sh logs api
 
 # 查看特定服務日誌
-./cmd/manage.sh logs postgresql
-./cmd/manage.sh logs redis
+./deploy/scripts/docker-manage.sh logs postgresql
+./deploy/scripts/docker-manage.sh logs redis
 ```
 
 #### 資料庫調試
@@ -148,7 +148,7 @@ vlc http://localhost:8083/test/index.m3u8
 
 #### 單元測試
 ```bash
-cd backend
+cd services/api
 go test -v ./...
 ```
 
@@ -244,7 +244,7 @@ kill -9 <PID>
 docker ps
 
 # 重啟服務
-./cmd/manage.sh restart
+./deploy/scripts/docker-manage.sh restart
 
 # 清理容器
 docker system prune -f
@@ -253,12 +253,12 @@ docker system prune -f
 ### 依賴問題
 ```bash
 # 後端依賴
-cd backend
+cd services/api
 go mod tidy
 go mod download
 
 # 前端依賴
-cd frontend
+cd services/frontend
 rm -rf node_modules package-lock.json
 npm install
 ```
@@ -270,8 +270,8 @@ docker ps | grep stream-demo-postgresql
 docker ps | grep stream-demo-mysql
 
 # 查看資料庫日誌
-./cmd/manage.sh logs postgresql
-./cmd/manage.sh logs mysql
+./deploy/scripts/docker-manage.sh logs postgresql
+./deploy/scripts/docker-manage.sh logs mysql
 ```
 
 ## 📚 開發資源

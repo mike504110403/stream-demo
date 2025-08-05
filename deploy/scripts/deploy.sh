@@ -173,7 +173,7 @@ build_images() {
     # 建置 stream-puller 映像
     ((current_image++))
     log_info "[$current_image/$total_images] 建置 Stream Puller 映像..."
-    if docker build -t stream-demo-stream-puller ../backend/cmd/stream_puller; then
+    if docker build -t stream-demo-stream-puller ../services/puller; then
         log_success "Stream Puller 映像建置完成"
     else
         log_error "Stream Puller 映像建置失敗"
@@ -428,10 +428,10 @@ show_production_info() {
     echo "🎥 HLS 播放: http://localhost:8083/[stream_key]/index.m3u8"
     echo ""
     echo "🔧 管理命令："
-    echo "  查看狀態: ./cmd/deploy.sh status"
-    echo "  查看日誌: ./cmd/deploy.sh logs"
-    echo "  停止服務: ./cmd/deploy.sh stop"
-    echo "  重啟服務: ./cmd/deploy.sh restart"
+    echo "  查看狀態: ./deploy/scripts/deploy.sh status"
+echo "  查看日誌: ./deploy/scripts/deploy.sh logs"
+echo "  停止服務: ./deploy/scripts/deploy.sh stop"
+echo "  重啟服務: ./deploy/scripts/deploy.sh restart"
 }
 
 # 主函數

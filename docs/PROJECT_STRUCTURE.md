@@ -4,9 +4,14 @@
 
 ```
 stream-demo/
-├── 📁 backend/           # 後端應用 (Go)
-├── 📁 frontend/          # 前端應用 (Vue 3)
-├── 📁 docker/            # Docker 相關配置
+├── 📁 services/          # 服務目錄
+│   ├── 📁 api/           # 後端應用 (Go)
+│   ├── 📁 frontend/      # 前端應用 (Vue 3)
+│   ├── 📁 puller/        # 串流拉取器
+│   ├── 📁 receiver/      # 串流接收器
+│   ├── 📁 converter/     # 媒體轉換器
+│   └── 📁 gateway/       # API 網關
+├── 📁 infrastructure/    # 基礎設施配置
 │   ├── 📁 nginx/         # Nginx 配置
 │   ├── 📁 postgresql/    # PostgreSQL 配置
 │   ├── 📁 mysql/         # MySQL 配置
@@ -34,10 +39,10 @@ stream-demo/
 - **`docker/docker-manage.sh`** - 完整的 Docker 服務管理腳本
 
 ### 🐳 Docker 配置
-- **`docker/docker-compose.yml`** - 生產模式配置 (包含前後端容器)
-- **`docker/docker-compose.dev.yml`** - 開發模式配置 (只包含周邊服務)
-- **`docker/nginx/`** - Nginx 反向代理配置
-- **`docker/*/`** - 各服務的 Docker 配置
+- **`infrastructure/docker-compose.yml`** - 生產模式配置 (包含前後端容器)
+- **`deploy/docker-compose.dev.yml`** - 開發模式配置 (只包含周邊服務)
+- **`services/gateway/`** - Nginx 反向代理配置
+- **`infrastructure/*/`** - 各服務的 Docker 配置
 
 ### 📚 文檔
 - **`README.md`** - 專案完整說明 (包含快速開始)
@@ -50,16 +55,16 @@ stream-demo/
 ### 開發模式 (推薦)
 ```bash
 # 一鍵啟動開發環境
-./cmd/start.sh start
+./deploy/scripts/docker-manage.sh start
 
 # 在 IDE 中啟動前後端
-cd backend && go run main.go
-cd frontend && npm run dev
+cd services/api && go run main.go
+cd services/frontend && npm run dev
 ```
 
 ### 生產模式
 ```bash
-./cmd/deploy.sh deploy   # 部署生產環境
+./deploy/scripts/deploy.sh deploy   # 部署生產環境
 ```
 
 ## 🔧 腳本功能對比
@@ -73,17 +78,17 @@ cd frontend && npm run dev
 
 ## 📁 目錄職責
 
-### `backend/` - 後端應用
+### `services/api/` - 後端應用
 - Go 1.24.3 + Gin 框架
 - 提供 RESTful API 和 WebSocket 服務
 - 支援 PostgreSQL 和 MySQL 資料庫
 
-### `frontend/` - 前端應用
+### `services/frontend/` - 前端應用
 - Vue 3 + TypeScript + Vite
 - Element Plus UI 框架
 - 支援熱重載開發
 
-### `docker/` - Docker 配置
+### `infrastructure/` - 基礎設施配置
 - 所有 Docker 相關配置集中管理
 - 支援開發模式和生產模式
 - 包含各服務的配置和腳本

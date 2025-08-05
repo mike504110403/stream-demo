@@ -450,7 +450,7 @@ start_dev_environment() {
         if ! check_ports; then
             echo ""
             log_info "使用 --force 選項跳過端口檢查："
-            echo "  ./cmd/start.sh start --force"
+            echo "  ./deploy/scripts/start.sh start --force"
             echo ""
             read -p "是否繼續啟動？(y/N): " -n 1 -r
             echo
