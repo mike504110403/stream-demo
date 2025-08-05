@@ -97,7 +97,7 @@ jobs:
     
     - name: Run linting
       working-directory: ./services/frontend
-      run: npm run lint
+      run: npx eslint --config .eslintrc.cjs src --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix
     
     - name: Run type checking
       working-directory: ./services/frontend
