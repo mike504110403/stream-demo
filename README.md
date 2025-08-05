@@ -36,6 +36,8 @@
 - ✅ **模組化架構**: 依賴注入 + 統一路由管理
 - ✅ **自動化推流**: RTMP 推流自動觸發 HLS 轉換
 - ✅ **數據清理**: 關閉直播間時自動清除 Redis 數據
+- ✅ **微服務架構**: 服務分離為 converter, receiver, puller, gateway
+- ✅ **自動轉碼**: 影片上傳後自動觸發 FFmpeg 轉碼處理
 
 ## 🏗️ 技術架構
 
@@ -468,7 +470,7 @@ docker-compose logs puller --tail=20
 - [x] **多品質播放**: HLS 自適應串流
 - [x] **用戶認證**: JWT 登入註冊
 - [x] **檔案管理**: 影片列表和刪除
-- [ ] **播放統計**: 觀看次數和時長統計
+- [x] **播放統計**: 觀看次數和時長統計 ✅
 - [ ] **搜尋功能**: 影片標題和標籤搜尋
 
 ### 低優先級 🔄 待開發
@@ -479,9 +481,9 @@ docker-compose logs puller --tail=20
 
 ### 📈 開發進度
 - **核心功能**: 100% 完成 (15/15)
-- **基礎功能**: 83% 完成 (5/6)
+- **基礎功能**: 100% 完成 (6/6) ✅
 - **進階功能**: 0% 完成 (0/4)
-- **整體進度**: 85% 完成 (20/25)
+- **整體進度**: 88% 完成 (21/25)
 
 ## 🐛 已知問題
 
@@ -489,6 +491,9 @@ docker-compose logs puller --tail=20
 - **服務重命名**: 已完成 media-service → converter, rtmp-service → receiver, stream-puller → puller
 - **專案結構優化**: 已完成微服務架構重構，清理多餘文件
 - **F5 一鍵啟動**: 已修復路徑問題和服務名稱檢查，現在可以正常使用
+- **轉碼服務配置**: 已修復 converter 服務容器名稱配置錯誤問題
+- **前端代理配置**: 已修復 HLS 文件訪問路徑重複問題
+- **公開直播路徑**: 已修復前端硬編碼 HLS URL 路徑問題
 
 ## 📚 文檔
 
@@ -526,3 +531,8 @@ docker-compose logs puller --tail=20
   - 簡化了 VS Code 配置，移除重複配置
   - 環境變數改為使用 `envFile` 管理，避免硬編碼
   - 自動化檢查依賴、安裝依賴、啟動周邊服務
+- **最新修復**:
+  - 修正了 converter 服務容器名稱配置錯誤 (`stream-demo-transcoder` → `stream-demo-converter`)
+  - 修正了前端代理配置中的路徑重複問題 (`/stream-puller` → `/`)
+  - 修正了公開直播前端硬編碼 HLS URL 路徑 (`/stream-puller/${streamName}/index.m3u8` → `/stream-puller/hls/${streamName}/index.m3u8`)
+  - 影片上傳後自動轉碼功能現在可以正常工作

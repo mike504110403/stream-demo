@@ -1,35 +1,28 @@
 package main
 
 import (
-	"encoding/json"
-	"flag"
 	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
 
+	"stream-demo/backend/database/models"
+	"stream-demo/backend/repositories/postgresql"
+	"stream-demo/backend/services"
+
+	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-// StreamConfig 外部流配置
-type StreamConfig struct {
-	ID          uint   `json:"id" gorm:"primaryKey"`
-	Name        string `json:"name" gorm:"uniqueIndex"`
-	Title       string `json:"title"`
-	Type        string `json:"type"` // "hls", "rtmp", "rtsp"
-	URL         string `json:"url"`
-	Enabled     bool   `json:"enabled"`
-	Category    string `json:"category"`
-	Description string `json:"description"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-}
+// StreamConfig 外部流配置 (使用資料庫模型)
+type StreamConfig = models.PublicStream
 
 // StreamProcess 流進程管理
 type StreamProcess struct {
@@ -47,6 +40,7 @@ type StreamPuller struct {
 	httpPort      int
 	mu            sync.RWMutex
 	db            *gorm.DB
+	configService *services.PublicStreamConfigService
 	maxConcurrent int // 最大同時轉檔數
 }
 
@@ -63,13 +57,35 @@ func logWarning(format string, args ...interface{}) {
 	fmt.Printf("[WARNING] "+format+"\n", args...)
 }
 
+// getEnv 從環境變數讀取字串，如果不存在則返回預設值
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+// getEnvAsInt 從環境變數讀取整數，如果不存在或解析失敗則返回預設值
+func getEnvAsInt(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if intValue, err := strconv.Atoi(value); err == nil {
+			return intValue
+		}
+	}
+	return defaultValue
+}
+
 // NewStreamPuller 創建優化的流拉取器
 func NewStreamPuller(outputDir string, httpPort int, db *gorm.DB) *StreamPuller {
+	repo := postgresql.NewPublicStreamRepository(db)
+	configService := services.NewPublicStreamConfigService(repo)
+
 	return &StreamPuller{
 		streams:       make(map[string]*StreamProcess),
 		outputDir:     outputDir,
 		httpPort:      httpPort,
 		db:            db,
+		configService: configService,
 		maxConcurrent: 2, // 限制最多同時轉檔 2 個流
 	}
 }
@@ -138,13 +154,22 @@ func (sp *StreamPuller) loadStreamsFromDatabase() error {
 		return nil
 	}
 
+	// 先查詢所有記錄，看看資料庫中有什麼
+	var allStreams []StreamConfig
+	if err := sp.db.Find(&allStreams).Error; err != nil {
+		return fmt.Errorf("查詢所有流配置失敗: %w", err)
+	}
+	logInfo("📊 資料庫中共有 %d 個流配置", len(allStreams))
+
+	// 查詢啟用的流配置
 	var streams []StreamConfig
-	if err := sp.db.Table("public_streams").Where("enabled = ?", true).Find(&streams).Error; err != nil {
-		return fmt.Errorf("查詢流配置失敗: %w", err)
+	if err := sp.db.Where("enabled = ?", true).Find(&streams).Error; err != nil {
+		return fmt.Errorf("查詢啟用的流配置失敗: %w", err)
 	}
 
 	for _, stream := range streams {
 		sp.AddStream(stream)
+		logInfo("📺 載入流配置: %s (%s) - 啟用: %t", stream.Name, stream.Title, stream.Enabled)
 	}
 
 	logInfo("📊 從資料庫載入了 %d 個啟用的流配置", len(streams))
@@ -284,58 +309,136 @@ func (sp *StreamPuller) StopStream(name string) {
 
 // startHTTPServer 啟動 HTTP 服務器
 func (sp *StreamPuller) startHTTPServer() {
-	mux := http.NewServeMux()
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.Default()
 
-	// 健康檢查
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":    "healthy",
-			"timestamp": time.Now().Unix(),
-			"service":   "stream-puller",
-		})
+	// 設置 CORS 中間件
+	r.Use(func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Range")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+		c.Next()
 	})
 
-	// 流狀態
-	mux.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
+	// 健康檢查
+	r.GET("/health", func(c *gin.Context) {
+		// 返回流狀態
 		sp.mu.RLock()
-		defer sp.mu.RUnlock()
-
 		status := make(map[string]interface{})
 		for name, streamProcess := range sp.streams {
 			streamProcess.mu.Lock()
 			status[name] = map[string]interface{}{
 				"running": streamProcess.Running,
-				"config":  streamProcess.Config,
+				"title":   streamProcess.Config.Title,
+				"type":    streamProcess.Config.Type,
 			}
 			streamProcess.mu.Unlock()
 		}
+		sp.mu.RUnlock()
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(status)
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "healthy",
+			"streams": status,
+		})
 	})
 
-	// 靜態文件服務 (HLS 文件)
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// 設置 CORS 頭
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	// 流控制 API
+	api := r.Group("/api")
+	{
+		api.GET("/streams", func(c *gin.Context) {
+			// 獲取所有流狀態
+			sp.mu.RLock()
+			streams := make([]map[string]interface{}, 0)
+			for name, streamProcess := range sp.streams {
+				streamProcess.mu.Lock()
+				streams = append(streams, map[string]interface{}{
+					"name":    name,
+					"title":   streamProcess.Config.Title,
+					"running": streamProcess.Running,
+					"type":    streamProcess.Config.Type,
+					"enabled": streamProcess.Config.Enabled,
+				})
+				streamProcess.mu.Unlock()
+			}
+			sp.mu.RUnlock()
 
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
+			c.JSON(http.StatusOK, gin.H{"streams": streams})
+		})
+
+		api.POST("/streams", func(c *gin.Context) {
+			// 啟動流
+			streamName := c.PostForm("name")
+			if streamName == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Stream name is required"})
+				return
+			}
+
+			sp.mu.RLock()
+			streamProcess, exists := sp.streams[streamName]
+			sp.mu.RUnlock()
+
+			if !exists {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Stream not found"})
+				return
+			}
+
+			go sp.startExternalStream(streamName, streamProcess)
+			c.JSON(http.StatusOK, gin.H{"status": "started"})
+		})
+
+		api.DELETE("/streams", func(c *gin.Context) {
+			// 停止流
+			streamName := c.PostForm("name")
+			if streamName == "" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Stream name is required"})
+				return
+			}
+
+			sp.StopStream(streamName)
+			c.JSON(http.StatusOK, gin.H{"status": "stopped"})
+		})
+	}
+
+	// 靜態文件服務 - 提供 HLS 文件 (最後註冊)
+	r.GET("/hls/*filepath", func(c *gin.Context) {
+		filepath := c.Param("filepath")
+
+		// 處理靜態文件
+		if strings.HasSuffix(filepath, ".m3u8") || strings.HasSuffix(filepath, ".ts") {
+			// 設置正確的 MIME 類型
+			if strings.HasSuffix(filepath, ".m3u8") {
+				c.Header("Content-Type", "application/vnd.apple.mpegurl")
+			} else if strings.HasSuffix(filepath, ".ts") {
+				c.Header("Content-Type", "video/mp2t")
+			}
+
+			// 構建文件路徑
+			filePath := sp.outputDir + "/" + filepath
+
+			// 檢查文件是否存在
+			if _, err := os.Stat(filePath); os.IsNotExist(err) {
+				c.Status(http.StatusNotFound)
+				return
+			}
+
+			// 提供文件
+			c.File(filePath)
 			return
 		}
 
-		// 提供靜態文件
-		http.FileServer(http.Dir(sp.outputDir)).ServeHTTP(w, r)
+		// 其他請求返回 404
+		c.Status(http.StatusNotFound)
 	})
 
 	// 啟動服務器
 	addr := fmt.Sprintf(":%d", sp.httpPort)
 	logInfo("🌐 HTTP 服務器啟動在端口 %d", sp.httpPort)
-	if err := http.ListenAndServe(addr, mux); err != nil {
+	if err := r.Run(addr); err != nil {
 		logError("HTTP 服務器啟動失敗: %v", err)
 	}
 }
@@ -352,19 +455,18 @@ func (sp *StreamPuller) Stop() {
 }
 
 func main() {
-	// 解析命令行參數
-	outputDir := flag.String("output", "/tmp/public_streams", "輸出目錄")
-	port := flag.Int("port", 8081, "HTTP 端口")
-	dbHost := flag.String("db-host", "localhost", "資料庫主機")
-	dbPort := flag.Int("db-port", 5432, "資料庫端口")
-	dbUser := flag.String("db-user", "stream_user", "資料庫用戶")
-	dbPass := flag.String("db-pass", "stream_password", "資料庫密碼")
-	dbName := flag.String("db-name", "stream_demo", "資料庫名稱")
-	flag.Parse()
+	// 從環境變數讀取配置
+	outputDir := getEnv("OUTPUT_DIR", "/tmp/public_streams")
+	port := getEnvAsInt("HTTP_PORT", 8081)
+	dbHost := getEnv("DB_HOST", "localhost")
+	dbPort := getEnvAsInt("DB_PORT", 5432)
+	dbUser := getEnv("DB_USER", "stream_user")
+	dbPass := getEnv("DB_PASS", "stream_password")
+	dbName := getEnv("DB_NAME", "stream_demo")
 
 	// 連接資料庫
 	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		*dbHost, *dbPort, *dbUser, *dbPass, *dbName)
+		dbHost, dbPort, dbUser, dbPass, dbName)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -376,7 +478,7 @@ func main() {
 	}
 
 	// 創建並啟動 StreamPuller
-	sp := NewStreamPuller(*outputDir, *port, db)
+	sp := NewStreamPuller(outputDir, port, db)
 	if err := sp.Start(); err != nil {
 		logError("啟動 StreamPuller 失敗: %v", err)
 		os.Exit(1)

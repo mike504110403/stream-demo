@@ -120,7 +120,7 @@ services:
   puller:
     build:
       context: ../services/puller
-      dockerfile: Dockerfile.optimized
+      dockerfile: Dockerfile
     image: stream-demo-puller:latest
     container_name: stream-demo-puller
     restart: unless-stopped

@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
       https: env.VITE_DEV_HTTPS === 'true',
       proxy: {
         '/api': {
-          target: env.VITE_API_BASE_URL || 'http://localhost:8084',
+          target: 'http://localhost:8080',
           changeOrigin: true,
           secure: false,
           ws: true, // 支援 WebSocket
@@ -37,10 +37,10 @@ export default defineConfig(({ mode }) => {
           },
         },
         '/stream-puller': {
-          target: env.VITE_STREAM_PULLER_BASE_URL || 'http://localhost:8084',
+          target: env.VITE_STREAM_PULLER_BASE_URL || 'http://localhost:8083',
           changeOrigin: true,
           secure: false,
-          rewrite: (path) => path.replace(/^\/stream-puller/, '/stream-puller'),
+          rewrite: (path) => path.replace(/^\/stream-puller/, ''),
           configure: (proxy, _options) => {
             proxy.on('error', (err, _req, _res) => {
               console.log('stream-puller proxy error', err);
@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => {
           },
         },
         '/hls': {
-          target: env.VITE_HLS_BASE_URL || 'http://localhost:8084',
+          target: env.VITE_HLS_BASE_URL || 'http://localhost:8082',
           changeOrigin: true,
           secure: false,
           configure: (proxy, _options) => {
@@ -58,7 +58,7 @@ export default defineConfig(({ mode }) => {
           },
         },
         '/ws': {
-          target: env.VITE_WS_BASE_URL || 'http://localhost:8084',
+          target: env.VITE_WS_BASE_URL || 'http://localhost:8080',
           changeOrigin: true,
           secure: false,
           ws: true, // 支援 WebSocket

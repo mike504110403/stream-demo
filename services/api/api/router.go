@@ -63,8 +63,9 @@ func (r *Router) SetupRoutes() {
 
 // setupMiddleware 設置中間件
 func (r *Router) setupMiddleware() {
+	r.engine.Use(middleware.CORSMiddleware())
 	r.engine.Use(middleware.ErrorHandler())
-	// 注意：CORS、Logger、Recovery 中間件需要另外實現或使用 gin 內建的
+	// 注意：Logger、Recovery 中間件需要另外實現或使用 gin 內建的
 }
 
 // setupPublicRoutes 設置公開路由
@@ -186,7 +187,9 @@ func (r *Router) setupPublicStreamRoutes(group *gin.RouterGroup) {
 	streams := group.Group("/public-streams")
 	{
 		streams.GET("", r.publicStreamHandler.GetAvailableStreams)
+		streams.POST("", r.publicStreamHandler.CreateStream)
 		streams.GET("/:name", r.publicStreamHandler.GetStreamInfo)
+		streams.PUT("/:name", r.publicStreamHandler.UpdateStream)
 		streams.GET("/:name/url", r.publicStreamHandler.GetStreamURL)
 		streams.GET("/:name/urls", r.publicStreamHandler.GetStreamURLs)
 		streams.GET("/:name/stats", r.publicStreamHandler.GetStreamStats)

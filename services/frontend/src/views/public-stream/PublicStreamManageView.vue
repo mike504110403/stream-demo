@@ -265,7 +265,7 @@ const loadStreams = async () => {
 
   try {
     // 通過 Vite 代理調用 Stream-Puller 的 API，獲取資料庫中的所有資料
-    const response = await fetch('/stream-puller/api/public-streams')
+    const response = await fetch('/api/public-streams')
     const data = await response.json()
 
     console.log('Stream-Puller API 響應:', data) // 調試用
@@ -312,11 +312,16 @@ const toggleStream = async (stream: any) => {
 
     console.log('發送資料:', { name: stream.name, enabled: newEnabled }) // 調試用
 
-    const response = await fetch(`/stream-puller/api/public-streams`, {
+    const response = await fetch(`/api/public-streams`, {
       method: 'PUT',
-      body: formData,
+      body: JSON.stringify({
+        title: formData.get('title'),
+        description: formData.get('description'),
+        url: formData.get('url'),
+        category: formData.get('category'),
+      }),
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
     })
 
@@ -353,11 +358,17 @@ const saveStream = async () => {
     })
 
     const method = editingStream.value ? 'PUT' : 'POST'
-    const response = await fetch(`/stream-puller/api/public-streams`, {
+    const response = await fetch(`/api/public-streams`, {
       method,
-      body: formData,
+      body: JSON.stringify({
+        name: formData.get('name'),
+        title: formData.get('title'),
+        description: formData.get('description'),
+        url: formData.get('url'),
+        category: formData.get('category'),
+      }),
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
     })
 

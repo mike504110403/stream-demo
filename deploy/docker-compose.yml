@@ -187,7 +187,7 @@ services:
   puller:
     build:
       context: ../services/puller
-      dockerfile: Dockerfile.optimized
+      dockerfile: Dockerfile
     container_name: stream-demo-puller
     restart: unless-stopped
     ports:

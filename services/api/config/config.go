@@ -591,7 +591,7 @@ func setDefaultValues(config *Configurations) {
 		config.Transcode.FFmpeg.Enabled = true
 	}
 	if config.Transcode.FFmpeg.ContainerName == "" {
-		config.Transcode.FFmpeg.ContainerName = "stream-demo-transcoder"
+		config.Transcode.FFmpeg.ContainerName = "stream-demo-converter"
 	}
 
 	// 影片預設值

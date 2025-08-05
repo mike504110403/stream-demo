@@ -20,6 +20,11 @@ services:
       - DB_USER=stream_user
       - DB_PASS=stream_password
       - DB_NAME=stream_demo
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET=stream-demo-videos
+      - MINIO_PROCESSED_BUCKET=stream-demo-processed
     depends_on:
       postgresql:
         condition: service_healthy

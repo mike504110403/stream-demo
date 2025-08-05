@@ -13,7 +13,7 @@ COPY . .
 RUN go mod download
 
 # 編譯 stream-puller
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o stream-puller ./cmd/stream_puller
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o stream-puller .
 
 # 運行階段
 FROM alpine:latest
@@ -46,4 +46,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8081/health || exit 1
 
 # 啟動命令
-CMD ["./stream-puller", "-output", "/tmp/public_streams", "-port", "8081"] 
+CMD ["./stream-puller"] 
