@@ -372,6 +372,11 @@ func (m *MockVideoService) ConfirmUploadOnly(videoID uint, s3Key string) error {
 	return args.Error(0)
 }
 
+func (m *MockVideoService) ConfirmUploadAndStartProcessingWithKey(videoID uint, s3Key string) error {
+	args := m.Called(videoID, s3Key)
+	return args.Error(0)
+}
+
 func (m *MockVideoService) GetVideos(offset, limit int) ([]*dto.VideoDTO, int64, error) {
 	args := m.Called(offset, limit)
 	if args.Get(0) == nil {
