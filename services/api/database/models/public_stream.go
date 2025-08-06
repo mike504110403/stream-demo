@@ -21,4 +21,4 @@ type PublicStream struct {
 // TableName 指定表名
 func (PublicStream) TableName() string {
 	return "public_streams"
-} 
+}

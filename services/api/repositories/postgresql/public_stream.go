@@ -57,4 +57,4 @@ func (r *PublicStreamRepository) Delete(id uint) error {
 // ToggleEnabled 切換啟用狀態
 func (r *PublicStreamRepository) ToggleEnabled(name string, enabled bool) error {
 	return r.DB.Model(&models.PublicStream{}).Where("name = ?", name).Update("enabled", enabled).Error
-} 
+}

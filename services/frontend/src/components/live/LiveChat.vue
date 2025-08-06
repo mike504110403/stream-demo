@@ -102,190 +102,190 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, onMounted, onUnmounted, nextTick, watch } from "vue";
+import { ElMessage } from "element-plus";
 import {
   Loading,
   InfoFilled,
   Warning,
   ChatDotRound,
-} from '@element-plus/icons-vue'
-import type { ChatMessage } from '@/types'
+} from "@element-plus/icons-vue";
+import type { ChatMessage } from "@/types";
 
 interface Props {
-  liveId: number
-  currentUserId: number
-  currentUsername: string
-  chatEnabled?: boolean
+  liveId: number;
+  currentUserId: number;
+  currentUsername: string;
+  chatEnabled?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   chatEnabled: true,
-})
+});
 
 // 響應式數據
-const messages = ref<ChatMessage[]>([])
-const messageText = ref('')
-const loading = ref(false)
-const connected = ref(false)
-const onlineUsers = ref(0)
-const messagesContainer = ref<HTMLElement>()
+const messages = ref<ChatMessage[]>([]);
+const messageText = ref("");
+const loading = ref(false);
+const connected = ref(false);
+const onlineUsers = ref(0);
+const messagesContainer = ref<HTMLElement>();
 
 // WebSocket 相關
-let ws: WebSocket | null = null
-let reconnectTimer: number | null = null
-let heartbeatTimer: number | null = null
+let ws: WebSocket | null = null;
+let reconnectTimer: number | null = null;
+let heartbeatTimer: number | null = null;
 
 // 初始化 WebSocket 連接
 const initWebSocket = () => {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const wsUrl = `${protocol}//${window.location.host}/ws/live/${props.liveId}`
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const wsUrl = `${protocol}//${window.location.host}/ws/live/${props.liveId}`;
 
-  console.log('連接 WebSocket:', wsUrl)
+  console.log("連接 WebSocket:", wsUrl);
 
-  ws = new WebSocket(wsUrl)
+  ws = new WebSocket(wsUrl);
 
   ws.onopen = () => {
-    console.log('WebSocket 連接成功')
-    connected.value = true
-    startHeartbeat()
-  }
+    console.log("WebSocket 連接成功");
+    connected.value = true;
+    startHeartbeat();
+  };
 
-  ws.onmessage = event => {
+  ws.onmessage = (event) => {
     try {
-      const data = JSON.parse(event.data)
-      handleWebSocketMessage(data)
+      const data = JSON.parse(event.data);
+      handleWebSocketMessage(data);
     } catch (error) {
-      console.error('解析 WebSocket 訊息失敗:', error)
+      console.error("解析 WebSocket 訊息失敗:", error);
     }
-  }
+  };
 
   ws.onclose = () => {
-    console.log('WebSocket 連接關閉')
-    connected.value = false
-    stopHeartbeat()
-    scheduleReconnect()
-  }
+    console.log("WebSocket 連接關閉");
+    connected.value = false;
+    stopHeartbeat();
+    scheduleReconnect();
+  };
 
-  ws.onerror = error => {
-    console.error('WebSocket 錯誤:', error)
-    connected.value = false
-  }
-}
+  ws.onerror = (error) => {
+    console.error("WebSocket 錯誤:", error);
+    connected.value = false;
+  };
+};
 
 // 處理 WebSocket 訊息
 const handleWebSocketMessage = (data: any) => {
   switch (data.type) {
-    case 'chat_message':
-      addMessage(data.message)
-      break
-    case 'system_message':
-      addSystemMessage(data.content)
-      break
-    case 'user_count':
-      onlineUsers.value = data.count
-      break
-    case 'chat_toggle':
+    case "chat_message":
+      addMessage(data.message);
+      break;
+    case "system_message":
+      addSystemMessage(data.content);
+      break;
+    case "user_count":
+      onlineUsers.value = data.count;
+      break;
+    case "chat_toggle":
       // 聊天開關狀態更新
-      break
-    case 'pong':
+      break;
+    case "pong":
       // 心跳回應
-      break
+      break;
     default:
-      console.log('未知訊息類型:', data.type)
+      console.log("未知訊息類型:", data.type);
   }
-}
+};
 
 // 發送訊息
 const sendMessage = () => {
   if (!messageText.value.trim() || !connected.value) {
-    return
+    return;
   }
 
   const message = {
-    type: 'chat_message',
+    type: "chat_message",
     live_id: props.liveId,
     user_id: props.currentUserId,
     username: props.currentUsername,
     content: messageText.value.trim(),
-  }
+  };
 
   if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(message))
-    messageText.value = ''
+    ws.send(JSON.stringify(message));
+    messageText.value = "";
   } else {
-    ElMessage.error('連接已斷開，請重新載入頁面')
+    ElMessage.error("連接已斷開，請重新載入頁面");
   }
-}
+};
 
 // 添加訊息到列表
 const addMessage = (message: ChatMessage) => {
-  messages.value.push(message)
-  scrollToBottom()
-}
+  messages.value.push(message);
+  scrollToBottom();
+};
 
 // 添加系統訊息
 const addSystemMessage = (content: string) => {
   const systemMessage: ChatMessage = {
     id: Date.now(),
-    type: 'system',
+    type: "system",
     live_id: props.liveId,
     user_id: 0,
-    username: '系統',
+    username: "系統",
     content,
     created_at: new Date().toISOString(),
-  }
+  };
 
-  messages.value.push(systemMessage)
-  scrollToBottom()
-}
+  messages.value.push(systemMessage);
+  scrollToBottom();
+};
 
 // 滾動到底部
 const scrollToBottom = () => {
   nextTick(() => {
     if (messagesContainer.value) {
-      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
     }
-  })
-}
+  });
+};
 
 // 切換聊天功能
 const toggleChat = (enabled: string | number | boolean) => {
   // 這裡可以調用 API 來切換聊天狀態
-  console.log('切換聊天狀態:', enabled)
-}
+  console.log("切換聊天狀態:", enabled);
+};
 
 // 心跳機制
 const startHeartbeat = () => {
   heartbeatTimer = window.setInterval(() => {
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'ping' }))
+      ws.send(JSON.stringify({ type: "ping" }));
     }
-  }, 30000) // 每30秒發送一次心跳
-}
+  }, 30000); // 每30秒發送一次心跳
+};
 
 const stopHeartbeat = () => {
   if (heartbeatTimer) {
-    clearInterval(heartbeatTimer)
-    heartbeatTimer = null
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
   }
-}
+};
 
 // 重連機制
 const scheduleReconnect = () => {
   if (reconnectTimer) {
-    clearTimeout(reconnectTimer)
+    clearTimeout(reconnectTimer);
   }
 
   reconnectTimer = window.setTimeout(() => {
-    console.log('嘗試重新連接...')
-    initWebSocket()
-  }, 3000) // 3秒後重連
-}
+    console.log("嘗試重新連接...");
+    initWebSocket();
+  }, 3000); // 3秒後重連
+};
 
 // 載入歷史訊息
 const loadHistoryMessages = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     // 這裡應該調用 API 來載入歷史訊息
     // const response = await getChatMessages(props.liveId)
@@ -296,76 +296,76 @@ const loadHistoryMessages = async () => {
       messages.value = [
         {
           id: 1,
-          type: 'system',
+          type: "system",
           live_id: props.liveId,
           user_id: 0,
-          username: '系統',
-          content: '歡迎來到直播間！',
+          username: "系統",
+          content: "歡迎來到直播間！",
           created_at: new Date(Date.now() - 60000).toISOString(),
         },
-      ]
-      loading.value = false
-      scrollToBottom()
-    }, 1000)
+      ];
+      loading.value = false;
+      scrollToBottom();
+    }, 1000);
   } catch (error) {
-    console.error('載入聊天記錄失敗:', error)
-    loading.value = false
+    console.error("載入聊天記錄失敗:", error);
+    loading.value = false;
   }
-}
+};
 
 // 工具函數
 const formatTime = (dateString: string): string => {
-  const date = new Date(dateString)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
+  const date = new Date(dateString);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
 
   if (diff < 60000) {
     // 1分鐘內
-    return '剛剛'
+    return "剛剛";
   } else if (diff < 3600000) {
     // 1小時內
-    return `${Math.floor(diff / 60000)}分鐘前`
+    return `${Math.floor(diff / 60000)}分鐘前`;
   } else {
-    return date.toLocaleTimeString('zh-TW', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+    return date.toLocaleTimeString("zh-TW", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
-}
+};
 
 // 監聽聊天開關狀態
 watch(
   () => props.chatEnabled,
-  enabled => {
+  (enabled) => {
     if (enabled && !connected.value) {
-      initWebSocket()
+      initWebSocket();
     }
-  }
-)
+  },
+);
 
 // 生命週期
 onMounted(() => {
-  loadHistoryMessages()
+  loadHistoryMessages();
 
   if (props.chatEnabled) {
-    initWebSocket()
+    initWebSocket();
   }
-})
+});
 
 onUnmounted(() => {
   if (ws) {
-    ws.close()
-    ws = null
+    ws.close();
+    ws = null;
   }
 
   if (reconnectTimer) {
-    clearTimeout(reconnectTimer)
+    clearTimeout(reconnectTimer);
   }
 
   if (heartbeatTimer) {
-    clearInterval(heartbeatTimer)
+    clearInterval(heartbeatTimer);
   }
-})
+});
 </script>
 
 <style scoped>

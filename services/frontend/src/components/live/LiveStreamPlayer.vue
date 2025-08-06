@@ -77,193 +77,193 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { publicStreamApi } from '@/api/public-stream'
-import type { PublicStreamInfo } from '@/types/public-stream'
+import { ref, onMounted, onUnmounted, watch } from "vue";
+import { publicStreamApi } from "@/api/public-stream";
+import type { PublicStreamInfo } from "@/types/public-stream";
 
 interface Props {
-  streamName: string
-  autoPlay?: boolean
-  showControls?: boolean
+  streamName: string;
+  autoPlay?: boolean;
+  showControls?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   autoPlay: true,
   showControls: true,
-})
+});
 
 // 響應式數據
-const videoPlayer = ref<HTMLVideoElement>()
-const streamUrl = ref('')
-const streamInfo = ref<PublicStreamInfo>({} as PublicStreamInfo)
-const loading = ref(true)
-const error = ref(false)
-const errorMessage = ref('')
-const isPlaying = ref(false)
-const isMuted = ref(false)
-const currentTime = ref(0)
-const duration = ref(0)
-const viewerCount = ref(0)
-const streamStatus = ref('載入中...')
+const videoPlayer = ref<HTMLVideoElement>();
+const streamUrl = ref("");
+const streamInfo = ref<PublicStreamInfo>({} as PublicStreamInfo);
+const loading = ref(true);
+const error = ref(false);
+const errorMessage = ref("");
+const isPlaying = ref(false);
+const isMuted = ref(false);
+const currentTime = ref(0);
+const duration = ref(0);
+const viewerCount = ref(0);
+const streamStatus = ref("載入中...");
 
 // 定時器
-let timeUpdateTimer: number | null = null
-let statsTimer: number | null = null
+let timeUpdateTimer: number | null = null;
+let statsTimer: number | null = null;
 
 // 獲取流資訊
 const fetchStreamInfo = async () => {
   try {
-    const response = await publicStreamApi.getStreamInfo(props.streamName)
-    streamInfo.value = response
-    streamStatus.value = response.status
+    const response = await publicStreamApi.getStreamInfo(props.streamName);
+    streamInfo.value = response;
+    streamStatus.value = response.status;
   } catch (err) {
-    console.error('獲取流資訊失敗:', err)
+    console.error("獲取流資訊失敗:", err);
   }
-}
+};
 
 // 獲取播放 URL
 const fetchStreamURL = async () => {
   try {
-    loading.value = true
-    error.value = false
+    loading.value = true;
+    error.value = false;
 
-    const response = await publicStreamApi.getStreamURLs(props.streamName)
-    streamUrl.value = response.urls.hls
+    const response = await publicStreamApi.getStreamURLs(props.streamName);
+    streamUrl.value = response.urls.hls;
 
     // 更新觀眾數（從流資訊中獲取）
-    viewerCount.value = streamInfo.value.viewer_count || 0
+    viewerCount.value = streamInfo.value.viewer_count || 0;
   } catch (err: any) {
-    error.value = true
-    errorMessage.value = err.message || '獲取播放地址失敗'
-    console.error('獲取播放 URL 失敗:', err)
+    error.value = true;
+    errorMessage.value = err.message || "獲取播放地址失敗";
+    console.error("獲取播放 URL 失敗:", err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 播放器事件處理
 const onLoadStart = () => {
-  loading.value = true
-  error.value = false
-}
+  loading.value = true;
+  error.value = false;
+};
 
 const onLoadedData = () => {
-  loading.value = false
+  loading.value = false;
   if (props.autoPlay && videoPlayer.value) {
-    videoPlayer.value.play().catch(err => {
-      console.error('自動播放失敗:', err)
-    })
+    videoPlayer.value.play().catch((err) => {
+      console.error("自動播放失敗:", err);
+    });
   }
-}
+};
 
 const onError = (event: Event) => {
-  loading.value = false
-  error.value = true
-  errorMessage.value = '視頻載入失敗，請檢查網路連接'
-  console.error('視頻播放錯誤:', event)
-}
+  loading.value = false;
+  error.value = true;
+  errorMessage.value = "視頻載入失敗，請檢查網路連接";
+  console.error("視頻播放錯誤:", event);
+};
 
 const onWaiting = () => {
-  loading.value = true
-}
+  loading.value = true;
+};
 
 const onPlaying = () => {
-  loading.value = false
-  isPlaying.value = true
-}
+  loading.value = false;
+  isPlaying.value = true;
+};
 
 const onPause = () => {
-  isPlaying.value = false
-}
+  isPlaying.value = false;
+};
 
 const onEnded = () => {
-  isPlaying.value = false
-}
+  isPlaying.value = false;
+};
 
 // 控制功能
 const togglePlay = () => {
   if (videoPlayer.value) {
     if (isPlaying.value) {
-      videoPlayer.value.pause()
+      videoPlayer.value.pause();
     } else {
-      videoPlayer.value.play()
+      videoPlayer.value.play();
     }
   }
-}
+};
 
 const toggleMute = () => {
   if (videoPlayer.value) {
-    videoPlayer.value.muted = !videoPlayer.value.muted
-    isMuted.value = videoPlayer.value.muted
+    videoPlayer.value.muted = !videoPlayer.value.muted;
+    isMuted.value = videoPlayer.value.muted;
   }
-}
+};
 
 const toggleFullscreen = () => {
   if (videoPlayer.value) {
     if (document.fullscreenElement) {
-      document.exitFullscreen()
+      document.exitFullscreen();
     } else {
-      videoPlayer.value.requestFullscreen()
+      videoPlayer.value.requestFullscreen();
     }
   }
-}
+};
 
 const retry = () => {
-  fetchStreamURL()
-}
+  fetchStreamURL();
+};
 
 // 時間格式化
 const formatTime = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-}
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+};
 
 // 更新時間
 const updateTime = () => {
   if (videoPlayer.value) {
-    currentTime.value = videoPlayer.value.currentTime
-    duration.value = videoPlayer.value.duration
+    currentTime.value = videoPlayer.value.currentTime;
+    duration.value = videoPlayer.value.duration;
   }
-}
+};
 
 // 更新統計資訊
 const updateStats = async () => {
   try {
-    const response = await publicStreamApi.getStreamStats(props.streamName)
-    viewerCount.value = response.data.viewer_count || 0
+    const response = await publicStreamApi.getStreamStats(props.streamName);
+    viewerCount.value = response.data.viewer_count || 0;
   } catch (err) {
-    console.error('更新統計資訊失敗:', err)
+    console.error("更新統計資訊失敗:", err);
   }
-}
+};
 
 // 生命週期
 onMounted(async () => {
-  await fetchStreamInfo()
-  await fetchStreamURL()
+  await fetchStreamInfo();
+  await fetchStreamURL();
 
   // 啟動定時器
-  timeUpdateTimer = window.setInterval(updateTime, 1000)
-  statsTimer = window.setInterval(updateStats, 5000)
-})
+  timeUpdateTimer = window.setInterval(updateTime, 1000);
+  statsTimer = window.setInterval(updateStats, 5000);
+});
 
 onUnmounted(() => {
   if (timeUpdateTimer) {
-    clearInterval(timeUpdateTimer)
+    clearInterval(timeUpdateTimer);
   }
   if (statsTimer) {
-    clearInterval(statsTimer)
+    clearInterval(statsTimer);
   }
-})
+});
 
 // 監聽流名稱變化
 watch(
   () => props.streamName,
   async () => {
-    await fetchStreamInfo()
-    await fetchStreamURL()
-  }
-)
+    await fetchStreamInfo();
+    await fetchStreamURL();
+  },
+);
 </script>
 
 <style scoped>

@@ -39,7 +39,7 @@ func (h *PublicStreamHandler) GetAvailableStreams(c *gin.Context) {
 	// 從 puller 服務獲取流配置
 	// 如果後端 API 在 Docker 中運行，使用內部網路；否則使用外部端口
 	pullerURL := getPullerURL()
-	
+
 	resp, err := http.Get(pullerURL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -61,7 +61,7 @@ func (h *PublicStreamHandler) GetAvailableStreams(c *gin.Context) {
 	var pullerResponse struct {
 		Streams []map[string]interface{} `json:"streams"`
 	}
-	
+
 	if err := json.NewDecoder(resp.Body).Decode(&pullerResponse); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "解析 puller 響應失敗",
@@ -82,7 +82,13 @@ func (h *PublicStreamHandler) GetAvailableStreams(c *gin.Context) {
 			"type":        stream["type"],
 			"enabled":     stream["enabled"],
 			"running":     stream["running"],
-			"status":      func() string { if stream["running"].(bool) { return "active" } else { return "inactive" } }(),
+			"status": func() string {
+				if stream["running"].(bool) {
+					return "active"
+				} else {
+					return "inactive"
+				}
+			}(),
 		})
 	}
 

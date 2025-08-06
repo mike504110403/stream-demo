@@ -13,17 +13,17 @@ func TestUserService_Register(t *testing.T) {
 	username := "testuser"
 	email := "test@example.com"
 	password := "password123"
-	
+
 	// 驗證輸入數據
 	assert.NotEmpty(t, username)
 	assert.NotEmpty(t, email)
 	assert.NotEmpty(t, password)
 	assert.Len(t, password, 11)
-	
+
 	// 驗證郵箱格式
 	assert.Contains(t, email, "@")
 	assert.Contains(t, email, ".")
-	
+
 	// 驗證用戶名格式
 	assert.Len(t, username, 8)
 	assert.GreaterOrEqual(t, len(username), 3)
@@ -34,16 +34,16 @@ func TestUserService_Login(t *testing.T) {
 	// 測試有效登入
 	username := "testuser"
 	password := "password123"
-	
+
 	// 驗證輸入數據
 	assert.NotEmpty(t, username)
 	assert.NotEmpty(t, password)
-	
+
 	// 模擬登入成功
 	userID := uint(1)
 	token := "jwt_token_123"
 	expiresAt := time.Now().Add(24 * time.Hour)
-	
+
 	assert.Greater(t, userID, uint(0))
 	assert.NotEmpty(t, token)
 	assert.True(t, expiresAt.After(time.Now()))
@@ -53,15 +53,15 @@ func TestUserService_Login(t *testing.T) {
 func TestUserService_GetUserByID(t *testing.T) {
 	// 測試有效用戶ID
 	userID := uint(1)
-	
+
 	assert.Greater(t, userID, uint(0))
-	
+
 	// 模擬用戶資料
 	username := "testuser"
 	email := "test@example.com"
 	avatar := "https://example.com/avatar.jpg"
 	bio := "Test user bio"
-	
+
 	assert.NotEmpty(t, username)
 	assert.NotEmpty(t, email)
 	assert.Contains(t, avatar, "http")
@@ -76,14 +76,14 @@ func TestUserService_UpdateUser(t *testing.T) {
 	newEmail := "new@example.com"
 	newAvatar := "https://example.com/new-avatar.jpg"
 	newBio := "Updated bio"
-	
+
 	// 驗證輸入數據
 	assert.Greater(t, userID, uint(0))
 	assert.NotEmpty(t, newUsername)
 	assert.NotEmpty(t, newEmail)
 	assert.Contains(t, newAvatar, "http")
 	assert.NotEmpty(t, newBio)
-	
+
 	// 驗證用戶名長度
 	assert.GreaterOrEqual(t, len(newUsername), 3)
 	assert.LessOrEqual(t, len(newUsername), 50)
@@ -93,9 +93,9 @@ func TestUserService_UpdateUser(t *testing.T) {
 func TestUserService_DeleteUser(t *testing.T) {
 	// 測試用戶刪除
 	userID := uint(1)
-	
+
 	assert.Greater(t, userID, uint(0))
-	
+
 	// 模擬刪除操作
 	deleted := true
 	assert.True(t, deleted)
@@ -116,7 +116,7 @@ func TestUserService_PasswordValidation(t *testing.T) {
 		{"no_number", "Password!", false},
 		{"no_special", "Password123", false},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.isValid {
@@ -147,7 +147,7 @@ func TestUserService_EmailValidation(t *testing.T) {
 		{"no_domain", "test@", false},
 		{"empty_email", "", false},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.isValid {
@@ -174,7 +174,7 @@ func TestUserService_UsernameValidation(t *testing.T) {
 		{"special_chars", "user@name", false},
 		{"empty_username", "", false},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.isValid {
@@ -193,13 +193,13 @@ func TestUserService_JWTTokenGeneration(t *testing.T) {
 	// 測試JWT Token生成
 	userID := uint(1)
 	username := "testuser"
-	
+
 	// 模擬JWT Token生成
 	token := generateJWTToken(userID, username)
-	
+
 	assert.NotEmpty(t, token)
 	assert.Contains(t, token, "eyJ")
-	
+
 	// 驗證Token格式（JWT通常以eyJ開頭）
 	assert.True(t, len(token) > 50)
 }
@@ -209,11 +209,11 @@ func TestUserService_PermissionValidation(t *testing.T) {
 	// 測試用戶權限
 	userID := uint(1)
 	targetUserID := uint(1)
-	
+
 	// 用戶只能操作自己的資料
 	canAccess := userID == targetUserID
 	assert.True(t, canAccess)
-	
+
 	// 測試無權限訪問
 	otherUserID := uint(2)
 	canAccessOther := userID == otherUserID
@@ -329,4 +329,4 @@ func contains(s, substr string) bool {
 func generateJWTToken(userID uint, username string) string {
 	// 模擬JWT Token生成
 	return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6InRlc3R1c2VyIiwiaWF0IjoxNjE2MTYxNjE2fQ.example_signature"
-} 
+}

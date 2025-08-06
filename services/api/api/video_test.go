@@ -67,7 +67,7 @@ func TestVideoHandler_ListVideos(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// 為每個測試創建新的 mock
 			mockVideoService := &mocks.MockVideoService{}
-			
+
 			// 創建處理器
 			handler := &VideoHandler{
 				videoService: mockVideoService,
@@ -80,7 +80,7 @@ func TestVideoHandler_ListVideos(t *testing.T) {
 
 			// 創建請求
 			req, _ := http.NewRequest("GET", "/api/videos", nil)
-			
+
 			// 添加查詢參數
 			q := req.URL.Query()
 			for key, value := range tt.queryParams {
@@ -168,7 +168,7 @@ func TestVideoHandler_GetVideo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// 為每個測試創建新的 mock
 			mockVideoService := &mocks.MockVideoService{}
-			
+
 			// 創建處理器
 			handler := &VideoHandler{
 				videoService: mockVideoService,
@@ -253,7 +253,7 @@ func TestVideoHandler_LikeVideo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// 為每個測試創建新的 mock
 			mockVideoService := &mocks.MockVideoService{}
-			
+
 			// 創建處理器
 			handler := &VideoHandler{
 				videoService: mockVideoService,
@@ -291,4 +291,4 @@ func TestVideoHandler_LikeVideo(t *testing.T) {
 			mockVideoService.AssertExpectations(t)
 		})
 	}
-} 
+}

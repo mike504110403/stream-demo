@@ -57,69 +57,69 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
-import Hls from 'hls.js'
+import { ref, onMounted, onUnmounted, computed, watch } from "vue";
+import Hls from "hls.js";
 
 interface Props {
-  streamUrl: string
-  title?: string
-  autoPlay?: boolean
-  muted?: boolean
+  streamUrl: string;
+  title?: string;
+  autoPlay?: boolean;
+  muted?: boolean;
 }
 
 interface VideoInfo {
-  resolution: string
-  bitrate: string
-  fps: string
-  buffered: string
+  resolution: string;
+  bitrate: string;
+  fps: string;
+  buffered: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: '直播',
+  title: "直播",
   autoPlay: true,
   muted: true,
-})
+});
 
-const videoRef = ref<HTMLVideoElement>()
-const hls = ref<Hls | null>(null)
-const loading = ref(false)
-const error = ref('')
-const status = ref<'idle' | 'loading' | 'playing' | 'error'>('idle')
-const latency = ref(0)
+const videoRef = ref<HTMLVideoElement>();
+const hls = ref<Hls | null>(null);
+const loading = ref(false);
+const error = ref("");
+const status = ref<"idle" | "loading" | "playing" | "error">("idle");
+const latency = ref(0);
 const videoInfo = ref<VideoInfo>({
-  resolution: '未知',
-  bitrate: '未知',
-  fps: '未知',
-  buffered: '0s',
-})
+  resolution: "未知",
+  bitrate: "未知",
+  fps: "未知",
+  buffered: "0s",
+});
 
 const statusText = computed(() => {
   switch (status.value) {
-    case 'idle':
-      return '待機'
-    case 'loading':
-      return '載入中'
-    case 'playing':
-      return '播放中'
-    case 'error':
-      return '錯誤'
+    case "idle":
+      return "待機";
+    case "loading":
+      return "載入中";
+    case "playing":
+      return "播放中";
+    case "error":
+      return "錯誤";
     default:
-      return '未知'
+      return "未知";
   }
-})
+});
 
-let latencyTimer: number | null = null
-let infoTimer: number | null = null
+let latencyTimer: number | null = null;
+let infoTimer: number | null = null;
 
 // 初始化 HLS
 const initHLS = () => {
-  if (!videoRef.value) return
+  if (!videoRef.value) return;
 
   // 檢查瀏覽器支援
   if (!Hls.isSupported()) {
-    error.value = '瀏覽器不支援 HLS'
-    status.value = 'error'
-    return
+    error.value = "瀏覽器不支援 HLS";
+    status.value = "error";
+    return;
   }
 
   // 創建 HLS 實例
@@ -160,189 +160,189 @@ const initHLS = () => {
     // maxRetries: 3,  // 暫時註釋掉不支援的屬性
     // retryDelayMs: 1000,  // 暫時註釋掉不支援的屬性
     // maxRetryDelayMs: 5000,  // 暫時註釋掉不支援的屬性
-  })
+  });
 
   // 綁定事件
   hls.value.on(Hls.Events.MEDIA_ATTACHED, () => {
-    console.log('HLS 媒體已附加')
-    hls.value?.loadSource(props.streamUrl)
-  })
+    console.log("HLS 媒體已附加");
+    hls.value?.loadSource(props.streamUrl);
+  });
 
   hls.value.on(Hls.Events.MANIFEST_LOADED, () => {
-    console.log('HLS 清單已載入')
-    loading.value = false
-    status.value = 'playing'
-  })
+    console.log("HLS 清單已載入");
+    loading.value = false;
+    status.value = "playing";
+  });
 
   hls.value.on(Hls.Events.LEVEL_LOADED, (_event, data) => {
-    console.log('HLS 品質等級已載入:', data.level)
-    updateVideoInfo()
-  })
+    console.log("HLS 品質等級已載入:", data.level);
+    updateVideoInfo();
+  });
 
   hls.value.on(Hls.Events.ERROR, (_event, data) => {
-    console.error('HLS 錯誤:', data)
+    console.error("HLS 錯誤:", data);
     if (data.fatal) {
-      error.value = `播放錯誤: ${data.details}`
-      status.value = 'error'
+      error.value = `播放錯誤: ${data.details}`;
+      status.value = "error";
     }
-  })
+  });
 
   hls.value.on(Hls.Events.FRAG_LOADED, () => {
     // 計算延遲
     if (videoRef.value) {
-      const currentTime = videoRef.value.currentTime
-      const buffered = videoRef.value.buffered
+      const currentTime = videoRef.value.currentTime;
+      const buffered = videoRef.value.buffered;
       if (buffered.length > 0) {
-        const bufferEnd = buffered.end(buffered.length - 1)
-        latency.value = Math.round((bufferEnd - currentTime) * 1000)
+        const bufferEnd = buffered.end(buffered.length - 1);
+        latency.value = Math.round((bufferEnd - currentTime) * 1000);
       }
     }
-  })
+  });
 
   // 附加到視頻元素
-  hls.value.attachMedia(videoRef.value)
-}
+  hls.value.attachMedia(videoRef.value);
+};
 
 // 更新視頻信息
 const updateVideoInfo = () => {
-  if (!videoRef.value) return
+  if (!videoRef.value) return;
 
-  const video = videoRef.value
+  const video = videoRef.value;
 
   // 解析度
   if (video.videoWidth && video.videoHeight) {
-    videoInfo.value.resolution = `${video.videoWidth}x${video.videoHeight}`
+    videoInfo.value.resolution = `${video.videoWidth}x${video.videoHeight}`;
   }
 
   // 比特率 (如果 HLS 提供)
   if (hls.value && hls.value.levels.length > 0) {
-    const currentLevel = hls.value.levels[hls.value.currentLevel]
+    const currentLevel = hls.value.levels[hls.value.currentLevel];
     if (currentLevel) {
-      videoInfo.value.bitrate = `${Math.round(currentLevel.bitrate / 1000)}kbps`
+      videoInfo.value.bitrate = `${Math.round(currentLevel.bitrate / 1000)}kbps`;
     }
   }
 
   // FPS (估算)
   if ((video as any).webkitVideoDecodedByteCount !== undefined) {
     // 這是一個粗略的估算
-    videoInfo.value.fps = '30'
+    videoInfo.value.fps = "30";
   }
 
   // 緩衝狀態
   if (video.buffered.length > 0) {
     const buffered =
-      video.buffered.end(video.buffered.length - 1) - video.currentTime
-    videoInfo.value.buffered = `${buffered.toFixed(1)}s`
+      video.buffered.end(video.buffered.length - 1) - video.currentTime;
+    videoInfo.value.buffered = `${buffered.toFixed(1)}s`;
   }
-}
+};
 
 // 重試播放
 const retry = () => {
-  error.value = ''
-  status.value = 'idle'
-  loading.value = true
+  error.value = "";
+  status.value = "idle";
+  loading.value = true;
 
   if (hls.value) {
-    hls.value.destroy()
-    hls.value = null
+    hls.value.destroy();
+    hls.value = null;
   }
 
   setTimeout(() => {
-    initHLS()
-  }, 1000)
-}
+    initHLS();
+  }, 1000);
+};
 
 // 視頻事件處理
 const onLoadStart = () => {
-  loading.value = true
-  status.value = 'loading'
-}
+  loading.value = true;
+  status.value = "loading";
+};
 
 const onLoadedMetadata = () => {
-  updateVideoInfo()
-}
+  updateVideoInfo();
+};
 
 const onCanPlay = () => {
-  loading.value = false
-  status.value = 'playing'
-}
+  loading.value = false;
+  status.value = "playing";
+};
 
 const onPlaying = () => {
-  status.value = 'playing'
-  startLatencyMonitoring()
-  startInfoMonitoring()
-}
+  status.value = "playing";
+  startLatencyMonitoring();
+  startInfoMonitoring();
+};
 
 const onWaiting = () => {
-  status.value = 'loading'
-}
+  status.value = "loading";
+};
 
 const onError = (e: Event) => {
-  console.error('視頻錯誤:', e)
-  error.value = '視頻播放錯誤'
-  status.value = 'error'
-}
+  console.error("視頻錯誤:", e);
+  error.value = "視頻播放錯誤";
+  status.value = "error";
+};
 
 // 開始延遲監控
 const startLatencyMonitoring = () => {
-  if (latencyTimer) clearInterval(latencyTimer)
+  if (latencyTimer) clearInterval(latencyTimer);
 
   latencyTimer = window.setInterval(() => {
     if (videoRef.value && hls.value) {
-      const currentTime = videoRef.value.currentTime
-      const buffered = videoRef.value.buffered
+      const currentTime = videoRef.value.currentTime;
+      const buffered = videoRef.value.buffered;
       if (buffered.length > 0) {
-        const bufferEnd = buffered.end(buffered.length - 1)
-        latency.value = Math.round((bufferEnd - currentTime) * 1000)
+        const bufferEnd = buffered.end(buffered.length - 1);
+        latency.value = Math.round((bufferEnd - currentTime) * 1000);
       }
     }
-  }, 1000)
-}
+  }, 1000);
+};
 
 // 開始信息監控
 const startInfoMonitoring = () => {
-  if (infoTimer) clearInterval(infoTimer)
+  if (infoTimer) clearInterval(infoTimer);
 
   infoTimer = window.setInterval(() => {
-    updateVideoInfo()
-  }, 2000)
-}
+    updateVideoInfo();
+  }, 2000);
+};
 
 // 清理
 const cleanup = () => {
   if (latencyTimer) {
-    clearInterval(latencyTimer)
-    latencyTimer = null
+    clearInterval(latencyTimer);
+    latencyTimer = null;
   }
 
   if (infoTimer) {
-    clearInterval(infoTimer)
-    infoTimer = null
+    clearInterval(infoTimer);
+    infoTimer = null;
   }
 
   if (hls.value) {
-    hls.value.destroy()
-    hls.value = null
+    hls.value.destroy();
+    hls.value = null;
   }
-}
+};
 
 // 監聽 URL 變化
 watch(
   () => props.streamUrl,
-  newUrl => {
+  (newUrl) => {
     if (newUrl && hls.value) {
-      hls.value.loadSource(newUrl)
+      hls.value.loadSource(newUrl);
     }
-  }
-)
+  },
+);
 
 onMounted(() => {
-  initHLS()
-})
+  initHLS();
+});
 
 onUnmounted(() => {
-  cleanup()
-})
+  cleanup();
+});
 </script>
 
 <style scoped>

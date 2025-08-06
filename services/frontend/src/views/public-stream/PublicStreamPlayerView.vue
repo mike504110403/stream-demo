@@ -1432,158 +1432,158 @@
 </style>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { publicStreamApi } from '@/api/public-stream'
-import type { PublicStreamInfo } from '@/types/public-stream'
-import Hls from 'hls.js'
-import flvjs from 'flv.js'
+import { ref, onMounted, onUnmounted, nextTick } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { publicStreamApi } from "@/api/public-stream";
+import type { PublicStreamInfo } from "@/types/public-stream";
+import Hls from "hls.js";
+import flvjs from "flv.js";
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
 // 響應式數據
-const streamInfo = ref<PublicStreamInfo | null>(null)
-const playbackUrl = ref('')
-const loading = ref(false)
-const loadingPlaybackUrl = ref(false)
-const hlsLoading = ref(false)
-const error = ref('')
-const videoPlayer = ref<HTMLVideoElement>()
-const hls = ref<Hls | null>(null)
-const flvPlayer = ref<flvjs.Player | null>(null)
-const streamURLs = ref<{ hls: string } | null>(null)
+const streamInfo = ref<PublicStreamInfo | null>(null);
+const playbackUrl = ref("");
+const loading = ref(false);
+const loadingPlaybackUrl = ref(false);
+const hlsLoading = ref(false);
+const error = ref("");
+const videoPlayer = ref<HTMLVideoElement>();
+const hls = ref<Hls | null>(null);
+const flvPlayer = ref<flvjs.Player | null>(null);
+const streamURLs = ref<{ hls: string } | null>(null);
 
 // 播放器控制
-const isFullscreen = ref(false)
-const isMuted = ref(false)
-const volume = ref(50)
-const showControls = ref(true)
+const isFullscreen = ref(false);
+const isMuted = ref(false);
+const volume = ref(50);
+const showControls = ref(true);
 
 // 聊天室
 const chatMessages = ref<
   Array<{
-    username: string
-    text: string
-    timestamp: string
+    username: string;
+    text: string;
+    timestamp: string;
   }>
->([])
-const newMessage = ref('')
-const chatMessagesRef = ref<HTMLElement | null>(null)
-const isLoggedIn = ref(true) // 簡化，實際應該從 auth store 獲取
-const streamMonitorInterval = ref<number | null>(null)
-const isChatOpen = ref(false)
-const unreadCount = ref(0)
-const isLiveStreaming = ref(false)
+>([]);
+const newMessage = ref("");
+const chatMessagesRef = ref<HTMLElement | null>(null);
+const isLoggedIn = ref(true); // 簡化，實際應該從 auth store 獲取
+const streamMonitorInterval = ref<number | null>(null);
+const isChatOpen = ref(false);
+const unreadCount = ref(0);
+const isLiveStreaming = ref(false);
 
 // 分類標籤映射
 const categoryLabels: Record<string, string> = {
-  test: '測試',
-  space: '太空',
-  news: '新聞',
-  sports: '體育',
-}
+  test: "測試",
+  space: "太空",
+  news: "新聞",
+  sports: "體育",
+};
 
 // 方法
 const loadStreamInfo = async () => {
-  const streamName = route.params.name as string
+  const streamName = route.params.name as string;
   if (!streamName) {
-    error.value = '無效的流名稱'
-    return
+    error.value = "無效的流名稱";
+    return;
   }
 
-  loading.value = true
-  error.value = ''
+  loading.value = true;
+  error.value = "";
 
   try {
-    const response = await publicStreamApi.getStreamInfo(streamName)
+    const response = await publicStreamApi.getStreamInfo(streamName);
 
     // 添加防護性檢查
     if (!response) {
-      console.error('API 響應為空')
-      error.value = '載入流資訊失敗：API 響應為空'
-      return
+      console.error("API 響應為空");
+      error.value = "載入流資訊失敗：API 響應為空";
+      return;
     }
 
-    console.log('流資訊載入成功:', response)
-    streamInfo.value = response
+    console.log("流資訊載入成功:", response);
+    streamInfo.value = response;
 
     // 如果流是活躍的，獲取播放 URL
-    if (response.status === 'active') {
-      console.log('流狀態為 active，開始載入播放 URL')
+    if (response.status === "active") {
+      console.log("流狀態為 active，開始載入播放 URL");
       // 延遲一下再載入播放 URL，確保 DOM 已更新
       setTimeout(() => {
-        loadPlaybackUrl(streamName)
-      }, 500)
+        loadPlaybackUrl(streamName);
+      }, 500);
     } else {
-      console.log('流狀態不是 active:', response.status)
+      console.log("流狀態不是 active:", response.status);
     }
   } catch (err) {
-    console.error('載入流資訊失敗:', err)
-    error.value = '載入流資訊失敗，請稍後再試'
+    console.error("載入流資訊失敗:", err);
+    error.value = "載入流資訊失敗，請稍後再試";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
-const loadPlaybackUrl = async (streamName: string, mode: 'hls' = 'hls') => {
-  loadingPlaybackUrl.value = true
+const loadPlaybackUrl = async (streamName: string, mode: "hls" = "hls") => {
+  loadingPlaybackUrl.value = true;
 
   try {
     // 獲取播放 URL
     if (!streamURLs.value) {
-      const response = await publicStreamApi.getStreamURLs(streamName)
+      const response = await publicStreamApi.getStreamURLs(streamName);
       streamURLs.value = {
-        hls: response.urls.hls || '',
-      }
+        hls: response.urls.hls || "",
+      };
     }
 
     // 根據模式選擇 URL
-    if (mode === 'hls') {
-      playbackUrl.value = streamURLs.value!.hls
-      console.log('HLS 播放 URL:', playbackUrl.value)
+    if (mode === "hls") {
+      playbackUrl.value = streamURLs.value!.hls;
+      console.log("HLS 播放 URL:", playbackUrl.value);
 
       // 等待 videoPlayer 元素準備好
-      await nextTick()
+      await nextTick();
 
       // 使用輪詢等待 videoPlayer 元素
-      let attempts = 0
+      let attempts = 0;
       while (!videoPlayer.value && attempts < 20) {
-        await new Promise(resolve => setTimeout(resolve, 100))
-        attempts++
-        console.log(`等待 videoPlayer 元素... 嘗試 ${attempts}/20`)
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        attempts++;
+        console.log(`等待 videoPlayer 元素... 嘗試 ${attempts}/20`);
       }
 
       if (!videoPlayer.value) {
-        console.error('videoPlayer 元素未準備好')
-        error.value = '播放器元素未準備好，請重新整理頁面'
-        return
+        console.error("videoPlayer 元素未準備好");
+        error.value = "播放器元素未準備好，請重新整理頁面";
+        return;
       }
 
-      console.log('videoPlayer 元素已準備好:', !!videoPlayer.value)
-      console.log('HLS.js 支援:', Hls.isSupported())
+      console.log("videoPlayer 元素已準備好:", !!videoPlayer.value);
+      console.log("HLS.js 支援:", Hls.isSupported());
 
       // 使用 HLS.js 載入流
       if (Hls.isSupported()) {
-        console.log('使用 HLS.js 載入流')
+        console.log("使用 HLS.js 載入流");
 
         // 清理之前的播放器
         if (hls.value) {
-          hls.value.destroy()
-          hls.value = null
+          hls.value.destroy();
+          hls.value = null;
         }
         if (flvPlayer.value) {
-          flvPlayer.value.destroy()
-          flvPlayer.value = null
+          flvPlayer.value.destroy();
+          flvPlayer.value = null;
         }
 
         // 移除禁止播放標記
         if (videoPlayer.value) {
-          videoPlayer.value.removeAttribute('data-no-play')
+          videoPlayer.value.removeAttribute("data-no-play");
         }
 
         // 顯示 HLS 載入狀態
-        hlsLoading.value = true
+        hlsLoading.value = true;
 
         // 創建新的 HLS 實例
         hls.value = new Hls({
@@ -1609,113 +1609,113 @@ const loadPlaybackUrl = async (streamName: string, mode: 'hls' = 'hls') => {
           manifestLoadingMaxRetry: 4, // 播放列表載入最大重試次數
           manifestLoadingRetryDelay: 1000, // 播放列表載入重試延遲 1 秒
           manifestLoadingMaxRetryTimeout: 64000, // 播放列表載入最大重試超時 64 秒
-        })
+        });
 
         // 立即顯示載入狀態
-        hlsLoading.value = true
+        hlsLoading.value = true;
 
         // 載入流
-        hls.value.loadSource(playbackUrl.value)
-        hls.value.attachMedia(videoPlayer.value)
+        hls.value.loadSource(playbackUrl.value);
+        hls.value.attachMedia(videoPlayer.value);
 
         // 監聽事件
         hls.value.on(Hls.Events.MANIFEST_PARSED, () => {
-          console.log('HLS 流載入成功')
+          console.log("HLS 流載入成功");
           // 不要立即隱藏載入狀態，等待片段載入
 
           // 等待足夠的緩衝後再播放
           setTimeout(() => {
             if (
               videoPlayer.value &&
-              !videoPlayer.value.hasAttribute('data-no-play')
+              !videoPlayer.value.hasAttribute("data-no-play")
             ) {
-              console.log('嘗試 HLS 自動播放')
-              videoPlayer.value.play().catch(err => {
-                console.error('自動播放失敗:', err)
-              })
+              console.log("嘗試 HLS 自動播放");
+              videoPlayer.value.play().catch((err) => {
+                console.error("自動播放失敗:", err);
+              });
             } else {
               console.log(
-                '跳過 HLS 自動播放，禁止播放:',
-                videoPlayer.value?.hasAttribute('data-no-play')
-              )
+                "跳過 HLS 自動播放，禁止播放:",
+                videoPlayer.value?.hasAttribute("data-no-play"),
+              );
             }
-          }, 4000) // 等待 4 秒確保有足夠緩衝
-        })
+          }, 4000); // 等待 4 秒確保有足夠緩衝
+        });
 
         hls.value.on(Hls.Events.ERROR, (_event, data) => {
-          console.error('HLS 錯誤:', data)
-          hlsLoading.value = false // 隱藏載入狀態
+          console.error("HLS 錯誤:", data);
+          hlsLoading.value = false; // 隱藏載入狀態
           if (data.fatal) {
-            error.value = '播放器載入失敗，請重新整理頁面'
+            error.value = "播放器載入失敗，請重新整理頁面";
           }
-        })
+        });
 
         hls.value.on(Hls.Events.MEDIA_ATTACHED, () => {
-          console.log('媒體元素已附加')
-        })
+          console.log("媒體元素已附加");
+        });
 
         // 監聽片段載入狀態
         hls.value.on(Hls.Events.BUFFER_APPENDING, () => {
-          console.log('正在追加緩衝')
-          hlsLoading.value = true
-        })
+          console.log("正在追加緩衝");
+          hlsLoading.value = true;
+        });
 
         hls.value.on(Hls.Events.BUFFER_APPENDED, () => {
-          console.log('緩衝追加完成')
-          hlsLoading.value = false
-        })
+          console.log("緩衝追加完成");
+          hlsLoading.value = false;
+        });
 
         // 監聽播放列表更新
         hls.value.on(Hls.Events.MANIFEST_LOADING, () => {
-          console.log('正在載入播放列表')
-          hlsLoading.value = true
-        })
+          console.log("正在載入播放列表");
+          hlsLoading.value = true;
+        });
 
         // 添加定時器監控流狀態
-        let lastFragmentTime = Date.now()
-        let fragmentCount = 0
-        let manifestCount = 0
-        let isBuffering = false
+        let lastFragmentTime = Date.now();
+        let fragmentCount = 0;
+        let manifestCount = 0;
+        let isBuffering = false;
 
         // 監聽播放列表載入
         hls.value.on(Hls.Events.MANIFEST_LOADED, () => {
-          manifestCount++
-          console.log('m3u8 載入完成，計數:', manifestCount)
+          manifestCount++;
+          console.log("m3u8 載入完成，計數:", manifestCount);
           // 不要立即隱藏 loading，等待片段載入
-        })
+        });
 
         // 監聽片段載入開始
         hls.value.on(Hls.Events.FRAG_LOADING, () => {
-          console.log('正在載入片段')
-          isBuffering = true
-          hlsLoading.value = true
-        })
+          console.log("正在載入片段");
+          isBuffering = true;
+          hlsLoading.value = true;
+        });
 
         // 監聽片段載入完成
         hls.value.on(Hls.Events.FRAG_LOADED, () => {
-          console.log('片段載入完成')
-          lastFragmentTime = Date.now()
-          fragmentCount++
-          console.log('片段載入完成，計數:', fragmentCount)
+          console.log("片段載入完成");
+          lastFragmentTime = Date.now();
+          fragmentCount++;
+          console.log("片段載入完成，計數:", fragmentCount);
 
           // 延遲隱藏 loading，確保有足夠緩衝
           setTimeout(() => {
             if (!isBuffering) {
-              hlsLoading.value = false
+              hlsLoading.value = false;
             }
-          }, 2000) // 增加到 2 秒，確保有足夠緩衝
-        })
+          }, 2000); // 增加到 2 秒，確保有足夠緩衝
+        });
 
         // 監控流是否卡住
         streamMonitorInterval.value = window.setInterval(() => {
           if (videoPlayer.value && hls.value) {
-            const currentTime = Date.now()
-            const timeSinceLastFragment = currentTime - lastFragmentTime
+            const currentTime = Date.now();
+            const timeSinceLastFragment = currentTime - lastFragmentTime;
 
             // 如果超過 5 秒沒有新片段，但一直在載入 m3u8，顯示 loading
             if (timeSinceLastFragment > 5000 && manifestCount > fragmentCount) {
-              console.log('有 m3u8 但沒有 .ts 片段，顯示載入狀態')
-              hlsLoading.value = true
+              console.log("有 m3u8 但沒有 .ts 片段，顯示載入狀態");
+              hlsLoading.value = true;
             }
 
             // 如果超過 8 秒沒有新片段，且影片正在等待，顯示 loading
@@ -1723,107 +1723,107 @@ const loadPlaybackUrl = async (streamName: string, mode: 'hls' = 'hls') => {
               timeSinceLastFragment > 8000 &&
               videoPlayer.value.readyState < 3
             ) {
-              console.log('流可能卡住，顯示載入狀態')
-              hlsLoading.value = true
+              console.log("流可能卡住，顯示載入狀態");
+              hlsLoading.value = true;
             }
 
             // 檢查是否正在直播（有持續的片段載入）
             if (fragmentCount > 0 && timeSinceLastFragment < 10000) {
-              isLiveStreaming.value = true
+              isLiveStreaming.value = true;
             } else {
-              isLiveStreaming.value = false
+              isLiveStreaming.value = false;
             }
 
             // 重置緩衝狀態
-            isBuffering = false
+            isBuffering = false;
           }
-        }, 2000) // 每 2 秒檢查一次
+        }, 2000); // 每 2 秒檢查一次
 
         // 監聽影片播放狀態
         if (videoPlayer.value) {
-          videoPlayer.value.addEventListener('waiting', () => {
-            console.log('影片等待中，顯示載入狀態')
-            hlsLoading.value = true
-          })
+          videoPlayer.value.addEventListener("waiting", () => {
+            console.log("影片等待中，顯示載入狀態");
+            hlsLoading.value = true;
+          });
 
-          videoPlayer.value.addEventListener('canplay', () => {
-            console.log('影片可以播放，隱藏載入狀態')
+          videoPlayer.value.addEventListener("canplay", () => {
+            console.log("影片可以播放，隱藏載入狀態");
             setTimeout(() => {
-              hlsLoading.value = false
-            }, 1000)
-          })
+              hlsLoading.value = false;
+            }, 1000);
+          });
 
-          videoPlayer.value.addEventListener('stalled', () => {
-            console.log('影片停滯，顯示載入狀態')
-            hlsLoading.value = true
-          })
+          videoPlayer.value.addEventListener("stalled", () => {
+            console.log("影片停滯，顯示載入狀態");
+            hlsLoading.value = true;
+          });
 
-          videoPlayer.value.addEventListener('suspend', () => {
-            console.log('影片暫停載入，顯示載入狀態')
-            hlsLoading.value = true
-          })
+          videoPlayer.value.addEventListener("suspend", () => {
+            console.log("影片暫停載入，顯示載入狀態");
+            hlsLoading.value = true;
+          });
 
-          videoPlayer.value.addEventListener('loadstart', () => {
-            console.log('影片開始載入')
-            hlsLoading.value = true
-          })
+          videoPlayer.value.addEventListener("loadstart", () => {
+            console.log("影片開始載入");
+            hlsLoading.value = true;
+          });
 
-          videoPlayer.value.addEventListener('loadeddata', () => {
-            console.log('影片數據載入完成')
+          videoPlayer.value.addEventListener("loadeddata", () => {
+            console.log("影片數據載入完成");
             setTimeout(() => {
-              hlsLoading.value = false
-            }, 1000)
-          })
+              hlsLoading.value = false;
+            }, 1000);
+          });
         }
 
         // 監聽播放狀態
         if (videoPlayer.value) {
-          videoPlayer.value.addEventListener('waiting', () => {
-            console.log('影片等待數據，顯示載入狀態')
-            hlsLoading.value = true
-          })
+          videoPlayer.value.addEventListener("waiting", () => {
+            console.log("影片等待數據，顯示載入狀態");
+            hlsLoading.value = true;
+          });
 
-          videoPlayer.value.addEventListener('canplay', () => {
-            console.log('影片可以播放，隱藏載入狀態')
-            hlsLoading.value = false
-          })
+          videoPlayer.value.addEventListener("canplay", () => {
+            console.log("影片可以播放，隱藏載入狀態");
+            hlsLoading.value = false;
+          });
 
-          videoPlayer.value.addEventListener('stalled', () => {
-            console.log('影片停滯，顯示載入狀態')
-            hlsLoading.value = true
-          })
+          videoPlayer.value.addEventListener("stalled", () => {
+            console.log("影片停滯，顯示載入狀態");
+            hlsLoading.value = true;
+          });
         }
       } else if (
-        videoPlayer.value.canPlayType('application/vnd.apple.mpegurl')
+        videoPlayer.value.canPlayType("application/vnd.apple.mpegurl")
       ) {
-        console.log('使用瀏覽器原生 HLS 支援')
+        console.log("使用瀏覽器原生 HLS 支援");
         // Safari 原生支援 HLS
-        videoPlayer.value.src = playbackUrl.value
-        videoPlayer.value.addEventListener('loadedmetadata', () => {
-          if (!videoPlayer.value?.hasAttribute('data-no-play')) {
-            console.log('嘗試 Safari 原生 HLS 自動播放')
-            videoPlayer.value?.play().catch(err => {
-              console.error('自動播放失敗:', err)
-            })
+        videoPlayer.value.src = playbackUrl.value;
+        videoPlayer.value.addEventListener("loadedmetadata", () => {
+          if (!videoPlayer.value?.hasAttribute("data-no-play")) {
+            console.log("嘗試 Safari 原生 HLS 自動播放");
+            videoPlayer.value?.play().catch((err) => {
+              console.error("自動播放失敗:", err);
+            });
           } else {
             console.log(
-              '跳過 Safari 原生 HLS 自動播放，禁止播放:',
-              videoPlayer.value?.hasAttribute('data-no-play')
-            )
+              "跳過 Safari 原生 HLS 自動播放，禁止播放:",
+              videoPlayer.value?.hasAttribute("data-no-play"),
+            );
           }
-        })
+        });
       } else {
-        console.error('瀏覽器不支援 HLS')
-        error.value = '您的瀏覽器不支援 HLS 播放'
+        console.error("瀏覽器不支援 HLS");
+        error.value = "您的瀏覽器不支援 HLS 播放";
       }
     }
   } catch (err) {
-    console.error('獲取播放 URL 失敗:', err)
-    error.value = '獲取播放 URL 失敗'
+    console.error("獲取播放 URL 失敗:", err);
+    error.value = "獲取播放 URL 失敗";
   } finally {
-    loadingPlaybackUrl.value = false
+    loadingPlaybackUrl.value = false;
   }
-}
+};
 
 // 這些功能暫時未使用，保留以備將來擴展
 // const toggleMute = () => {
@@ -1846,146 +1846,149 @@ const loadPlaybackUrl = async (streamName: string, mode: 'hls' = 'hls') => {
 const playVideo = async () => {
   if (videoPlayer.value) {
     try {
-      console.log('手動播放影片')
-      await videoPlayer.value.play()
+      console.log("手動播放影片");
+      await videoPlayer.value.play();
     } catch (err) {
-      console.error('播放失敗:', err)
-      error.value = '播放失敗，請檢查瀏覽器設定'
+      console.error("播放失敗:", err);
+      error.value = "播放失敗，請檢查瀏覽器設定";
     }
   }
-}
+};
 
 const goBack = () => {
-  router.push('/public-streams')
-}
+  router.push("/public-streams");
+};
 
 const getCategoryLabel = (category: string) => {
-  return categoryLabels[category] || category
-}
+  return categoryLabels[category] || category;
+};
 
 const formatTime = (timeString: string) => {
-  const date = new Date(timeString)
-  return date.toLocaleString('zh-TW')
-}
+  const date = new Date(timeString);
+  return date.toLocaleString("zh-TW");
+};
 
 // 播放器控制方法
 const toggleMute = () => {
   if (videoPlayer.value) {
-    videoPlayer.value.muted = !videoPlayer.value.muted
-    isMuted.value = videoPlayer.value.muted
+    videoPlayer.value.muted = !videoPlayer.value.muted;
+    isMuted.value = videoPlayer.value.muted;
   }
-}
+};
 
 const changeVolume = (value: number | number[]) => {
-  const volumeValue = Array.isArray(value) ? value[0] : value
+  const volumeValue = Array.isArray(value) ? value[0] : value;
   if (videoPlayer.value) {
-    videoPlayer.value.volume = volumeValue / 100
+    videoPlayer.value.volume = volumeValue / 100;
   }
-}
+};
 
 const toggleFullscreen = () => {
   if (videoPlayer.value) {
     if (document.fullscreenElement) {
-      document.exitFullscreen()
-      isFullscreen.value = false
+      document.exitFullscreen();
+      isFullscreen.value = false;
     } else {
-      videoPlayer.value.requestFullscreen()
-      isFullscreen.value = true
+      videoPlayer.value.requestFullscreen();
+      isFullscreen.value = true;
     }
   }
-}
+};
 
 // 監聽全螢幕狀態變化
 const handleFullscreenChange = () => {
-  isFullscreen.value = !!document.fullscreenElement
-}
+  isFullscreen.value = !!document.fullscreenElement;
+};
 
 const rotateScreen = () => {
   if (videoPlayer.value) {
-    const currentRotation = videoPlayer.value.style.transform
-    const newRotation = currentRotation.includes('rotate(90deg)')
-      ? ''
-      : 'rotate(90deg)'
-    videoPlayer.value.style.transform = newRotation
+    const currentRotation = videoPlayer.value.style.transform;
+    const newRotation = currentRotation.includes("rotate(90deg)")
+      ? ""
+      : "rotate(90deg)";
+    videoPlayer.value.style.transform = newRotation;
   }
-}
+};
 
 // 聊天室方法
 const toggleChat = () => {
-  isChatOpen.value = !isChatOpen.value
+  isChatOpen.value = !isChatOpen.value;
   if (isChatOpen.value) {
-    unreadCount.value = 0 // 打開聊天室時清除未讀數
+    unreadCount.value = 0; // 打開聊天室時清除未讀數
   }
-}
+};
 
 const sendMessage = () => {
   if (newMessage.value.trim() && isLoggedIn.value) {
     chatMessages.value.push({
-      username: '用戶',
+      username: "用戶",
       text: newMessage.value,
       timestamp: new Date().toISOString(),
-    })
-    newMessage.value = ''
+    });
+    newMessage.value = "";
 
     // 滾動到底部
     nextTick(() => {
       if (chatMessagesRef.value) {
-        chatMessagesRef.value.scrollTop = chatMessagesRef.value.scrollHeight
+        chatMessagesRef.value.scrollTop = chatMessagesRef.value.scrollHeight;
       }
-    })
+    });
   }
-}
+};
 
 // 生命週期
 onMounted(async () => {
-  await loadStreamInfo()
+  await loadStreamInfo();
 
   // 添加全螢幕事件監聽器
-  document.addEventListener('fullscreenchange', handleFullscreenChange)
-  document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
-  document.addEventListener('mozfullscreenchange', handleFullscreenChange)
-  document.addEventListener('MSFullscreenChange', handleFullscreenChange)
-})
+  document.addEventListener("fullscreenchange", handleFullscreenChange);
+  document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+  document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+  document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+});
 
 onUnmounted(() => {
   // 清理事件監聽器
-  document.removeEventListener('fullscreenchange', handleFullscreenChange)
-  document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
-  document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
-  document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
+  document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  document.removeEventListener(
+    "webkitfullscreenchange",
+    handleFullscreenChange,
+  );
+  document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
+  document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
 
   // 清理 HLS 實例
   if (hls.value) {
-    hls.value.destroy()
-    hls.value = null
+    hls.value.destroy();
+    hls.value = null;
   }
 
   // 清理定時器
   if (streamMonitorInterval.value) {
-    clearInterval(streamMonitorInterval.value)
-    streamMonitorInterval.value = null
+    clearInterval(streamMonitorInterval.value);
+    streamMonitorInterval.value = null;
   }
-})
+});
 
 onUnmounted(() => {
   // 清理播放器
   if (videoPlayer.value) {
-    videoPlayer.value.pause()
-    videoPlayer.value.src = ''
+    videoPlayer.value.pause();
+    videoPlayer.value.src = "";
   }
 
   // 清理 HLS 實例
   if (hls.value) {
-    hls.value.destroy()
-    hls.value = null
+    hls.value.destroy();
+    hls.value = null;
   }
 
   // 清理 FLV 實例
   if (flvPlayer.value) {
-    flvPlayer.value.destroy()
-    flvPlayer.value = null
+    flvPlayer.value.destroy();
+    flvPlayer.value = null;
   }
-})
+});
 </script>
 
 <style scoped>

@@ -226,15 +226,25 @@ services:
     networks:
       - stream-demo-network
     environment:
+      # 資料庫配置
+      - DATABASE_URL=host=postgresql user=stream_user password=stream_password dbname=stream_demo port=5432 sslmode=disable
+      # MinIO 配置
       - MINIO_ENDPOINT=http://minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
       - MINIO_BUCKET=stream-demo-videos
       - MINIO_PROCESSED_BUCKET=stream-demo-processed
+      # CDN 配置
+      - CDN_BASE_URL=http://localhost:9000/stream-demo-processed
+      # 工作協程配置
+      - WORKER_COUNT=3
     depends_on:
-      - minio
+      postgresql:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "ffmpeg", "-version"]
+      test: ["CMD", "converter", "--health-check"]
       interval: 30s
       timeout: 10s
       retries: 3

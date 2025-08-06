@@ -85,7 +85,7 @@
             <div class="video-info">
               <h3 class="video-title">{{ video.title }}</h3>
               <p class="video-description">
-                {{ video.description || '暫無描述' }}
+                {{ video.description || "暫無描述" }}
               </p>
 
               <div class="video-stats">
@@ -140,225 +140,225 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, reactive, computed } from "vue";
+import { useRouter } from "vue-router";
 import {
   ElMessage,
   ElMessageBox,
   type FormInstance,
   type FormRules,
-} from 'element-plus'
-import { View, Star } from '@element-plus/icons-vue'
+} from "element-plus";
+import { View, Star } from "@element-plus/icons-vue";
 import {
   getVideos,
   searchVideos,
   updateVideo,
   deleteVideo as deleteVideoApi,
-} from '@/api/video'
-import type { Video, UpdateVideoRequest } from '@/types'
+} from "@/api/video";
+import type { Video, UpdateVideoRequest } from "@/types";
 
-const router = useRouter()
+const router = useRouter();
 
-const loading = ref(false)
-const updating = ref(false)
-const videos = ref<Video[]>([])
-const searchQuery = ref('')
-const statusFilter = ref('')
+const loading = ref(false);
+const updating = ref(false);
+const videos = ref<Video[]>([]);
+const searchQuery = ref("");
+const statusFilter = ref("");
 
-const editDialogVisible = ref(false)
-const editFormRef = ref<FormInstance>()
+const editDialogVisible = ref(false);
+const editFormRef = ref<FormInstance>();
 const editForm = reactive<UpdateVideoRequest & { id?: number }>({
-  title: '',
-  description: '',
-})
+  title: "",
+  description: "",
+});
 
 const editRules: FormRules = {
   title: [
-    { required: true, message: '請輸入標題', trigger: 'blur' },
+    { required: true, message: "請輸入標題", trigger: "blur" },
     {
       min: 1,
       max: 100,
-      message: '標題長度在 1 到 100 個字符',
-      trigger: 'blur',
+      message: "標題長度在 1 到 100 個字符",
+      trigger: "blur",
     },
   ],
-}
+};
 
 // 計算是否有正在處理的影片
 const hasProcessingVideos = computed(() => {
-  return videos.value.some(video =>
-    ['uploading', 'transcoding', 'processing'].includes(video.status)
-  )
-})
+  return videos.value.some((video) =>
+    ["uploading", "transcoding", "processing"].includes(video.status),
+  );
+});
 
 const loadVideos = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    const response = await getVideos()
-    console.log('API 響應:', response) // 調試用
+    const response = await getVideos();
+    console.log("API 響應:", response); // 調試用
 
     // 處理後端 ListResponse 結構: {total: number, items: Video[]}
     // request.ts 攔截器已經提取了 data，所以 response 就是實際數據
-    const result = response
-    let filteredVideos: Video[] = []
+    const result = response;
+    let filteredVideos: Video[] = [];
 
-    if (result && typeof result === 'object') {
+    if (result && typeof result === "object") {
       // 如果有 items 字段，說明是 ListResponse 結構
-      if ('items' in result && Array.isArray(result.items)) {
-        filteredVideos = result.items
+      if ("items" in result && Array.isArray(result.items)) {
+        filteredVideos = result.items;
       }
       // 如果直接是數組
       else if (Array.isArray(result)) {
-        filteredVideos = result
+        filteredVideos = result;
       }
     }
 
     // 狀態篩選
     if (statusFilter.value) {
       filteredVideos = filteredVideos.filter(
-        (video: Video) => video.status === statusFilter.value
-      )
+        (video: Video) => video.status === statusFilter.value,
+      );
     }
 
-    videos.value = filteredVideos
-    console.log('處理後的影片列表:', filteredVideos) // 調試用
+    videos.value = filteredVideos;
+    console.log("處理後的影片列表:", filteredVideos); // 調試用
   } catch (error) {
-    console.error('載入影片失敗:', error)
-    ElMessage.error('載入影片失敗')
+    console.error("載入影片失敗:", error);
+    ElMessage.error("載入影片失敗");
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const handleSearch = async () => {
   if (!searchQuery.value.trim()) {
-    loadVideos()
-    return
+    loadVideos();
+    return;
   }
 
-  loading.value = true
+  loading.value = true;
   try {
-    const response = await searchVideos({ q: searchQuery.value })
-    console.log('搜尋 API 響應:', response) // 調試用
+    const response = await searchVideos({ q: searchQuery.value });
+    console.log("搜尋 API 響應:", response); // 調試用
 
     // 處理搜尋結果
     // request.ts 攔截器已經提取了 data，所以 response 就是實際數據
-    const result = response
-    let searchResults: Video[] = []
+    const result = response;
+    let searchResults: Video[] = [];
 
-    if (result && typeof result === 'object') {
+    if (result && typeof result === "object") {
       // 如果有 items 字段，說明是 ListResponse 結構
-      if ('items' in result && Array.isArray(result.items)) {
-        searchResults = result.items
+      if ("items" in result && Array.isArray(result.items)) {
+        searchResults = result.items;
       }
       // 如果直接是數組
       else if (Array.isArray(result)) {
-        searchResults = result
+        searchResults = result;
       }
     }
 
-    videos.value = searchResults
+    videos.value = searchResults;
   } catch (error) {
-    console.error('搜尋影片失敗:', error)
-    ElMessage.error('搜尋影片失敗')
+    console.error("搜尋影片失敗:", error);
+    ElMessage.error("搜尋影片失敗");
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const viewVideo = (id: number) => {
-  router.push(`/videos/${id.toString()}`)
-}
+  router.push(`/videos/${id.toString()}`);
+};
 
 const editVideo = (video: Video) => {
-  editForm.id = video.id
-  editForm.title = video.title
-  editForm.description = video.description || ''
-  editDialogVisible.value = true
-}
+  editForm.id = video.id;
+  editForm.title = video.title;
+  editForm.description = video.description || "";
+  editDialogVisible.value = true;
+};
 
 const handleUpdate = async () => {
-  if (!editFormRef.value || !editForm.id) return
+  if (!editFormRef.value || !editForm.id) return;
 
-  await editFormRef.value.validate(async valid => {
+  await editFormRef.value.validate(async (valid) => {
     if (valid) {
-      updating.value = true
+      updating.value = true;
       try {
         await updateVideo(editForm.id!, {
           title: editForm.title,
           description: editForm.description,
-        })
-        ElMessage.success('更新成功')
-        editDialogVisible.value = false
-        loadVideos()
+        });
+        ElMessage.success("更新成功");
+        editDialogVisible.value = false;
+        loadVideos();
       } catch (error) {
-        console.error('更新影片失敗:', error)
+        console.error("更新影片失敗:", error);
       } finally {
-        updating.value = false
+        updating.value = false;
       }
     }
-  })
-}
+  });
+};
 
 const deleteVideo = async (id: number) => {
   try {
-    await ElMessageBox.confirm('確定要刪除這個影片嗎？', '確認刪除', {
-      confirmButtonText: '確定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    })
+    await ElMessageBox.confirm("確定要刪除這個影片嗎？", "確認刪除", {
+      confirmButtonText: "確定",
+      cancelButtonText: "取消",
+      type: "warning",
+    });
 
-    await deleteVideoApi(id)
-    ElMessage.success('刪除成功')
-    loadVideos()
+    await deleteVideoApi(id);
+    ElMessage.success("刪除成功");
+    loadVideos();
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('刪除影片失敗:', error)
+    if (error !== "cancel") {
+      console.error("刪除影片失敗:", error);
     }
   }
-}
+};
 
 const getStatusType = (status: string) => {
   switch (status) {
-    case 'ready':
-      return 'success'
-    case 'uploading':
-      return 'info'
-    case 'transcoding':
-      return 'warning'
-    case 'processing':
-      return 'warning'
-    case 'failed':
-      return 'danger'
+    case "ready":
+      return "success";
+    case "uploading":
+      return "info";
+    case "transcoding":
+      return "warning";
+    case "processing":
+      return "warning";
+    case "failed":
+      return "danger";
     default:
-      return 'info'
+      return "info";
   }
-}
+};
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'ready':
-      return '已完成'
-    case 'uploading':
-      return '上傳中'
-    case 'transcoding':
-      return '轉碼中'
-    case 'processing':
-      return '處理中'
-    case 'failed':
-      return '失敗'
+    case "ready":
+      return "已完成";
+    case "uploading":
+      return "上傳中";
+    case "transcoding":
+      return "轉碼中";
+    case "processing":
+      return "處理中";
+    case "failed":
+      return "失敗";
     default:
-      return status
+      return status;
   }
-}
+};
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('zh-TW')
-}
+  return new Date(dateString).toLocaleDateString("zh-TW");
+};
 
 onMounted(() => {
-  loadVideos()
-})
+  loadVideos();
+});
 </script>
 
 <style scoped>

@@ -22,7 +22,7 @@
             <div class="live-info">
               <h3 class="live-title">{{ live.title }}</h3>
               <p class="live-description">
-                {{ live.description || '暫無描述' }}
+                {{ live.description || "暫無描述" }}
               </p>
 
               <div class="live-meta">
@@ -72,94 +72,94 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { ElMessage } from "element-plus";
 import {
   getActiveRooms,
   startLive as startLiveAPI,
   endLive as endLiveAPI,
-} from '@/api/live-room'
-import type { LiveRoomInfo } from '@/types'
+} from "@/api/live-room";
+import type { LiveRoomInfo } from "@/types";
 
-const router = useRouter()
+const router = useRouter();
 
-const loading = ref(false)
-const lives = ref<LiveRoomInfo[]>([])
+const loading = ref(false);
+const lives = ref<LiveRoomInfo[]>([]);
 
 const loadLives = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    const response = await getActiveRooms()
-    lives.value = response || []
+    const response = await getActiveRooms();
+    lives.value = response || [];
   } catch (error) {
-    console.error('載入直播間失敗:', error)
+    console.error("載入直播間失敗:", error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const viewLive = (id: string) => {
-  router.push(`/live-rooms/${id}`)
-}
+  router.push(`/live-rooms/${id}`);
+};
 
 const startLive = async (id: string) => {
   try {
-    await startLiveAPI(id)
-    ElMessage.success('直播已開始！')
-    loadLives()
+    await startLiveAPI(id);
+    ElMessage.success("直播已開始！");
+    loadLives();
   } catch (error) {
-    console.error('開始直播失敗:', error)
+    console.error("開始直播失敗:", error);
   }
-}
+};
 
 const endLive = async (id: string) => {
   try {
-    await endLiveAPI(id)
-    ElMessage.success('直播已結束！')
-    loadLives()
+    await endLiveAPI(id);
+    ElMessage.success("直播已結束！");
+    loadLives();
   } catch (error) {
-    console.error('結束直播失敗:', error)
+    console.error("結束直播失敗:", error);
   }
-}
+};
 
 const getStatusType = (status: string) => {
   switch (status) {
-    case 'live':
-      return 'success'
-    case 'created':
-      return 'info'
-    case 'ended':
-      return 'danger'
-    case 'cancelled':
-      return 'warning'
+    case "live":
+      return "success";
+    case "created":
+      return "info";
+    case "ended":
+      return "danger";
+    case "cancelled":
+      return "warning";
     default:
-      return 'info'
+      return "info";
   }
-}
+};
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'live':
-      return '直播中'
-    case 'created':
-      return '已創建'
-    case 'ended':
-      return '已結束'
-    case 'cancelled':
-      return '已取消'
+    case "live":
+      return "直播中";
+    case "created":
+      return "已創建";
+    case "ended":
+      return "已結束";
+    case "cancelled":
+      return "已取消";
     default:
-      return status
+      return status;
   }
-}
+};
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleString('zh-TW')
-}
+  return new Date(dateString).toLocaleString("zh-TW");
+};
 
 onMounted(() => {
-  loadLives()
-})
+  loadLives();
+});
 </script>
 
 <style scoped>

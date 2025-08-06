@@ -63,56 +63,56 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue'
+import { watch } from "vue";
 
 interface Props {
-  show: boolean
-  title?: string
-  closeOnOverlay?: boolean
+  show: boolean;
+  title?: string;
+  closeOnOverlay?: boolean;
 }
 
 interface Emits {
-  (e: 'update:show', value: boolean): void
+  (e: "update:show", value: boolean): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: '對話框',
+  title: "對話框",
   closeOnOverlay: true,
-})
+});
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
 const closeModal = () => {
-  emit('update:show', false)
-}
+  emit("update:show", false);
+};
 
 const handleOverlayClick = () => {
   if (props.closeOnOverlay) {
-    closeModal()
+    closeModal();
   }
-}
+};
 
 // 監聽 ESC 鍵關閉模態框
 const handleEscKey = (event: KeyboardEvent) => {
-  if (event.key === 'Escape' && props.show) {
-    closeModal()
+  if (event.key === "Escape" && props.show) {
+    closeModal();
   }
-}
+};
 
 // 監聽 show 屬性變化，添加/移除 ESC 鍵監聽
 watch(
   () => props.show,
-  newValue => {
+  (newValue) => {
     if (newValue) {
-      document.addEventListener('keydown', handleEscKey)
-      document.body.style.overflow = 'hidden'
+      document.addEventListener("keydown", handleEscKey);
+      document.body.style.overflow = "hidden";
     } else {
-      document.removeEventListener('keydown', handleEscKey)
-      document.body.style.overflow = ''
+      document.removeEventListener("keydown", handleEscKey);
+      document.body.style.overflow = "";
     }
   },
-  { immediate: true }
-)
+  { immediate: true },
+);
 </script>
 
 <style scoped>

@@ -63,7 +63,7 @@
               :class="{ pulse: stream.status === 'active' }"
               >●</span
             >
-            {{ stream.status === 'active' ? '直播中' : '離線' }}
+            {{ stream.status === "active" ? "直播中" : "離線" }}
           </div>
 
           <!-- 觀看者數量 -->
@@ -108,7 +108,7 @@
                 d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               ></path>
             </svg>
-            {{ stream.status === 'active' ? '立即觀看' : '離線' }}
+            {{ stream.status === "active" ? "立即觀看" : "離線" }}
           </el-button>
         </div>
       </div>
@@ -122,68 +122,68 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { publicStreamApi } from '@/api/public-stream'
-import type { PublicStreamInfo } from '@/types/public-stream'
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { publicStreamApi } from "@/api/public-stream";
+import type { PublicStreamInfo } from "@/types/public-stream";
 
-const router = useRouter()
+const router = useRouter();
 
 // 響應式數據
-const streams = ref<PublicStreamInfo[]>([])
-const loading = ref(false)
-const error = ref('')
+const streams = ref<PublicStreamInfo[]>([]);
+const loading = ref(false);
+const error = ref("");
 
 // 分類選項
 const categories = [
-  { value: 'all', label: '全部', icon: '🌐' },
-  { value: 'test', label: '測試', icon: '🧪' },
-  { value: 'space', label: '太空', icon: '🚀' },
-  { value: 'news', label: '新聞', icon: '📰' },
-  { value: 'sports', label: '體育', icon: '⚽' },
-]
+  { value: "all", label: "全部", icon: "🌐" },
+  { value: "test", label: "測試", icon: "🧪" },
+  { value: "space", label: "太空", icon: "🚀" },
+  { value: "news", label: "新聞", icon: "📰" },
+  { value: "sports", label: "體育", icon: "⚽" },
+];
 
 // 計算屬性
 const filteredStreams = computed(() => {
-  return streams.value
-})
+  return streams.value;
+});
 
 // 方法
 const loadStreams = async () => {
-  loading.value = true
-  error.value = ''
+  loading.value = true;
+  error.value = "";
 
   try {
-    const response = await publicStreamApi.getAvailableStreams()
-    streams.value = response.streams
+    const response = await publicStreamApi.getAvailableStreams();
+    streams.value = response.streams;
   } catch (err) {
-    console.error('載入流列表失敗:', err)
-    error.value = '載入流列表失敗，請稍後再試'
+    console.error("載入流列表失敗:", err);
+    error.value = "載入流列表失敗，請稍後再試";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const watchStream = (stream: PublicStreamInfo) => {
-  if (stream.status === 'active') {
-    router.push(`/public-streams/${stream.name}`)
+  if (stream.status === "active") {
+    router.push(`/public-streams/${stream.name}`);
   }
-}
+};
 
 const getCategoryLabel = (category: string) => {
-  const found = categories.find(c => c.value === category)
-  return found ? found.label : category
-}
+  const found = categories.find((c) => c.value === category);
+  return found ? found.label : category;
+};
 
 const formatTime = (timeString: string) => {
-  const date = new Date(timeString)
-  return date.toLocaleString('zh-TW')
-}
+  const date = new Date(timeString);
+  return date.toLocaleString("zh-TW");
+};
 
 // 生命週期
 onMounted(() => {
-  loadStreams()
-})
+  loadStreams();
+});
 </script>
 
 <style scoped>

@@ -20,6 +20,7 @@ type VideoServiceInterface interface {
 	GenerateUploadURL(userID uint, filename string, fileSize int64) (*storage.PresignedUploadURL, error)
 	CreateVideoRecord(userID uint, title, description, s3Key string) (*dto.VideoDTO, error)
 	ConfirmUploadOnly(videoID uint, s3Key string) error
+	ConfirmUploadAndStartProcessingWithKey(videoID uint, s3Key string) error
 	GetVideos(offset, limit int) ([]*dto.VideoDTO, int64, error)
 	GetVideoByID(videoID uint) (*dto.VideoDTO, error)
 	GetVideosByUserID(userID uint) ([]*dto.VideoDTO, int64, error)
@@ -45,4 +46,4 @@ type LiveServiceInterface interface {
 	UpdateViewerCount(id uint, count int64) error
 	ToggleChat(id uint, enabled bool) error
 	GetActiveLives() ([]*dto.LiveDTO, error)
-} 
+}

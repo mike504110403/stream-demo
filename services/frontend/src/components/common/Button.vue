@@ -10,26 +10,26 @@
 
 <script setup lang="ts">
 interface Props {
-  text?: string
-  type?: 'primary' | 'secondary' | 'danger'
-  disabled?: boolean
+  text?: string;
+  type?: "primary" | "secondary" | "danger";
+  disabled?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  text: 'Button',
-  type: 'primary',
+  text: "Button",
+  type: "primary",
   disabled: false,
-})
+});
 
 const emit = defineEmits<{
-  click: [event: MouseEvent]
-}>()
+  click: [event: MouseEvent];
+}>();
 
 const handleClick = (event: MouseEvent) => {
   if (!props.disabled) {
-    emit('click', event)
+    emit("click", event);
   }
-}
+};
 </script>
 
 <style scoped>

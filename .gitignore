@@ -40,7 +40,6 @@ tsconfig.tsbuildinfo
 
 # 依賴鎖定文件 (可選，根據團隊需求)
 # yarn.lock
-# package-lock.json
 # go.sum
 
 # 臨時文件

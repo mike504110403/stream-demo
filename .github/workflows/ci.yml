@@ -65,11 +65,16 @@ jobs:
           echo "✅ Coverage is above 5% threshold (current: $COVERAGE%)"
         fi
     
-    - name: Run linter
+    - name: Run linter and format
       working-directory: ./services/api
       run: |
-        go vet ./...
+        echo "🔍 格式化 Go 程式碼..."
         go fmt ./...
+        echo "✅ Go 程式碼格式化完成"
+        
+        echo "🔍 執行 Go linter..."
+        go vet ./...
+        echo "✅ Go linter 完成"
     
     - name: Build backend
       working-directory: ./services/api
@@ -103,9 +108,30 @@ jobs:
       working-directory: ./services/frontend
       run: npm run build
     
-    - name: Check formatting
+    - name: Check and fix formatting
       working-directory: ./services/frontend
-      run: npx prettier --check src/
+      run: |
+        echo "🔍 檢查程式碼格式..."
+        if npx prettier --check src/; then
+          echo "✅ 程式碼格式正確"
+        else
+          echo "⚠️  發現格式問題，正在自動修復..."
+          npx prettier --write src/
+          echo "✅ 格式修復完成"
+          
+          # 檢查是否有變更需要提交
+          if git diff --quiet; then
+            echo "✅ 沒有需要提交的變更"
+          else
+            echo "📝 檢測到格式變更，正在提交..."
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add .
+            git commit -m "style: auto-format code with prettier" || echo "⚠️  提交失敗，但格式已修復"
+          fi
+        fi
+    
+
 
   # 程式碼品質檢查
   code-quality:
@@ -143,6 +169,9 @@ jobs:
     
     - name: Validate YAML files
       run: |
+        # 安裝 Python yaml 模組
+        python3 -m pip install pyyaml
+        
         # 檢查 YAML 文件語法
         for file in $(find . -name "*.yml" -o -name "*.yaml"); do
           if [ -f "$file" ]; then

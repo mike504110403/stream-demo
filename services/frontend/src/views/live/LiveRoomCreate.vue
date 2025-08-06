@@ -51,72 +51,72 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { createRoom } from '@/api/live-room'
-import type { CreateRoomRequest } from '@/types'
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { ElMessage, type FormInstance, type FormRules } from "element-plus";
+import { createRoom } from "@/api/live-room";
+import type { CreateRoomRequest } from "@/types";
 
-const router = useRouter()
-const formRef = ref<FormInstance>()
-const loading = ref(false)
+const router = useRouter();
+const formRef = ref<FormInstance>();
+const loading = ref(false);
 
 const form = ref<CreateRoomRequest>({
-  title: '',
-  description: '',
-})
+  title: "",
+  description: "",
+});
 
 const rules: FormRules = {
   title: [
-    { required: true, message: '請輸入直播間標題', trigger: 'blur' },
+    { required: true, message: "請輸入直播間標題", trigger: "blur" },
     {
       min: 2,
       max: 50,
-      message: '標題長度應在 2 到 50 個字符之間',
-      trigger: 'blur',
+      message: "標題長度應在 2 到 50 個字符之間",
+      trigger: "blur",
     },
   ],
   description: [
-    { max: 200, message: '描述不能超過 200 個字符', trigger: 'blur' },
+    { max: 200, message: "描述不能超過 200 個字符", trigger: "blur" },
   ],
-}
+};
 
 const handleSubmit = async () => {
-  if (!formRef.value) return
+  if (!formRef.value) return;
 
   // 防止重複提交
-  if (loading.value) return
+  if (loading.value) return;
 
   try {
-    await formRef.value.validate()
-    loading.value = true
+    await formRef.value.validate();
+    loading.value = true;
 
-    const response = await createRoom(form.value)
-    console.log('創建直播間回應:', response) // 調試用
+    const response = await createRoom(form.value);
+    console.log("創建直播間回應:", response); // 調試用
 
     // 檢查回應是否包含 id
     if (!response || !response.id) {
-      console.error('無法取得直播間ID，回應格式:', response)
-      throw new Error('無法取得直播間ID')
+      console.error("無法取得直播間ID，回應格式:", response);
+      throw new Error("無法取得直播間ID");
     }
 
-    const roomId = response.id
+    const roomId = response.id;
 
-    ElMessage.success('直播間創建成功！')
+    ElMessage.success("直播間創建成功！");
 
     // 跳轉到直播間詳情頁面
-    router.push(`/live-rooms/${roomId}`)
+    router.push(`/live-rooms/${roomId}`);
   } catch (error) {
-    console.error('創建直播間失敗:', error)
+    console.error("創建直播間失敗:", error);
     if (error instanceof Error) {
-      ElMessage.error(error.message)
+      ElMessage.error(error.message);
     } else {
-      ElMessage.error('創建直播間失敗')
+      ElMessage.error("創建直播間失敗");
     }
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 </script>
 
 <style scoped>

@@ -45,32 +45,32 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useAuthStore } from '@/store/auth'
-import { ArrowDown } from '@element-plus/icons-vue'
+import { computed } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { useAuthStore } from "@/store/auth";
+import { ArrowDown } from "@element-plus/icons-vue";
 
-const router = useRouter()
-const route = useRoute()
-const authStore = useAuthStore()
+const router = useRouter();
+const route = useRoute();
+const authStore = useAuthStore();
 
-const activeIndex = computed(() => route.path)
+const activeIndex = computed(() => route.path);
 
 const handleSelect = (key: string) => {
-  router.push(key)
-}
+  router.push(key);
+};
 
 const handleCommand = (command: string) => {
   switch (command) {
-    case 'profile':
-      router.push('/profile')
-      break
-    case 'logout':
-      authStore.logout()
-      router.push('/login')
-      break
+    case "profile":
+      router.push("/profile");
+      break;
+    case "logout":
+      authStore.logout();
+      router.push("/login");
+      break;
   }
-}
+};
 </script>
 
 <style scoped>

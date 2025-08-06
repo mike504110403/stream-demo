@@ -111,7 +111,7 @@
                 :class="{ active: row.status === 'active' }"
                 >●</span
               >
-              {{ row.status === 'active' ? '運行中' : '已停止' }}
+              {{ row.status === "active" ? "運行中" : "已停止" }}
             </div>
           </template>
         </el-table-column>
@@ -127,7 +127,7 @@
                 size="small"
                 :type="row.enabled ? 'warning' : 'success'"
               >
-                {{ row.enabled ? '停用' : '啟用' }}
+                {{ row.enabled ? "停用" : "啟用" }}
               </el-button>
             </div>
           </template>
@@ -193,7 +193,7 @@
         <div class="dialog-footer">
           <el-button @click="showAddDialog = false">取消</el-button>
           <el-button @click="saveStream" type="primary" :loading="saving">
-            {{ editingStream ? '更新' : '新增' }}
+            {{ editingStream ? "更新" : "新增" }}
           </el-button>
         </div>
       </template>
@@ -202,225 +202,225 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, onMounted } from "vue";
+import { ElMessage } from "element-plus";
 // import { ElMessageBox } from 'element-plus'  // 暫時註釋掉未使用的 import
 
 // 響應式數據
-const streams = ref<any[]>([])
-const loading = ref(false)
-const saving = ref(false)
-const error = ref('')
-const showAddDialog = ref(false)
-const editingStream = ref<any>(null)
-const formRef = ref()
+const streams = ref<any[]>([]);
+const loading = ref(false);
+const saving = ref(false);
+const error = ref("");
+const showAddDialog = ref(false);
+const editingStream = ref<any>(null);
+const formRef = ref();
 
 // 表單數據
 const form = ref({
-  name: '',
-  title: '',
-  description: '',
-  url: '',
-  type: 'hls',
-  category: 'test',
+  name: "",
+  title: "",
+  description: "",
+  url: "",
+  type: "hls",
+  category: "test",
   enabled: true,
-})
+});
 
 // 表單驗證規則
 const rules: any = {
   name: [
-    { required: true, message: '請輸入名稱', trigger: 'blur' },
-    { min: 2, max: 50, message: '名稱長度在 2 到 50 個字符', trigger: 'blur' },
+    { required: true, message: "請輸入名稱", trigger: "blur" },
+    { min: 2, max: 50, message: "名稱長度在 2 到 50 個字符", trigger: "blur" },
   ],
   title: [
-    { required: true, message: '請輸入標題', trigger: 'blur' },
+    { required: true, message: "請輸入標題", trigger: "blur" },
     {
       min: 2,
       max: 100,
-      message: '標題長度在 2 到 100 個字符',
-      trigger: 'blur',
+      message: "標題長度在 2 到 100 個字符",
+      trigger: "blur",
     },
   ],
   url: [
-    { required: true, message: '請輸入 URL', trigger: 'blur' },
-    { type: 'url', message: '請輸入有效的 URL', trigger: 'blur' },
+    { required: true, message: "請輸入 URL", trigger: "blur" },
+    { type: "url", message: "請輸入有效的 URL", trigger: "blur" },
   ],
-  type: [{ required: true, message: '請選擇類型', trigger: 'change' }],
-  category: [{ required: true, message: '請選擇分類', trigger: 'change' }],
-}
+  type: [{ required: true, message: "請選擇類型", trigger: "change" }],
+  category: [{ required: true, message: "請選擇分類", trigger: "change" }],
+};
 
 // 分類標籤映射
 const categoryLabels: Record<string, string> = {
-  test: '測試',
-  space: '太空',
-  news: '新聞',
-  sports: '體育',
-  entertainment: '娛樂',
-}
+  test: "測試",
+  space: "太空",
+  news: "新聞",
+  sports: "體育",
+  entertainment: "娛樂",
+};
 
 // 方法
 const loadStreams = async () => {
-  loading.value = true
-  error.value = ''
+  loading.value = true;
+  error.value = "";
 
   try {
     // 通過 Vite 代理調用 Stream-Puller 的 API，獲取資料庫中的所有資料
-    const response = await fetch('/api/public-streams')
-    const data = await response.json()
+    const response = await fetch("/api/public-streams");
+    const data = await response.json();
 
-    console.log('Stream-Puller API 響應:', data) // 調試用
+    console.log("Stream-Puller API 響應:", data); // 調試用
 
     if (data.success && data.data && data.data.streams) {
       streams.value = data.data.streams.map((stream: any) => ({
         ...stream,
-        status: stream.enabled ? 'active' : 'inactive',
-      }))
+        status: stream.enabled ? "active" : "inactive",
+      }));
     } else {
-      throw new Error('響應格式不正確')
+      throw new Error("響應格式不正確");
     }
   } catch (err) {
-    console.error('載入流配置失敗:', err)
-    error.value = '載入流配置失敗，請稍後再試'
+    console.error("載入流配置失敗:", err);
+    error.value = "載入流配置失敗，請稍後再試";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const refreshStreams = () => {
-  loadStreams()
-}
+  loadStreams();
+};
 
 const editStream = (stream: any) => {
-  editingStream.value = stream
-  form.value = { ...stream }
-  showAddDialog.value = true
-}
+  editingStream.value = stream;
+  form.value = { ...stream };
+  showAddDialog.value = true;
+};
 
 const toggleStream = async (stream: any) => {
   try {
-    console.log('切換流狀態:', stream) // 調試用
+    console.log("切換流狀態:", stream); // 調試用
 
     if (!stream.name) {
-      ElMessage.error('流名稱不能為空')
-      return
+      ElMessage.error("流名稱不能為空");
+      return;
     }
 
-    const newEnabled = !stream.enabled
-    const formData = new URLSearchParams()
-    formData.append('name', stream.name)
-    formData.append('enabled', newEnabled.toString())
+    const newEnabled = !stream.enabled;
+    const formData = new URLSearchParams();
+    formData.append("name", stream.name);
+    formData.append("enabled", newEnabled.toString());
 
-    console.log('發送資料:', { name: stream.name, enabled: newEnabled }) // 調試用
+    console.log("發送資料:", { name: stream.name, enabled: newEnabled }); // 調試用
 
     const response = await fetch(`/api/public-streams`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify({
-        title: formData.get('title'),
-        description: formData.get('description'),
-        url: formData.get('url'),
-        category: formData.get('category'),
+        title: formData.get("title"),
+        description: formData.get("description"),
+        url: formData.get("url"),
+        category: formData.get("category"),
       }),
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-    })
+    });
 
     if (response.ok) {
-      stream.enabled = newEnabled
-      stream.status = newEnabled ? 'active' : 'inactive'
-      ElMessage.success(`已${newEnabled ? '啟用' : '停用'}直播源`)
+      stream.enabled = newEnabled;
+      stream.status = newEnabled ? "active" : "inactive";
+      ElMessage.success(`已${newEnabled ? "啟用" : "停用"}直播源`);
     } else {
-      const errorText = await response.text()
-      console.error('API 錯誤響應:', errorText) // 調試用
-      throw new Error(`操作失敗: ${errorText}`)
+      const errorText = await response.text();
+      console.error("API 錯誤響應:", errorText); // 調試用
+      throw new Error(`操作失敗: ${errorText}`);
     }
   } catch (err) {
-    console.error('切換狀態失敗:', err)
-    ElMessage.error('操作失敗，請稍後再試')
+    console.error("切換狀態失敗:", err);
+    ElMessage.error("操作失敗，請稍後再試");
   }
-}
+};
 
 // 移除刪除功能
 
 const saveStream = async () => {
-  if (!formRef.value) return
+  if (!formRef.value) return;
 
   try {
-    await formRef.value.validate()
-    saving.value = true
+    await formRef.value.validate();
+    saving.value = true;
 
-    const formData = new URLSearchParams()
-    Object.keys(form.value).forEach(key => {
+    const formData = new URLSearchParams();
+    Object.keys(form.value).forEach((key) => {
       formData.append(
         key,
-        form.value[key as keyof typeof form.value].toString()
-      )
-    })
+        form.value[key as keyof typeof form.value].toString(),
+      );
+    });
 
-    const method = editingStream.value ? 'PUT' : 'POST'
+    const method = editingStream.value ? "PUT" : "POST";
     const response = await fetch(`/api/public-streams`, {
       method,
       body: JSON.stringify({
-        name: formData.get('name'),
-        title: formData.get('title'),
-        description: formData.get('description'),
-        url: formData.get('url'),
-        category: formData.get('category'),
+        name: formData.get("name"),
+        title: formData.get("title"),
+        description: formData.get("description"),
+        url: formData.get("url"),
+        category: formData.get("category"),
       }),
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-    })
+    });
 
     if (response.ok) {
-      ElMessage.success(editingStream.value ? '更新成功' : '新增成功')
-      showAddDialog.value = false
-      loadStreams()
+      ElMessage.success(editingStream.value ? "更新成功" : "新增成功");
+      showAddDialog.value = false;
+      loadStreams();
     } else {
-      throw new Error('保存失敗')
+      throw new Error("保存失敗");
     }
   } catch (err) {
-    console.error('保存失敗:', err)
-    ElMessage.error('保存失敗，請稍後再試')
+    console.error("保存失敗:", err);
+    ElMessage.error("保存失敗，請稍後再試");
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 const resetForm = () => {
-  editingStream.value = null
+  editingStream.value = null;
   form.value = {
-    name: '',
-    title: '',
-    description: '',
-    url: '',
-    type: 'hls',
-    category: 'test',
+    name: "",
+    title: "",
+    description: "",
+    url: "",
+    type: "hls",
+    category: "test",
     enabled: true,
-  }
+  };
   if (formRef.value) {
-    formRef.value.resetFields()
+    formRef.value.resetFields();
   }
-}
+};
 
 const copyToClipboard = async (text: string) => {
   try {
-    await navigator.clipboard.writeText(text)
-    ElMessage.success('已複製到剪貼板')
+    await navigator.clipboard.writeText(text);
+    ElMessage.success("已複製到剪貼板");
   } catch (err) {
-    console.error('複製失敗:', err)
-    ElMessage.error('複製失敗')
+    console.error("複製失敗:", err);
+    ElMessage.error("複製失敗");
   }
-}
+};
 
 const getCategoryLabel = (category: string) => {
-  return categoryLabels[category] || category
-}
+  return categoryLabels[category] || category;
+};
 
 // 生命週期
 onMounted(() => {
-  loadStreams()
-})
+  loadStreams();
+});
 </script>
 
 <style scoped>

@@ -88,123 +88,123 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import {
   ElMessage,
   ElMessageBox,
   type FormInstance,
   type FormRules,
-} from 'element-plus'
-import { useAuthStore } from '@/store/auth'
-import { updateUser, deleteUser } from '@/api/user'
-import type { UpdateUserRequest } from '@/types'
+} from "element-plus";
+import { useAuthStore } from "@/store/auth";
+import { updateUser, deleteUser } from "@/api/user";
+import type { UpdateUserRequest } from "@/types";
 
-const router = useRouter()
-const authStore = useAuthStore()
+const router = useRouter();
+const authStore = useAuthStore();
 
-const loading = ref(false)
-const profileFormRef = ref<FormInstance>()
+const loading = ref(false);
+const profileFormRef = ref<FormInstance>();
 
 const profileForm = reactive<UpdateUserRequest & { id?: number }>({
-  username: '',
-  email: '',
-  avatar: '',
-  bio: '',
-})
+  username: "",
+  email: "",
+  avatar: "",
+  bio: "",
+});
 
 const profileRules: FormRules = {
   username: [
-    { required: true, message: '請輸入用戶名', trigger: 'blur' },
+    { required: true, message: "請輸入用戶名", trigger: "blur" },
     {
       min: 3,
       max: 32,
-      message: '用戶名長度在 3 到 32 個字符',
-      trigger: 'blur',
+      message: "用戶名長度在 3 到 32 個字符",
+      trigger: "blur",
     },
   ],
   email: [
-    { required: true, message: '請輸入郵箱', trigger: 'blur' },
-    { type: 'email', message: '請輸入正確的郵箱格式', trigger: 'blur' },
+    { required: true, message: "請輸入郵箱", trigger: "blur" },
+    { type: "email", message: "請輸入正確的郵箱格式", trigger: "blur" },
   ],
-  bio: [{ max: 500, message: '個人簡介不能超過 500 個字符', trigger: 'blur' }],
-}
+  bio: [{ max: 500, message: "個人簡介不能超過 500 個字符", trigger: "blur" }],
+};
 
 const initForm = () => {
   if (authStore.user) {
-    profileForm.id = authStore.user.id
-    profileForm.username = authStore.user.username
-    profileForm.email = authStore.user.email
-    profileForm.avatar = authStore.user.avatar || ''
-    profileForm.bio = authStore.user.bio || ''
+    profileForm.id = authStore.user.id;
+    profileForm.username = authStore.user.username;
+    profileForm.email = authStore.user.email;
+    profileForm.avatar = authStore.user.avatar || "";
+    profileForm.bio = authStore.user.bio || "";
   }
-}
+};
 
 const resetForm = () => {
-  initForm()
-}
+  initForm();
+};
 
 const handleUpdate = async () => {
-  if (!profileFormRef.value || !profileForm.id) return
+  if (!profileFormRef.value || !profileForm.id) return;
 
-  await profileFormRef.value.validate(async valid => {
+  await profileFormRef.value.validate(async (valid) => {
     if (valid) {
-      loading.value = true
+      loading.value = true;
       try {
         const updatedUser = await updateUser(profileForm.id!, {
           username: profileForm.username,
           email: profileForm.email,
           avatar: profileForm.avatar,
           bio: profileForm.bio,
-        })
+        });
 
         // 更新本地用戶資料
-        const userData = updatedUser
-        authStore.updateUser(userData)
+        const userData = updatedUser;
+        authStore.updateUser(userData);
 
-        ElMessage.success('更新成功')
+        ElMessage.success("更新成功");
       } catch (error) {
-        console.error('更新失敗:', error)
+        console.error("更新失敗:", error);
       } finally {
-        loading.value = false
+        loading.value = false;
       }
     }
-  })
-}
+  });
+};
 
 const handleDeleteAccount = async () => {
   try {
     await ElMessageBox.confirm(
-      '確定要刪除您的帳號嗎？此操作不可恢復！',
-      '確認刪除帳號',
+      "確定要刪除您的帳號嗎？此操作不可恢復！",
+      "確認刪除帳號",
       {
-        confirmButtonText: '確定刪除',
-        cancelButtonText: '取消',
-        type: 'error',
-      }
-    )
+        confirmButtonText: "確定刪除",
+        cancelButtonText: "取消",
+        type: "error",
+      },
+    );
 
     if (authStore.user?.id) {
-      await deleteUser(authStore.user.id)
-      ElMessage.success('帳號已刪除')
-      authStore.logout()
-      router.push('/')
+      await deleteUser(authStore.user.id);
+      ElMessage.success("帳號已刪除");
+      authStore.logout();
+      router.push("/");
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('刪除帳號失敗:', error)
+    if (error !== "cancel") {
+      console.error("刪除帳號失敗:", error);
     }
   }
-}
+};
 
 const formatDate = (dateString?: string) => {
-  if (!dateString) return '未知'
-  return new Date(dateString).toLocaleDateString('zh-TW')
-}
+  if (!dateString) return "未知";
+  return new Date(dateString).toLocaleDateString("zh-TW");
+};
 
 onMounted(() => {
-  initForm()
-})
+  initForm();
+});
 </script>
 
 <style scoped>

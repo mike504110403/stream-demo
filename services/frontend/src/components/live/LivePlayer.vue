@@ -83,7 +83,7 @@
       <div class="live-meta">
         <span class="meta-item">
           <el-icon><User /></el-icon>
-          {{ liveInfo.user?.username || '未知用戶' }}
+          {{ liveInfo.user?.username || "未知用戶" }}
         </span>
         <span class="meta-item">
           <el-icon><Clock /></el-icon>
@@ -95,66 +95,66 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Loading, Warning, User, Clock } from '@element-plus/icons-vue'
-import Hls from 'hls.js'
-import type { Live } from '@/types'
+import { ref, onMounted, onUnmounted, watch } from "vue";
+import { ElMessage } from "element-plus";
+import { Loading, Warning, User, Clock } from "@element-plus/icons-vue";
+import Hls from "hls.js";
+import type { Live } from "@/types";
 
 interface Props {
-  streamUrl?: string
-  liveInfo?: Live
-  autoPlay?: boolean
+  streamUrl?: string;
+  liveInfo?: Live;
+  autoPlay?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   autoPlay: true,
-})
+});
 
 // 響應式數據
-const videoElement = ref<HTMLVideoElement>()
-const hls = ref<Hls | null>(null)
-const loading = ref(false)
-const error = ref<string>('')
-const isLive = ref(false)
-const isPlaying = ref(false)
-const canPlay = ref(false)
-const currentTime = ref(0)
-const duration = ref(0)
-const viewerCount = ref(0)
+const videoElement = ref<HTMLVideoElement>();
+const hls = ref<Hls | null>(null);
+const loading = ref(false);
+const error = ref<string>("");
+const isLive = ref(false);
+const isPlaying = ref(false);
+const canPlay = ref(false);
+const currentTime = ref(0);
+const duration = ref(0);
+const viewerCount = ref(0);
 
 // 定時器
-const timeUpdateTimer = ref<number | null>(null)
-const retryTimer = ref<number | null>(null)
+const timeUpdateTimer = ref<number | null>(null);
+const retryTimer = ref<number | null>(null);
 
 // 初始化播放器
 const initPlayer = () => {
   if (!videoElement.value || !props.streamUrl) {
-    return
+    return;
   }
 
-  loading.value = true
-  error.value = ''
+  loading.value = true;
+  error.value = "";
 
-  console.log('初始化直播播放器:', props.streamUrl)
+  console.log("初始化直播播放器:", props.streamUrl);
 
   // 清理之前的 HLS 實例
   if (hls.value) {
-    hls.value.destroy()
-    hls.value = null
+    hls.value.destroy();
+    hls.value = null;
   }
 
   // 檢查是否為 HLS 串流
-  if (props.streamUrl.includes('.m3u8')) {
-    setupHLSPlayer()
+  if (props.streamUrl.includes(".m3u8")) {
+    setupHLSPlayer();
   } else {
-    setupDirectPlayer()
+    setupDirectPlayer();
   }
-}
+};
 
 // 設置 HLS 播放器
 const setupHLSPlayer = () => {
-  if (!videoElement.value || !props.streamUrl) return
+  if (!videoElement.value || !props.streamUrl) return;
 
   if (Hls.isSupported()) {
     hls.value = new Hls({
@@ -172,244 +172,244 @@ const setupHLSPlayer = () => {
       maxFragLookUpTolerance: 0.25,
       liveSyncDurationCount: 3,
       liveMaxLatencyDurationCount: 10,
-    })
+    });
 
-    hls.value.loadSource(props.streamUrl)
-    hls.value.attachMedia(videoElement.value)
+    hls.value.loadSource(props.streamUrl);
+    hls.value.attachMedia(videoElement.value);
 
     hls.value.on(Hls.Events.MANIFEST_PARSED, () => {
-      console.log('HLS 清單解析完成')
-      loading.value = false
-      isLive.value = true
+      console.log("HLS 清單解析完成");
+      loading.value = false;
+      isLive.value = true;
 
       if (props.autoPlay) {
-        videoElement.value?.play().catch(e => {
-          console.error('自動播放失敗:', e)
-        })
+        videoElement.value?.play().catch((e) => {
+          console.error("自動播放失敗:", e);
+        });
       }
-    })
+    });
 
     hls.value.on(Hls.Events.ERROR, (_event, data) => {
-      console.error('HLS 錯誤:', data)
-      handleHlsError(data)
-    })
+      console.error("HLS 錯誤:", data);
+      handleHlsError(data);
+    });
 
     hls.value.on(Hls.Events.FRAG_LOADED, () => {
       // 直播流正常載入
-      isLive.value = true
-    })
+      isLive.value = true;
+    });
   } else {
     // 瀏覽器原生支援 HLS
-    console.log('使用瀏覽器原生 HLS 支援')
-    videoElement.value.src = props.streamUrl
-    loading.value = false
-    isLive.value = true
+    console.log("使用瀏覽器原生 HLS 支援");
+    videoElement.value.src = props.streamUrl;
+    loading.value = false;
+    isLive.value = true;
   }
-}
+};
 
 // 設置直接播放器（非 HLS）
 const setupDirectPlayer = () => {
-  if (!videoElement.value || !props.streamUrl) return
+  if (!videoElement.value || !props.streamUrl) return;
 
-  console.log('設置直接播放器')
-  videoElement.value.src = props.streamUrl
-  loading.value = false
-  isLive.value = true
-}
+  console.log("設置直接播放器");
+  videoElement.value.src = props.streamUrl;
+  loading.value = false;
+  isLive.value = true;
+};
 
 // 處理 HLS 錯誤
 const handleHlsError = (data: any) => {
   if (data.fatal) {
     switch (data.type) {
       case Hls.ErrorTypes.NETWORK_ERROR:
-        error.value = '網路錯誤，無法載入直播流'
-        break
+        error.value = "網路錯誤，無法載入直播流";
+        break;
       case Hls.ErrorTypes.MEDIA_ERROR:
-        error.value = '媒體錯誤，直播流格式不支援'
-        break
+        error.value = "媒體錯誤，直播流格式不支援";
+        break;
       default:
-        error.value = '播放器錯誤，請重新載入'
+        error.value = "播放器錯誤，請重新載入";
     }
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 事件處理
 const handleLoadStart = () => {
-  console.log('開始載入直播流')
-  loading.value = true
-  error.value = ''
-}
+  console.log("開始載入直播流");
+  loading.value = true;
+  error.value = "";
+};
 
 const handleCanPlay = () => {
-  console.log('直播流可以播放')
-  loading.value = false
-  canPlay.value = true
-  isLive.value = true
-}
+  console.log("直播流可以播放");
+  loading.value = false;
+  canPlay.value = true;
+  isLive.value = true;
+};
 
 const handleError = (event: Event) => {
-  const video = event.target as HTMLVideoElement
-  const videoError = video.error
+  const video = event.target as HTMLVideoElement;
+  const videoError = video.error;
 
-  console.error('影片播放錯誤:', videoError)
+  console.error("影片播放錯誤:", videoError);
 
   if (videoError) {
     switch (videoError.code) {
       case videoError.MEDIA_ERR_ABORTED:
-        error.value = '播放被中止'
-        break
+        error.value = "播放被中止";
+        break;
       case videoError.MEDIA_ERR_NETWORK:
-        error.value = '網路錯誤，無法載入直播流'
-        break
+        error.value = "網路錯誤，無法載入直播流";
+        break;
       case videoError.MEDIA_ERR_DECODE:
-        error.value = '解碼錯誤，直播流格式不支援'
-        break
+        error.value = "解碼錯誤，直播流格式不支援";
+        break;
       case videoError.MEDIA_ERR_SRC_NOT_SUPPORTED:
-        error.value = '不支援的直播流格式'
-        break
+        error.value = "不支援的直播流格式";
+        break;
       default:
-        error.value = '播放器錯誤'
+        error.value = "播放器錯誤";
     }
   } else {
-    error.value = '直播流載入失敗'
+    error.value = "直播流載入失敗";
   }
 
-  loading.value = false
-}
+  loading.value = false;
+};
 
 const handleWaiting = () => {
-  console.log('等待直播流載入')
-  loading.value = true
-}
+  console.log("等待直播流載入");
+  loading.value = true;
+};
 
 const handlePlaying = () => {
-  console.log('直播開始播放')
-  isPlaying.value = true
-  loading.value = false
-  startTimeUpdate()
-}
+  console.log("直播開始播放");
+  isPlaying.value = true;
+  loading.value = false;
+  startTimeUpdate();
+};
 
 const handlePause = () => {
-  console.log('直播暫停')
-  isPlaying.value = false
-  stopTimeUpdate()
-}
+  console.log("直播暫停");
+  isPlaying.value = false;
+  stopTimeUpdate();
+};
 
 const handleEnded = () => {
-  console.log('直播結束')
-  isPlaying.value = false
-  stopTimeUpdate()
-}
+  console.log("直播結束");
+  isPlaying.value = false;
+  stopTimeUpdate();
+};
 
 // 播放控制
 const togglePlay = () => {
-  if (!videoElement.value) return
+  if (!videoElement.value) return;
 
   if (isPlaying.value) {
-    videoElement.value.pause()
+    videoElement.value.pause();
   } else {
-    videoElement.value.play().catch(e => {
-      console.error('播放失敗:', e)
-      ElMessage.error('播放失敗')
-    })
+    videoElement.value.play().catch((e) => {
+      console.error("播放失敗:", e);
+      ElMessage.error("播放失敗");
+    });
   }
-}
+};
 
 const retryLoad = () => {
-  console.log('重新載入直播流')
-  initPlayer()
-}
+  console.log("重新載入直播流");
+  initPlayer();
+};
 
 const toggleFullscreen = () => {
-  if (!videoElement.value) return
+  if (!videoElement.value) return;
 
   if (document.fullscreenElement) {
-    document.exitFullscreen()
+    document.exitFullscreen();
   } else {
-    videoElement.value.requestFullscreen().catch(e => {
-      console.error('全螢幕切換失敗:', e)
-    })
+    videoElement.value.requestFullscreen().catch((e) => {
+      console.error("全螢幕切換失敗:", e);
+    });
   }
-}
+};
 
 // 時間更新
 const startTimeUpdate = () => {
   if (timeUpdateTimer.value) {
-    clearInterval(timeUpdateTimer.value)
+    clearInterval(timeUpdateTimer.value);
   }
 
   timeUpdateTimer.value = window.setInterval(() => {
     if (videoElement.value) {
-      currentTime.value = videoElement.value.currentTime
-      duration.value = videoElement.value.duration
+      currentTime.value = videoElement.value.currentTime;
+      duration.value = videoElement.value.duration;
     }
-  }, 1000)
-}
+  }, 1000);
+};
 
 const stopTimeUpdate = () => {
   if (timeUpdateTimer.value) {
-    clearInterval(timeUpdateTimer.value)
-    timeUpdateTimer.value = null
+    clearInterval(timeUpdateTimer.value);
+    timeUpdateTimer.value = null;
   }
-}
+};
 
 // 工具函數
 const formatTime = (seconds: number): string => {
-  if (!seconds || isNaN(seconds)) return '00:00'
+  if (!seconds || isNaN(seconds)) return "00:00";
 
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  const secs = Math.floor(seconds % 60)
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
 
   if (hours > 0) {
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   }
-  return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-}
+  return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+};
 
 const formatViewerCount = (count: number): string => {
   if (count >= 10000) {
-    return `${(count / 10000).toFixed(1)}萬`
+    return `${(count / 10000).toFixed(1)}萬`;
   }
-  return count.toString()
-}
+  return count.toString();
+};
 
 const formatStartTime = (dateString: string): string => {
-  const date = new Date(dateString)
-  return date.toLocaleString('zh-TW')
-}
+  const date = new Date(dateString);
+  return date.toLocaleString("zh-TW");
+};
 
 // 監聽串流 URL 變化
 watch(
   () => props.streamUrl,
-  newUrl => {
+  (newUrl) => {
     if (newUrl) {
-      initPlayer()
+      initPlayer();
     }
-  }
-)
+  },
+);
 
 // 生命週期
 onMounted(() => {
   if (props.streamUrl) {
-    initPlayer()
+    initPlayer();
   }
-})
+});
 
 onUnmounted(() => {
   // 清理資源
   if (hls.value) {
-    hls.value.destroy()
-    hls.value = null
+    hls.value.destroy();
+    hls.value = null;
   }
 
-  stopTimeUpdate()
+  stopTimeUpdate();
 
   if (retryTimer.value) {
-    clearTimeout(retryTimer.value)
+    clearTimeout(retryTimer.value);
   }
-})
+});
 </script>
 
 <style scoped>

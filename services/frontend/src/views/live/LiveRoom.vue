@@ -1,7 +1,7 @@
 <template>
   <div class="live-room">
     <div class="page-header">
-      <h1>{{ roomInfo?.title || '直播間' }}</h1>
+      <h1>{{ roomInfo?.title || "直播間" }}</h1>
       <div class="header-actions">
         <!-- 主播專用按鈕 -->
         <template v-if="isCreator">
@@ -13,7 +13,7 @@
             @click="handleStartLive"
             :loading="startingLive"
           >
-            {{ roomInfo?.status === 'ended' ? '重新開始直播' : '開始直播' }}
+            {{ roomInfo?.status === "ended" ? "重新開始直播" : "開始直播" }}
           </el-button>
           <el-button
             v-if="roomInfo?.status === 'live'"
@@ -87,7 +87,7 @@
               <div class="offline-icon">📺</div>
               <div class="offline-text">
                 {{
-                  roomInfo.status === 'created' ? '直播尚未開始' : '直播已結束'
+                  roomInfo.status === "created" ? "直播尚未開始" : "直播已結束"
                 }}
               </div>
               <div
@@ -99,7 +99,7 @@
               >
                 <el-button type="primary" @click="handleStartLive">
                   {{
-                    roomInfo.status === 'ended' ? '重新開始直播' : '開始直播'
+                    roomInfo.status === "ended" ? "重新開始直播" : "開始直播"
                   }}
                 </el-button>
               </div>
@@ -117,7 +117,7 @@
                   >{{ roomInfo.viewer_count }} 觀眾</span
                 >
                 <el-tag :type="isConnected ? 'success' : 'danger'" size="small">
-                  {{ isConnected ? '已連接' : '未連接' }}
+                  {{ isConnected ? "已連接" : "未連接" }}
                 </el-tag>
               </div>
             </div>
@@ -250,9 +250,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { ElMessage, ElMessageBox } from "element-plus";
 import {
   getRoomById,
   joinRoom,
@@ -261,124 +261,124 @@ import {
   endLive as endLiveAPI,
   closeRoom,
   getUserRole as getUserRoleAPI,
-} from '@/api/live-room'
-import { useAuthStore } from '@/store/auth'
-import type { LiveRoomInfo } from '@/types'
-import { LiveRoomWebSocket, type LiveRoomMessage } from '@/utils/websocket'
-import Hls from 'hls.js'
+} from "@/api/live-room";
+import { useAuthStore } from "@/store/auth";
+import type { LiveRoomInfo } from "@/types";
+import { LiveRoomWebSocket, type LiveRoomMessage } from "@/utils/websocket";
+import Hls from "hls.js";
 
-const route = useRoute()
-const router = useRouter()
-const authStore = useAuthStore()
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
 
 // 響應式數據
-const loading = ref(true)
-const error = ref('')
-const roomInfo = ref<LiveRoomInfo | null>(null)
-const showStreamInfo = ref(false)
-const startingLive = ref(false)
-const endingLive = ref(false)
-const closingRoom = ref(false)
-const userRole = ref<string>('') // 添加用戶角色狀態
+const loading = ref(true);
+const error = ref("");
+const roomInfo = ref<LiveRoomInfo | null>(null);
+const showStreamInfo = ref(false);
+const startingLive = ref(false);
+const endingLive = ref(false);
+const closingRoom = ref(false);
+const userRole = ref<string>(""); // 添加用戶角色狀態
 
 // 聊天相關
 const messages = ref<
   Array<{
-    id: string
-    username: string
-    content: string
-    role?: string
-    timestamp: number
+    id: string;
+    username: string;
+    content: string;
+    role?: string;
+    timestamp: number;
   }>
->([])
-const newMessage = ref('')
-const chatMessages = ref<HTMLElement>()
+>([]);
+const newMessage = ref("");
+const chatMessages = ref<HTMLElement>();
 
 // WebSocket 相關
-const wsClient = ref<LiveRoomWebSocket | null>(null)
-const isConnected = ref(false)
+const wsClient = ref<LiveRoomWebSocket | null>(null);
+const isConnected = ref(false);
 
 // HLS 播放器相關
-const videoPlayer = ref<HTMLVideoElement>()
-const hls = ref<Hls | null>(null)
-const hlsLoading = ref(false)
+const videoPlayer = ref<HTMLVideoElement>();
+const hls = ref<Hls | null>(null);
+const hlsLoading = ref(false);
 
 // 計算屬性
-const roomId = computed(() => route.params.id as string)
-const currentUserId = computed(() => authStore.user?.id || 0)
-const currentUsername = computed(() => authStore.user?.username || '')
+const roomId = computed(() => route.params.id as string);
+const currentUserId = computed(() => authStore.user?.id || 0);
+const currentUsername = computed(() => authStore.user?.username || "");
 
 // 用戶角色相關
 const isCreator = computed(() => {
   // 優先檢查用戶角色，然後檢查創建者ID
   const result =
-    userRole.value === 'creator' ||
-    roomInfo.value?.creator_id === currentUserId.value
-  console.log('角色判斷:', {
+    userRole.value === "creator" ||
+    roomInfo.value?.creator_id === currentUserId.value;
+  console.log("角色判斷:", {
     userRole: userRole.value,
     creator_id: roomInfo.value?.creator_id,
     currentUserId: currentUserId.value,
     isCreator: result,
-  })
-  return result
-})
-const isViewer = computed(() => !isCreator.value)
+  });
+  return result;
+});
+const isViewer = computed(() => !isCreator.value);
 
-import { getRtmpPushUrl, getHlsPlayUrl } from '@/utils/stream-config'
+import { getRtmpPushUrl, getHlsPlayUrl } from "@/utils/stream-config";
 
 // 串流 URL
 const streamUrl = computed(() => {
-  if (!roomInfo.value || roomInfo.value.status !== 'live') return ''
-  return getHlsPlayUrl(roomInfo.value.stream_key)
-})
+  if (!roomInfo.value || roomInfo.value.status !== "live") return "";
+  return getHlsPlayUrl(roomInfo.value.stream_key);
+});
 
 const rtmpUrl = computed(() => {
-  if (!roomInfo.value) return ''
-  return getRtmpPushUrl(roomInfo.value.stream_key)
-})
+  if (!roomInfo.value) return "";
+  return getRtmpPushUrl(roomInfo.value.stream_key);
+});
 
 const hlsUrl = computed(() => {
-  if (!roomInfo.value) return ''
-  return getHlsPlayUrl(roomInfo.value.stream_key)
-})
+  if (!roomInfo.value) return "";
+  return getHlsPlayUrl(roomInfo.value.stream_key);
+});
 
 // 初始化 HLS 播放器
 const initHLSPlayer = async () => {
-  console.log('initHLSPlayer 被調用:', {
+  console.log("initHLSPlayer 被調用:", {
     videoPlayer: !!videoPlayer.value,
     streamUrl: streamUrl.value,
     hlsUrl: hlsUrl.value,
     roomInfo: roomInfo.value,
     roomStatus: roomInfo.value?.status,
     streamKey: roomInfo.value?.stream_key,
-  })
+  });
 
   if (!videoPlayer.value) {
-    console.log('videoPlayer 未準備好，跳過初始化')
-    return
+    console.log("videoPlayer 未準備好，跳過初始化");
+    return;
   }
 
   // 使用 hlsUrl 而不是 streamUrl，因為 hlsUrl 不依賴於狀態
   const urlToUse =
-    roomInfo.value?.status === 'live' ? streamUrl.value : hlsUrl.value
+    roomInfo.value?.status === "live" ? streamUrl.value : hlsUrl.value;
 
   if (!urlToUse) {
-    console.log('URL 為空，跳過初始化')
-    return
+    console.log("URL 為空，跳過初始化");
+    return;
   }
 
-  console.log('初始化 HLS 播放器:', urlToUse)
+  console.log("初始化 HLS 播放器:", urlToUse);
 
   // 清理現有的 HLS 實例
   if (hls.value) {
-    console.log('清理現有的 HLS 實例')
-    hls.value.destroy()
-    hls.value = null
+    console.log("清理現有的 HLS 實例");
+    hls.value.destroy();
+    hls.value = null;
   }
 
   // 檢查瀏覽器是否支援 HLS
   if (Hls.isSupported()) {
-    console.log('瀏覽器支援 HLS.js，使用 HLS.js 播放')
+    console.log("瀏覽器支援 HLS.js，使用 HLS.js 播放");
     hls.value = new Hls({
       debug: true, // 開啟調試模式以便排查問題
       enableWorker: true,
@@ -413,251 +413,251 @@ const initHLSPlayer = async () => {
       manifestLoadingMaxRetry: 4, // 播放列表載入最大重試次數
       manifestLoadingRetryDelay: 1000, // 播放列表載入重試延遲 1 秒
       manifestLoadingMaxRetryTimeout: 64000, // 播放列表載入最大重試超時 64 秒
-    })
+    });
 
-    console.log('HLS.js 實例創建成功，開始載入源')
-    hls.value.loadSource(urlToUse)
-    hls.value.attachMedia(videoPlayer.value)
+    console.log("HLS.js 實例創建成功，開始載入源");
+    hls.value.loadSource(urlToUse);
+    hls.value.attachMedia(videoPlayer.value);
 
     hls.value.on(Hls.Events.MANIFEST_PARSED, () => {
-      console.log('HLS 播放列表已解析，開始播放')
+      console.log("HLS 播放列表已解析，開始播放");
       if (videoPlayer.value) {
-        videoPlayer.value.play().catch(err => {
-          console.error('自動播放失敗:', err)
-        })
+        videoPlayer.value.play().catch((err) => {
+          console.error("自動播放失敗:", err);
+        });
       }
-    })
+    });
 
     // 添加更多事件監聽器來調試 LL-HLS
     hls.value.on(Hls.Events.MANIFEST_LOADING, () => {
-      console.log('正在載入 HLS 播放列表...')
-    })
+      console.log("正在載入 HLS 播放列表...");
+    });
 
     hls.value.on(Hls.Events.MANIFEST_LOADED, () => {
-      console.log('HLS 播放列表載入完成')
-    })
+      console.log("HLS 播放列表載入完成");
+    });
 
     hls.value.on(Hls.Events.LEVEL_LOADED, (_event, data) => {
-      console.log('HLS 品質等級載入完成:', data.level)
-    })
+      console.log("HLS 品質等級載入完成:", data.level);
+    });
 
     hls.value.on(Hls.Events.FRAG_LOADING, (_event, data) => {
-      console.log('正在載入片段:', data.frag.url)
-    })
+      console.log("正在載入片段:", data.frag.url);
+    });
 
     hls.value.on(Hls.Events.FRAG_LOADED, (_event, data) => {
-      console.log('片段載入完成:', data.frag.url)
-    })
+      console.log("片段載入完成:", data.frag.url);
+    });
 
     hls.value.on(Hls.Events.BUFFER_APPENDING, () => {
-      console.log('正在追加緩衝...')
-    })
+      console.log("正在追加緩衝...");
+    });
 
     hls.value.on(Hls.Events.BUFFER_APPENDED, () => {
-      console.log('緩衝追加完成')
-    })
+      console.log("緩衝追加完成");
+    });
 
     hls.value.on(Hls.Events.ERROR, (_event, data) => {
-      console.error('HLS 錯誤:', data)
+      console.error("HLS 錯誤:", data);
       if (data.fatal) {
         switch (data.type) {
           case Hls.ErrorTypes.NETWORK_ERROR:
-            console.log('網絡錯誤，嘗試恢復...')
-            hls.value?.startLoad()
-            break
+            console.log("網絡錯誤，嘗試恢復...");
+            hls.value?.startLoad();
+            break;
           case Hls.ErrorTypes.MEDIA_ERROR:
-            console.log('媒體錯誤，嘗試恢復...')
-            hls.value?.recoverMediaError()
-            break
+            console.log("媒體錯誤，嘗試恢復...");
+            hls.value?.recoverMediaError();
+            break;
           default:
-            console.error('致命錯誤，無法恢復')
-            break
+            console.error("致命錯誤，無法恢復");
+            break;
         }
       }
-    })
-  } else if (videoPlayer.value.canPlayType('application/vnd.apple.mpegurl')) {
+    });
+  } else if (videoPlayer.value.canPlayType("application/vnd.apple.mpegurl")) {
     // Safari 原生支援 HLS
-    console.log('使用 Safari 原生 HLS 播放')
-    videoPlayer.value.src = urlToUse
-    videoPlayer.value.addEventListener('loadedmetadata', () => {
-      videoPlayer.value?.play().catch(err => {
-        console.error('Safari 自動播放失敗:', err)
-      })
-    })
+    console.log("使用 Safari 原生 HLS 播放");
+    videoPlayer.value.src = urlToUse;
+    videoPlayer.value.addEventListener("loadedmetadata", () => {
+      videoPlayer.value?.play().catch((err) => {
+        console.error("Safari 自動播放失敗:", err);
+      });
+    });
   } else {
-    console.error('瀏覽器不支援 HLS 播放')
+    console.error("瀏覽器不支援 HLS 播放");
   }
-}
+};
 
 // 清理 HLS 播放器
 const cleanupHLSPlayer = () => {
   if (hls.value) {
-    hls.value.destroy()
-    hls.value = null
+    hls.value.destroy();
+    hls.value = null;
   }
   if (videoPlayer.value) {
-    videoPlayer.value.src = ''
+    videoPlayer.value.src = "";
   }
-}
+};
 
 // 視頻事件處理函數
 const onVideoLoadStart = () => {
-  console.log('視頻開始載入')
-  hlsLoading.value = true
-}
+  console.log("視頻開始載入");
+  hlsLoading.value = true;
+};
 
 const onVideoLoadedData = () => {
-  console.log('視頻數據載入完成')
-}
+  console.log("視頻數據載入完成");
+};
 
 const onVideoCanPlay = () => {
-  console.log('視頻可以播放')
-  hlsLoading.value = false
-}
+  console.log("視頻可以播放");
+  hlsLoading.value = false;
+};
 
 const onVideoPlaying = () => {
-  console.log('視頻開始播放')
-  hlsLoading.value = false
-}
+  console.log("視頻開始播放");
+  hlsLoading.value = false;
+};
 
 const onVideoWaiting = () => {
-  console.log('視頻等待中')
-  hlsLoading.value = true
-}
+  console.log("視頻等待中");
+  hlsLoading.value = true;
+};
 
 const onVideoError = (event: Event) => {
-  console.error('視頻播放錯誤:', event)
-  hlsLoading.value = false
-}
+  console.error("視頻播放錯誤:", event);
+  hlsLoading.value = false;
+};
 
 // 載入直播間資訊
 const loadRoomInfo = async () => {
   if (!roomId.value) {
-    error.value = '無效的直播間 ID'
-    loading.value = false
-    return
+    error.value = "無效的直播間 ID";
+    loading.value = false;
+    return;
   }
 
-  loading.value = true
-  error.value = ''
+  loading.value = true;
+  error.value = "";
 
   try {
-    const response = await getRoomById(roomId.value)
-    roomInfo.value = response
+    const response = await getRoomById(roomId.value);
+    roomInfo.value = response;
 
     // 調試：檢查認證狀態
-    console.log('載入房間信息時的認證狀態:', {
+    console.log("載入房間信息時的認證狀態:", {
       token: !!authStore.token,
       user: authStore.user,
       currentUserId: currentUserId.value,
       roomCreatorId: roomInfo.value?.creator_id,
-    })
+    });
 
     // 加入直播間
-    await joinRoom(roomId.value)
+    await joinRoom(roomId.value);
 
     // 獲取用戶在房間中的角色
-    await getUserRole()
+    await getUserRole();
 
     // 初始化空的聊天消息列表
-    messages.value = []
+    messages.value = [];
   } catch (err: any) {
-    console.error('載入直播間資訊失敗:', err)
-    error.value = err.message || '載入直播間資訊失敗'
+    console.error("載入直播間資訊失敗:", err);
+    error.value = err.message || "載入直播間資訊失敗";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 獲取用戶在房間中的角色
 const getUserRole = async () => {
   try {
-    const response = await getUserRoleAPI(roomId.value)
-    userRole.value = response.role
-    console.log('用戶角色設置:', userRole.value)
+    const response = await getUserRoleAPI(roomId.value);
+    userRole.value = response.role;
+    console.log("用戶角色設置:", userRole.value);
   } catch (err: any) {
-    console.error('獲取用戶角色失敗:', err)
+    console.error("獲取用戶角色失敗:", err);
     // 如果 API 失敗，使用創建者ID來判斷
     if (roomInfo.value?.creator_id === currentUserId.value) {
-      userRole.value = 'creator'
+      userRole.value = "creator";
     } else {
-      userRole.value = 'viewer'
+      userRole.value = "viewer";
     }
-    console.log('使用備用角色判斷:', userRole.value)
+    console.log("使用備用角色判斷:", userRole.value);
   }
-}
+};
 
 // 開始直播
 const handleStartLive = async () => {
-  if (!roomId.value) return
+  if (!roomId.value) return;
 
-  startingLive.value = true
+  startingLive.value = true;
   try {
-    await startLiveAPI(roomId.value)
+    await startLiveAPI(roomId.value);
     // 狀態會通過 WebSocket 實時更新，不需要重新載入
   } catch (err: any) {
-    console.error('開始直播失敗:', err)
-    ElMessage.error(err.message || '開始直播失敗')
+    console.error("開始直播失敗:", err);
+    ElMessage.error(err.message || "開始直播失敗");
   } finally {
-    startingLive.value = false
+    startingLive.value = false;
   }
-}
+};
 
 // 結束直播
 const handleEndLive = async () => {
-  if (!roomId.value) return
+  if (!roomId.value) return;
 
-  endingLive.value = true
+  endingLive.value = true;
   try {
-    await endLiveAPI(roomId.value)
+    await endLiveAPI(roomId.value);
     // 狀態會通過 WebSocket 實時更新，不需要重新載入
   } catch (err: any) {
-    console.error('結束直播失敗:', err)
-    ElMessage.error(err.message || '結束直播失敗')
+    console.error("結束直播失敗:", err);
+    ElMessage.error(err.message || "結束直播失敗");
   } finally {
-    endingLive.value = false
+    endingLive.value = false;
   }
-}
+};
 
 // 關閉直播間
 const handleCloseRoom = async () => {
-  if (!roomId.value) return
+  if (!roomId.value) return;
 
   // 確認對話框
   try {
     await ElMessageBox.confirm(
-      '確定要關閉這個直播間嗎？關閉後將無法恢復。',
-      '確認關閉',
+      "確定要關閉這個直播間嗎？關閉後將無法恢復。",
+      "確認關閉",
       {
-        confirmButtonText: '確定關閉',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
-    )
+        confirmButtonText: "確定關閉",
+        cancelButtonText: "取消",
+        type: "warning",
+      },
+    );
   } catch {
-    return // 用戶取消
+    return; // 用戶取消
   }
 
-  closingRoom.value = true
+  closingRoom.value = true;
   try {
-    await closeRoom(roomId.value)
+    await closeRoom(roomId.value);
     // 跳轉會通過 WebSocket 的 room_closed 消息處理
   } catch (err: any) {
-    console.error('關閉直播間失敗:', err)
-    ElMessage.error(err.message || '關閉直播間失敗')
+    console.error("關閉直播間失敗:", err);
+    ElMessage.error(err.message || "關閉直播間失敗");
   } finally {
-    closingRoom.value = false
+    closingRoom.value = false;
   }
-}
+};
 
 // 發送消息
 const sendMessage = () => {
-  if (!newMessage.value.trim() || !roomInfo.value) return
+  if (!newMessage.value.trim() || !roomInfo.value) return;
 
   // 通過 WebSocket 發送聊天消息
   if (wsClient.value && isConnected.value) {
-    wsClient.value.sendChatMessage(newMessage.value)
-    newMessage.value = ''
+    wsClient.value.sendChatMessage(newMessage.value);
+    newMessage.value = "";
   } else {
     // 如果 WebSocket 未連接，使用本地消息（僅用於測試）
     const message = {
@@ -665,294 +665,294 @@ const sendMessage = () => {
       username: currentUsername.value,
       content: newMessage.value,
       timestamp: Date.now(),
-    }
+    };
 
-    messages.value.push(message)
-    newMessage.value = ''
+    messages.value.push(message);
+    newMessage.value = "";
 
     // 滾動到底部
     setTimeout(() => {
       if (chatMessages.value) {
-        chatMessages.value.scrollTop = chatMessages.value.scrollHeight
+        chatMessages.value.scrollTop = chatMessages.value.scrollHeight;
       }
-    }, 100)
+    }, 100);
   }
-}
+};
 
 // 複製功能
 const copyToClipboard = async (text: string, label: string) => {
   try {
-    await navigator.clipboard.writeText(text)
-    ElMessage.success(`${label} 已複製到剪貼簿`)
+    await navigator.clipboard.writeText(text);
+    ElMessage.success(`${label} 已複製到剪貼簿`);
   } catch (err) {
-    console.error('複製失敗:', err)
-    ElMessage.error('複製失敗')
+    console.error("複製失敗:", err);
+    ElMessage.error("複製失敗");
   }
-}
+};
 
 const copyStreamKey = () => {
   if (roomInfo.value?.stream_key) {
-    copyToClipboard(roomInfo.value.stream_key, '串流金鑰')
+    copyToClipboard(roomInfo.value.stream_key, "串流金鑰");
   }
-}
+};
 
 const copyRtmpUrl = () => {
-  copyToClipboard(rtmpUrl.value, 'RTMP 推流地址')
-}
+  copyToClipboard(rtmpUrl.value, "RTMP 推流地址");
+};
 
 const copyHlsUrl = () => {
-  copyToClipboard(hlsUrl.value, 'HLS 播放地址')
-}
+  copyToClipboard(hlsUrl.value, "HLS 播放地址");
+};
 
 // 工具函數
 const getStatusType = (status: string) => {
   switch (status) {
-    case 'live':
-      return 'success'
-    case 'created':
-      return 'info'
-    case 'ended':
-      return 'danger'
-    case 'cancelled':
-      return 'warning'
+    case "live":
+      return "success";
+    case "created":
+      return "info";
+    case "ended":
+      return "danger";
+    case "cancelled":
+      return "warning";
     default:
-      return 'info'
+      return "info";
   }
-}
+};
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'live':
-      return '直播中'
-    case 'created':
-      return '已創建'
-    case 'ended':
-      return '已結束'
-    case 'cancelled':
-      return '已取消'
+    case "live":
+      return "直播中";
+    case "created":
+      return "已創建";
+    case "ended":
+      return "已結束";
+    case "cancelled":
+      return "已取消";
     default:
-      return status
+      return status;
   }
-}
+};
 
 const formatDate = (dateString: string) => {
-  if (!dateString) return '未知'
-  return new Date(dateString).toLocaleString('zh-TW')
-}
+  if (!dateString) return "未知";
+  return new Date(dateString).toLocaleString("zh-TW");
+};
 
 const formatTime = (timestamp: number) => {
-  return new Date(timestamp).toLocaleTimeString('zh-TW', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+  return new Date(timestamp).toLocaleTimeString("zh-TW", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 // WebSocket 連接
 const connectWebSocket = async () => {
-  if (!roomId.value || !authStore.token) return
+  if (!roomId.value || !authStore.token) return;
 
   try {
-    wsClient.value = new LiveRoomWebSocket(roomId.value, authStore.token)
+    wsClient.value = new LiveRoomWebSocket(roomId.value, authStore.token);
 
     // 註冊消息處理器
-    wsClient.value.on('chat', (message: LiveRoomMessage) => {
+    wsClient.value.on("chat", (message: LiveRoomMessage) => {
       const chatMessage = {
         id: message.timestamp.toString(),
         username: message.username || `user_${message.user_id}`,
-        content: message.content || '',
+        content: message.content || "",
         role: message.role,
         timestamp: message.timestamp,
-      }
-      messages.value.push(chatMessage)
+      };
+      messages.value.push(chatMessage);
 
       // 滾動到底部
       nextTick(() => {
         if (chatMessages.value) {
-          chatMessages.value.scrollTop = chatMessages.value.scrollHeight
+          chatMessages.value.scrollTop = chatMessages.value.scrollHeight;
         }
-      })
-    })
+      });
+    });
 
-    wsClient.value.on('user_joined', (message: LiveRoomMessage) => {
+    wsClient.value.on("user_joined", (message: LiveRoomMessage) => {
       if (message.data?.viewer_count !== undefined && roomInfo.value) {
-        roomInfo.value.viewer_count = message.data.viewer_count
-        console.log('觀眾數量更新 (加入):', message.data.viewer_count)
+        roomInfo.value.viewer_count = message.data.viewer_count;
+        console.log("觀眾數量更新 (加入):", message.data.viewer_count);
       }
       // 只有主播能看到加入消息
       if (isCreator.value && message.username) {
-        ElMessage.info(`${message.username} 加入了直播間`)
+        ElMessage.info(`${message.username} 加入了直播間`);
       }
-    })
+    });
 
-    wsClient.value.on('user_left', (message: LiveRoomMessage) => {
+    wsClient.value.on("user_left", (message: LiveRoomMessage) => {
       if (message.data?.viewer_count !== undefined && roomInfo.value) {
-        roomInfo.value.viewer_count = message.data.viewer_count
-        console.log('觀眾數量更新 (離開):', message.data.viewer_count)
+        roomInfo.value.viewer_count = message.data.viewer_count;
+        console.log("觀眾數量更新 (離開):", message.data.viewer_count);
       }
       // 只有主播能看到離開消息
       if (isCreator.value && message.username) {
-        ElMessage.info(`${message.username} 離開了直播間`)
+        ElMessage.info(`${message.username} 離開了直播間`);
       }
-    })
+    });
 
     // 定期更新觀眾數量（備用方案）
-    wsClient.value.on('viewer_count_update', (message: LiveRoomMessage) => {
+    wsClient.value.on("viewer_count_update", (message: LiveRoomMessage) => {
       if (message.data?.viewer_count !== undefined && roomInfo.value) {
-        roomInfo.value.viewer_count = message.data.viewer_count
-        console.log('觀眾數量定期更新:', message.data.viewer_count)
+        roomInfo.value.viewer_count = message.data.viewer_count;
+        console.log("觀眾數量定期更新:", message.data.viewer_count);
       }
-    })
+    });
 
     // 處理直播開始通知
-    wsClient.value.on('live_started', (_message: LiveRoomMessage) => {
+    wsClient.value.on("live_started", (_message: LiveRoomMessage) => {
       if (roomInfo.value) {
-        roomInfo.value.status = 'live'
-        console.log('直播狀態更新: 已開始')
+        roomInfo.value.status = "live";
+        console.log("直播狀態更新: 已開始");
         // 初始化 HLS 播放器
         nextTick(() => {
-          initHLSPlayer()
-        })
+          initHLSPlayer();
+        });
       }
-    })
+    });
 
     // 處理直播結束通知
-    wsClient.value.on('live_ended', (_message: LiveRoomMessage) => {
+    wsClient.value.on("live_ended", (_message: LiveRoomMessage) => {
       if (roomInfo.value) {
-        roomInfo.value.status = 'ended'
-        console.log('直播狀態更新: 已結束')
+        roomInfo.value.status = "ended";
+        console.log("直播狀態更新: 已結束");
       }
-    })
+    });
 
     // 處理直播間關閉通知
-    wsClient.value.on('room_closed', (_message: LiveRoomMessage) => {
-      ElMessage.warning('直播間已關閉')
-      router.push('/live-rooms')
-    })
+    wsClient.value.on("room_closed", (_message: LiveRoomMessage) => {
+      ElMessage.warning("直播間已關閉");
+      router.push("/live-rooms");
+    });
 
     // 連接 WebSocket
-    await wsClient.value.connect()
-    isConnected.value = true
-    console.log('WebSocket 連接成功')
+    await wsClient.value.connect();
+    isConnected.value = true;
+    console.log("WebSocket 連接成功");
   } catch (error) {
-    console.error('WebSocket 連接失敗:', error)
-    ElMessage.warning('WebSocket 連接失敗，聊天功能可能無法正常使用')
+    console.error("WebSocket 連接失敗:", error);
+    ElMessage.warning("WebSocket 連接失敗，聊天功能可能無法正常使用");
   }
-}
+};
 
 // 斷開 WebSocket 連接
 const disconnectWebSocket = () => {
   if (wsClient.value) {
-    wsClient.value.disconnect()
-    wsClient.value = null
-    isConnected.value = false
+    wsClient.value.disconnect();
+    wsClient.value = null;
+    isConnected.value = false;
   }
-}
+};
 
 // 離開直播間
 const handleLeaveRoom = async () => {
   if (roomId.value) {
     try {
-      await leaveRoom(roomId.value)
-      ElMessage.success('已離開直播間')
-      router.push('/live-rooms')
+      await leaveRoom(roomId.value);
+      ElMessage.success("已離開直播間");
+      router.push("/live-rooms");
     } catch (err) {
-      console.error('離開直播間失敗:', err)
-      ElMessage.error('離開直播間失敗')
+      console.error("離開直播間失敗:", err);
+      ElMessage.error("離開直播間失敗");
     }
   }
-}
+};
 
 // 監聽 streamUrl 變化
-watch(streamUrl, newUrl => {
-  console.log('streamUrl 變化:', newUrl)
-  if (newUrl && roomInfo.value?.status === 'live') {
-    console.log('串流 URL 變化，重新初始化播放器:', newUrl)
+watch(streamUrl, (newUrl) => {
+  console.log("streamUrl 變化:", newUrl);
+  if (newUrl && roomInfo.value?.status === "live") {
+    console.log("串流 URL 變化，重新初始化播放器:", newUrl);
     nextTick(() => {
-      initHLSPlayer()
-    })
+      initHLSPlayer();
+    });
   }
-})
+});
 
 // 監聽房間狀態變化，在直播開始時初始化 HLS 播放器
 watch(
   () => roomInfo.value?.status,
   (newStatus, oldStatus) => {
-    console.log('房間狀態變化:', { oldStatus, newStatus })
-    if (newStatus === 'live') {
-      console.log('直播狀態，初始化 HLS 播放器')
+    console.log("房間狀態變化:", { oldStatus, newStatus });
+    if (newStatus === "live") {
+      console.log("直播狀態，初始化 HLS 播放器");
       nextTick(() => {
-        initHLSPlayer()
-      })
+        initHLSPlayer();
+      });
     } else if (
-      oldStatus === 'live' &&
+      oldStatus === "live" &&
       newStatus &&
-      (newStatus === 'ended' || newStatus === 'cancelled')
+      (newStatus === "ended" || newStatus === "cancelled")
     ) {
-      console.log('直播結束，清理 HLS 播放器')
-      cleanupHLSPlayer()
+      console.log("直播結束，清理 HLS 播放器");
+      cleanupHLSPlayer();
     }
-  }
-)
+  },
+);
 
 // 監聽 roomInfo 變化，確保在載入完成後初始化播放器
 watch(
   () => roomInfo.value,
-  newRoomInfo => {
-    console.log('roomInfo 變化:', newRoomInfo)
-    if (newRoomInfo && newRoomInfo.status === 'live') {
-      console.log('房間信息載入完成，直播中，初始化 HLS 播放器')
+  (newRoomInfo) => {
+    console.log("roomInfo 變化:", newRoomInfo);
+    if (newRoomInfo && newRoomInfo.status === "live") {
+      console.log("房間信息載入完成，直播中，初始化 HLS 播放器");
       nextTick(() => {
-        initHLSPlayer()
-      })
+        initHLSPlayer();
+      });
     }
   },
-  { immediate: true }
-)
+  { immediate: true },
+);
 
 // 監聽用戶角色變化，確保在角色確定後初始化播放器
 watch(
   () => userRole.value,
-  newRole => {
-    console.log('用戶角色變化:', newRole)
-    if (roomInfo.value?.status === 'live') {
-      console.log('用戶角色確定，直播中，初始化 HLS 播放器')
+  (newRole) => {
+    console.log("用戶角色變化:", newRole);
+    if (roomInfo.value?.status === "live") {
+      console.log("用戶角色確定，直播中，初始化 HLS 播放器");
       nextTick(() => {
-        initHLSPlayer()
-      })
+        initHLSPlayer();
+      });
     }
-  }
-)
+  },
+);
 
 onMounted(async () => {
-  await loadRoomInfo()
-  await connectWebSocket()
+  await loadRoomInfo();
+  await connectWebSocket();
 
   // 延遲檢查，確保在組件完全載入後檢查是否需要初始化 HLS 播放器
   setTimeout(() => {
-    console.log('onMounted 延遲檢查:', {
+    console.log("onMounted 延遲檢查:", {
       roomInfo: roomInfo.value,
       roomStatus: roomInfo.value?.status,
       streamUrl: streamUrl.value,
       videoPlayer: !!videoPlayer.value,
       userRole: userRole.value,
-    })
+    });
 
     if (
-      roomInfo.value?.status === 'live' &&
+      roomInfo.value?.status === "live" &&
       streamUrl.value &&
       videoPlayer.value
     ) {
-      console.log('onMounted 延遲檢查：需要初始化 HLS 播放器')
-      initHLSPlayer()
+      console.log("onMounted 延遲檢查：需要初始化 HLS 播放器");
+      initHLSPlayer();
     }
-  }, 1000)
-})
+  }, 1000);
+});
 
 onUnmounted(() => {
-  cleanupHLSPlayer()
-  disconnectWebSocket()
-  handleLeaveRoom()
-})
+  cleanupHLSPlayer();
+  disconnectWebSocket();
+  handleLeaveRoom();
+});
 </script>
 
 <style scoped>

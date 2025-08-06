@@ -62,110 +62,110 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from "vue";
 
 interface Props {
-  streamUrl: string
+  streamUrl: string;
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
-const videoElement = ref<HTMLVideoElement>()
-const connectionStatus = ref<'disconnected' | 'connecting' | 'connected'>(
-  'disconnected'
-)
-const error = ref<string>('')
+const videoElement = ref<HTMLVideoElement>();
+const connectionStatus = ref<"disconnected" | "connecting" | "connected">(
+  "disconnected",
+);
+const error = ref<string>("");
 
-let peerConnection: RTCPeerConnection | null = null
-let wsConnection: WebSocket | null = null
+let peerConnection: RTCPeerConnection | null = null;
+let wsConnection: WebSocket | null = null;
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'connected':
-      return '已連接'
-    case 'connecting':
-      return '連接中...'
-    case 'disconnected':
-      return '未連接'
+    case "connected":
+      return "已連接";
+    case "connecting":
+      return "連接中...";
+    case "disconnected":
+      return "未連接";
     default:
-      return '未知狀態'
+      return "未知狀態";
   }
-}
+};
 
 const connect = async () => {
-  if (!videoElement.value) return
+  if (!videoElement.value) return;
 
   try {
-    connectionStatus.value = 'connecting'
-    error.value = ''
+    connectionStatus.value = "connecting";
+    error.value = "";
 
     // 創建 WebRTC 連接
     peerConnection = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-    })
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    });
 
     // 處理遠程流
-    peerConnection.ontrack = event => {
+    peerConnection.ontrack = (event) => {
       if (videoElement.value) {
-        videoElement.value.srcObject = event.streams[0]
-        connectionStatus.value = 'connected'
+        videoElement.value.srcObject = event.streams[0];
+        connectionStatus.value = "connected";
       }
-    }
+    };
 
     // 處理連接狀態變化
     peerConnection.onconnectionstatechange = () => {
-      console.log('WebRTC 連接狀態:', peerConnection?.connectionState)
-      if (peerConnection?.connectionState === 'connected') {
-        connectionStatus.value = 'connected'
-      } else if (peerConnection?.connectionState === 'failed') {
-        error.value = 'WebRTC 連接失敗'
-        connectionStatus.value = 'disconnected'
+      console.log("WebRTC 連接狀態:", peerConnection?.connectionState);
+      if (peerConnection?.connectionState === "connected") {
+        connectionStatus.value = "connected";
+      } else if (peerConnection?.connectionState === "failed") {
+        error.value = "WebRTC 連接失敗";
+        connectionStatus.value = "disconnected";
       }
-    }
+    };
 
     // 連接到信令服務器
-    await connectToSignalingServer()
+    await connectToSignalingServer();
   } catch (err) {
-    console.error('WebRTC 連接錯誤:', err)
-    error.value = err instanceof Error ? err.message : '連接失敗'
-    connectionStatus.value = 'disconnected'
+    console.error("WebRTC 連接錯誤:", err);
+    error.value = err instanceof Error ? err.message : "連接失敗";
+    connectionStatus.value = "disconnected";
   }
-}
+};
 
 const connectToSignalingServer = async () => {
   // 這裡需要連接到後端的 WebRTC 信令服務器
   // 暫時使用模擬連接
-  console.log('連接到 WebRTC 信令服務器:', props.streamUrl)
+  console.log("連接到 WebRTC 信令服務器:", props.streamUrl);
 
   // 模擬連接成功
   setTimeout(() => {
     if (peerConnection) {
-      connectionStatus.value = 'connected'
+      connectionStatus.value = "connected";
     }
-  }, 1000)
-}
+  }, 1000);
+};
 
 const disconnect = () => {
   if (peerConnection) {
-    peerConnection.close()
-    peerConnection = null
+    peerConnection.close();
+    peerConnection = null;
   }
 
   if (wsConnection) {
-    wsConnection.close()
-    wsConnection = null
+    wsConnection.close();
+    wsConnection = null;
   }
 
-  connectionStatus.value = 'disconnected'
-}
+  connectionStatus.value = "disconnected";
+};
 
 onMounted(() => {
-  connect()
-})
+  connect();
+});
 
 onUnmounted(() => {
-  disconnect()
-})
+  disconnect();
+});
 </script>
 
 <style scoped>

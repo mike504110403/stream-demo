@@ -76,13 +76,13 @@ func TestNewRedisCache(t *testing.T) {
 	// 測試創建 Redis 緩存實例
 	// 注意：這個測試需要實際的 Redis 客戶端，在測試環境中會跳過
 	t.Skip("Skipping test that requires actual Redis client")
-	
+
 	db := 1
 	keyPrefix := "test:"
 	defaultExpiration := 5 * time.Minute
-	
+
 	cache := NewRedisCache(db, keyPrefix, defaultExpiration)
-	
+
 	if cache != nil {
 		assert.Equal(t, db, cache.db)
 		assert.Equal(t, keyPrefix, cache.keyPrefix)
@@ -95,11 +95,11 @@ func TestBuildKey(t *testing.T) {
 	cache := &RedisCache{
 		keyPrefix: "test:",
 	}
-	
+
 	// 測試有前綴的情況
 	key := cache.buildKey("user:123")
 	assert.Equal(t, "test:user:123", key)
-	
+
 	// 測試無前綴的情況
 	cache.keyPrefix = ""
 	key = cache.buildKey("user:123")
@@ -112,14 +112,14 @@ func TestRedisCacheSet(t *testing.T) {
 		keyPrefix:         "test:",
 		defaultExpiration: 5 * time.Minute,
 	}
-	
+
 	// 測試 buildKey 邏輯
 	key := cache.buildKey("user:123")
 	assert.Equal(t, "test:user:123", key)
-	
+
 	// 測試默認過期時間
 	assert.Equal(t, 5*time.Minute, cache.defaultExpiration)
-	
+
 	// 測試 JSON 序列化邏輯
 	testData := map[string]interface{}{"id": 123, "name": "test"}
 	_, err := json.Marshal(testData)
@@ -132,15 +132,15 @@ func TestRedisCacheGet(t *testing.T) {
 		keyPrefix:         "test:",
 		defaultExpiration: 5 * time.Minute,
 	}
-	
+
 	// 測試 buildKey 邏輯
 	key := cache.buildKey("user:123")
 	assert.Equal(t, "test:user:123", key)
-	
+
 	// 測試 JSON 反序列化邏輯
 	testJSON := `{"id":123,"name":"test"}`
 	var result map[string]interface{}
-	
+
 	// 這裡我們只測試 JSON 解析邏輯，不測試實際的 Redis 調用
 	_ = testJSON
 	_ = result
@@ -153,7 +153,7 @@ func TestRedisCacheGetString(t *testing.T) {
 		keyPrefix:         "test:",
 		defaultExpiration: 5 * time.Minute,
 	}
-	
+
 	// 測試 buildKey 邏輯
 	key := cache.buildKey("key")
 	assert.Equal(t, "test:key", key)
@@ -165,7 +165,7 @@ func TestRedisCacheGetInt(t *testing.T) {
 		keyPrefix:         "test:",
 		defaultExpiration: 5 * time.Minute,
 	}
-	
+
 	// 測試 buildKey 邏輯
 	key := cache.buildKey("count")
 	assert.Equal(t, "test:count", key)
@@ -177,7 +177,7 @@ func TestRedisCacheDelete(t *testing.T) {
 		keyPrefix:         "test:",
 		defaultExpiration: 5 * time.Minute,
 	}
-	
+
 	// 測試 buildKey 邏輯
 	key := cache.buildKey("key")
 	assert.Equal(t, "test:key", key)
@@ -189,7 +189,7 @@ func TestRedisCacheExists(t *testing.T) {
 		keyPrefix:         "test:",
 		defaultExpiration: 5 * time.Minute,
 	}
-	
+
 	// 測試 buildKey 邏輯
 	key := cache.buildKey("key")
 	assert.Equal(t, "test:key", key)
@@ -201,7 +201,7 @@ func TestRedisCacheExpire(t *testing.T) {
 		keyPrefix:         "test:",
 		defaultExpiration: 5 * time.Minute,
 	}
-	
+
 	// 測試 buildKey 邏輯
 	key := cache.buildKey("key")
 	assert.Equal(t, "test:key", key)
@@ -213,7 +213,7 @@ func TestRedisCacheTTL(t *testing.T) {
 		keyPrefix:         "test:",
 		defaultExpiration: 5 * time.Minute,
 	}
-	
+
 	// 測試 buildKey 邏輯
 	key := cache.buildKey("key")
 	assert.Equal(t, "test:key", key)
@@ -225,7 +225,7 @@ func TestRedisCacheIncrement(t *testing.T) {
 		keyPrefix:         "test:",
 		defaultExpiration: 5 * time.Minute,
 	}
-	
+
 	// 測試 buildKey 邏輯
 	key := cache.buildKey("counter")
 	assert.Equal(t, "test:counter", key)
@@ -237,7 +237,7 @@ func TestRedisCacheDecrement(t *testing.T) {
 		keyPrefix:         "test:",
 		defaultExpiration: 5 * time.Minute,
 	}
-	
+
 	// 測試 buildKey 邏輯
 	key := cache.buildKey("counter")
 	assert.Equal(t, "test:counter", key)
@@ -249,11 +249,11 @@ func TestRedisCacheMGet(t *testing.T) {
 		keyPrefix:         "test:",
 		defaultExpiration: 5 * time.Minute,
 	}
-	
+
 	// 測試 buildKey 邏輯
 	keys := []string{"key1", "key2"}
 	expectedKeys := []string{"test:key1", "test:key2"}
-	
+
 	for i, key := range keys {
 		builtKey := cache.buildKey(key)
 		assert.Equal(t, expectedKeys[i], builtKey)
@@ -266,7 +266,7 @@ func TestRedisCacheMSet(t *testing.T) {
 		keyPrefix:         "test:",
 		defaultExpiration: 5 * time.Minute,
 	}
-	
+
 	// 測試 buildKey 邏輯
 	key := cache.buildKey("key1")
 	assert.Equal(t, "test:key1", key)
@@ -278,7 +278,7 @@ func TestRedisCacheClose(t *testing.T) {
 		keyPrefix:         "test:",
 		defaultExpiration: 5 * time.Minute,
 	}
-	
+
 	// 這個測試主要是確保函數不會 panic
 	assert.NotNil(t, cache)
 }
@@ -290,7 +290,7 @@ func TestRedisCacheConfig(t *testing.T) {
 		keyPrefix:         "test:",
 		defaultExpiration: 5 * time.Minute,
 	}
-	
+
 	assert.Equal(t, 1, cache.db)
 	assert.Equal(t, "test:", cache.keyPrefix)
 	assert.Equal(t, 5*time.Minute, cache.defaultExpiration)
@@ -303,12 +303,12 @@ func TestRedisCacheJSONHandling(t *testing.T) {
 		"name": "test",
 		"tags": []string{"tag1", "tag2"},
 	}
-	
+
 	// 測試序列化
 	jsonData, err := json.Marshal(testData)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, jsonData)
-	
+
 	// 測試反序列化
 	var result map[string]interface{}
 	err = json.Unmarshal(jsonData, &result)
@@ -322,12 +322,12 @@ func BenchmarkRedisCacheOperations(b *testing.B) {
 	// 這個 benchmark 需要實際的 Redis 連接
 	// 在 CI 環境中會跳過
 	b.Skip("Skipping benchmark that requires actual Redis connection")
-	
+
 	cache := NewRedisCache(1, "bench:", 5*time.Minute)
 	if cache == nil {
 		b.Skip("Redis cache not available")
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		key := fmt.Sprintf("key:%d", i)
@@ -335,4 +335,4 @@ func BenchmarkRedisCacheOperations(b *testing.B) {
 		var value string
 		cache.Get(key, &value)
 	}
-} 
+}

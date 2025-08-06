@@ -84,17 +84,17 @@ func (h *VideoHandler) ConfirmUpload(c *gin.Context) {
 		return
 	}
 
-	// 只確認上傳，不檢查轉碼狀態
-	if err := h.videoService.ConfirmUploadOnly(req.VideoID, req.S3Key); err != nil {
+	// 確認上傳並開始轉碼處理
+	if err := h.videoService.ConfirmUploadAndStartProcessingWithKey(req.VideoID, req.S3Key); err != nil {
 		c.JSON(http.StatusInternalServerError, response.NewErrorResponse(500, err.Error()))
 		return
 	}
 
-	// 返回簡單的成功回應，不包含轉碼狀態
+	// 返回成功回應，表示轉碼處理已開始
 	c.JSON(http.StatusOK, response.NewSuccessResponse(gin.H{
 		"message":  "影片上傳確認成功，轉碼處理已開始",
 		"video_id": req.VideoID,
-		"status":   "uploading",
+		"status":   "processing",
 	}))
 }
 

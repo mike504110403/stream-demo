@@ -40,7 +40,6 @@ type Container struct {
 	LiveRoomSyncService *services.LiveRoomSyncService
 	PaymentService      *services.PaymentService
 	PublicStreamService *services.PublicStreamService
-	TranscodeWorker     *services.TranscodeWorker
 
 	// 處理器層
 	UserHandler         *api.UserHandler
@@ -198,8 +197,7 @@ func (c *Container) initServices() error {
 		c.PublicStreamService = publicStreamService
 	}
 
-	// 初始化轉碼工作服務
-	c.TranscodeWorker = services.NewTranscodeWorker(c.VideoService)
+
 
 	return nil
 }
@@ -245,11 +243,6 @@ func (c *Container) initWebSocket() error {
 
 // StartServices 啟動所有服務
 func (c *Container) StartServices() {
-	// 啟動轉碼工作服務
-	if c.TranscodeWorker != nil {
-		c.TranscodeWorker.Start()
-	}
-
 	// 啟動直播間同步服務
 	if c.LiveRoomSyncService != nil {
 		c.LiveRoomSyncService.Start()
@@ -260,11 +253,6 @@ func (c *Container) StartServices() {
 
 // StopServices 停止所有服務
 func (c *Container) StopServices() {
-	// 停止轉碼工作服務
-	if c.TranscodeWorker != nil {
-		c.TranscodeWorker.Stop()
-	}
-
 	// 停止直播間同步服務
 	if c.LiveRoomSyncService != nil {
 		c.LiveRoomSyncService.Stop()

@@ -25,7 +25,7 @@
             <div class="room-info">
               <h3 class="room-title">{{ room.title }}</h3>
               <p class="room-description">
-                {{ room.description || '暫無描述' }}
+                {{ room.description || "暫無描述" }}
               </p>
 
               <div class="room-meta">
@@ -71,7 +71,7 @@
                 type="success"
                 @click="startLive(room.id)"
               >
-                {{ room.status === 'ended' ? '重新開始直播' : '開始直播' }}
+                {{ room.status === "ended" ? "重新開始直播" : "開始直播" }}
               </el-button>
               <el-button
                 v-if="
@@ -92,106 +92,106 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { ElMessage } from "element-plus";
 import {
   getAllRooms,
   startLive as startLiveAPI,
   endLive as endLiveAPI,
-} from '@/api/live-room'
-import { useAuthStore } from '@/store/auth'
-import type { LiveRoomInfo } from '@/types'
+} from "@/api/live-room";
+import { useAuthStore } from "@/store/auth";
+import type { LiveRoomInfo } from "@/types";
 
-const router = useRouter()
-const authStore = useAuthStore()
+const router = useRouter();
+const authStore = useAuthStore();
 
-const loading = ref(false)
-const rooms = ref<LiveRoomInfo[]>([])
-const currentUserId = authStore.user?.id
+const loading = ref(false);
+const rooms = ref<LiveRoomInfo[]>([]);
+const currentUserId = authStore.user?.id;
 
 const loadRooms = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    console.log('開始載入直播間...')
-    const response = await getAllRooms({ limit: 50 })
-    console.log('API 響應:', response)
-    rooms.value = response || []
-    console.log('設置的直播間數據:', rooms.value)
+    console.log("開始載入直播間...");
+    const response = await getAllRooms({ limit: 50 });
+    console.log("API 響應:", response);
+    rooms.value = response || [];
+    console.log("設置的直播間數據:", rooms.value);
   } catch (error) {
-    console.error('載入直播間失敗:', error)
-    ElMessage.error('載入直播間失敗')
+    console.error("載入直播間失敗:", error);
+    ElMessage.error("載入直播間失敗");
     // 確保在錯誤時清空數據
-    rooms.value = []
+    rooms.value = [];
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const viewRoom = (roomId: string) => {
-  router.push(`/live-rooms/${roomId}`)
-}
+  router.push(`/live-rooms/${roomId}`);
+};
 
 const startLive = async (roomId: string) => {
   try {
-    await startLiveAPI(roomId)
-    ElMessage.success('直播開始成功')
-    await loadRooms() // 重新載入列表
+    await startLiveAPI(roomId);
+    ElMessage.success("直播開始成功");
+    await loadRooms(); // 重新載入列表
   } catch (error) {
-    console.error('開始直播失敗:', error)
-    ElMessage.error('開始直播失敗')
+    console.error("開始直播失敗:", error);
+    ElMessage.error("開始直播失敗");
   }
-}
+};
 
 const endLive = async (roomId: string) => {
   try {
-    await endLiveAPI(roomId)
-    ElMessage.success('直播結束成功')
-    await loadRooms() // 重新載入列表
+    await endLiveAPI(roomId);
+    ElMessage.success("直播結束成功");
+    await loadRooms(); // 重新載入列表
   } catch (error) {
-    console.error('結束直播失敗:', error)
-    ElMessage.error('結束直播失敗')
+    console.error("結束直播失敗:", error);
+    ElMessage.error("結束直播失敗");
   }
-}
+};
 
 const getStatusType = (status: string) => {
   switch (status) {
-    case 'created':
-      return 'info'
-    case 'live':
-      return 'success'
-    case 'ended':
-      return 'danger'
-    case 'cancelled':
-      return 'warning'
+    case "created":
+      return "info";
+    case "live":
+      return "success";
+    case "ended":
+      return "danger";
+    case "cancelled":
+      return "warning";
     default:
-      return 'info'
+      return "info";
   }
-}
+};
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'created':
-      return '已創建'
-    case 'live':
-      return '直播中'
-    case 'ended':
-      return '已結束'
-    case 'cancelled':
-      return '已取消'
+    case "created":
+      return "已創建";
+    case "live":
+      return "直播中";
+    case "ended":
+      return "已結束";
+    case "cancelled":
+      return "已取消";
     default:
-      return status
+      return status;
   }
-}
+};
 
 const formatDate = (dateString: string) => {
-  if (!dateString) return '未知'
-  return new Date(dateString).toLocaleString('zh-TW')
-}
+  if (!dateString) return "未知";
+  return new Date(dateString).toLocaleString("zh-TW");
+};
 
 onMounted(() => {
-  loadRooms()
-})
+  loadRooms();
+});
 </script>
 
 <style scoped>

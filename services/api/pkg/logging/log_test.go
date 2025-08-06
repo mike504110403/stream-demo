@@ -11,7 +11,7 @@ import (
 func TestFormatLogMessage(t *testing.T) {
 	message := "test message"
 	formatted := formatLogMessage(INFO, message)
-	
+
 	assert.Contains(t, formatted, "INFO")
 	assert.Contains(t, formatted, message)
 	assert.Contains(t, formatted, time.Now().Format("2006-01-02"))
@@ -56,7 +56,7 @@ func TestSetup(t *testing.T) {
 	err := os.MkdirAll(tempDir, 0755)
 	assert.NoError(t, err)
 	defer os.RemoveAll(tempDir)
-	
+
 	// 這裡我們只是測試函數不會 panic
 	// 實際的 Setup 函數需要文件系統權限
 }
@@ -72,7 +72,7 @@ func TestLogMessageFormatting(t *testing.T) {
 		{ERROR, "error test"},
 		{FATAL, "fatal test"},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(levelFlags[tc.level], func(t *testing.T) {
 			formatted := formatLogMessage(tc.level, tc.message)
@@ -80,4 +80,4 @@ func TestLogMessageFormatting(t *testing.T) {
 			assert.Contains(t, formatted, tc.message)
 		})
 	}
-} 
+}

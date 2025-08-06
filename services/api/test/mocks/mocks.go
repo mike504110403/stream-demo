@@ -532,25 +532,7 @@ func (m *MockS3Client) DeleteObject(input interface{}) (interface{}, error) {
 	return args.Get(0), args.Error(1)
 }
 
-// MockFFmpegService FFmpeg服務mock
-type MockFFmpegService struct {
-	mock.Mock
-}
 
-func (m *MockFFmpegService) TranscodeVideo(inputPath, outputPath string, options map[string]string) error {
-	args := m.Called(inputPath, outputPath, options)
-	return args.Error(0)
-}
-
-func (m *MockFFmpegService) GenerateThumbnail(videoPath, thumbnailPath string, timeOffset string) error {
-	args := m.Called(videoPath, thumbnailPath, timeOffset)
-	return args.Error(0)
-}
-
-func (m *MockFFmpegService) GetVideoInfo(videoPath string) (map[string]interface{}, error) {
-	args := m.Called(videoPath)
-	return args.Get(0).(map[string]interface{}), args.Error(1)
-}
 
 // MockWebSocketHub WebSocket Hub mock
 type MockWebSocketHub struct {

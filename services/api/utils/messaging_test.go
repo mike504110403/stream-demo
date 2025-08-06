@@ -47,10 +47,10 @@ func TestMessageStructure(t *testing.T) {
 func TestGenerateMessageID(t *testing.T) {
 	// 測試生成訊息 ID
 	id1 := generateMessageID()
-	
+
 	// 添加小延遲以確保時間戳不同
 	time.Sleep(1 * time.Millisecond)
-	
+
 	id2 := generateMessageID()
 
 	assert.NotEmpty(t, id1)
@@ -302,7 +302,7 @@ func TestRedisMessagingGetStats(t *testing.T) {
 		},
 		isListening: true,
 	}
-	
+
 	stats := messaging.GetStats()
 	assert.NotNil(t, stats)
 	// 檢查統計信息存在

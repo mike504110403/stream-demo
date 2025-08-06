@@ -15,7 +15,7 @@
 
 ## 📋 專案概述
 
-現代化全棧串流平台，提供影片上傳、自動轉碼、直播間管理和公開直播功能。採用 **PostgreSQL + Redis 混合架構**，整合 **MinIO 對象存儲** 和 **FFmpeg 本地轉碼**。
+現代化全棧串流平台，提供影片上傳、自動轉碼、直播間管理和公開直播功能。採用 **PostgreSQL + Redis 混合架構**，整合 **MinIO 對象存儲** 和 **獨立 FFmpeg 轉碼服務**。
 
 ### 📊 專案統計
 - **總檔案數**: 200+ 個核心檔案
@@ -26,6 +26,7 @@
 
 ### 🎯 核心特色
 - ✅ **混合架構**: PostgreSQL 主資料庫 + Redis 緩存與訊息
+- ✅ **獨立轉碼服務**: Converter 服務專門處理影片轉碼，API 服務專注業務邏輯
 - ✅ **智能轉碼**: 背景服務自動生成多品質 HLS 和 MP4
 - ✅ **雙桶存儲**: 原始檔案與轉碼後檔案分離
 - ✅ **直播間系統**: RTMP 推流 + HLS 播放 + 低延遲 + 自動化轉換
@@ -53,39 +54,72 @@ graph TB
     subgraph "API 層"
         D[Go/Gin 後端] --> E[JWT 認證]
         D --> F[WebSocket 服務]
-    end
-    
-    subgraph "資料層"
-        G[PostgreSQL] --> H[用戶數據]
-        G --> I[影片數據]
-        G --> J[直播數據]
-        K[Redis] --> L[緩存]
-        K --> M[即時訊息]
-    end
-    
-    subgraph "存儲層"
-        N[MinIO] --> O[原始影片]
-        N --> P[轉碼後檔案]
+        D --> G[影片管理 API]
     end
     
     subgraph "轉碼層"
-        Q[FFmpeg Converter] --> R[HLS 轉碼]
-        Q --> S[MP4 轉碼]
+        H[Converter 服務] --> I[FFmpeg 轉碼]
+        H --> J[資料庫任務查詢]
+        H --> K[MinIO 檔案處理]
+    end
+    
+    subgraph "資料層"
+        L[PostgreSQL] --> M[用戶數據]
+        L --> N[影片數據]
+        L --> O[直播數據]
+        P[Redis] --> Q[緩存]
+        P --> R[即時訊息]
+    end
+    
+    subgraph "存儲層"
+        S[MinIO] --> T[原始影片]
+        S --> U[轉碼後檔案]
     end
     
     subgraph "直播層"
-        T[nginx-rtmp Receiver] --> U[RTMP 推流]
-        V[Stream Puller] --> W[HLS 生成]
+        V[nginx-rtmp Receiver] --> W[RTMP 推流]
+        X[Stream Puller] --> Y[HLS 生成]
     end
     
     A --> D
-    D --> G
-    D --> K
-    D --> N
-    D --> Q
-    T --> V
-    V --> Q
-    Q --> N
+    D --> L
+    D --> P
+    D --> S
+    G --> H
+    H --> L
+    H --> S
+    V --> X
+    X --> H
+    H --> U
+```
+
+### 影片轉碼架構
+
+```mermaid
+sequenceDiagram
+    participant Frontend as 前端
+    participant API as API 服務
+    participant DB as PostgreSQL
+    participant Converter as Converter 服務
+    participant FFmpeg as FFmpeg
+    participant MinIO as MinIO
+    
+    Frontend->>API: 上傳影片
+    API->>DB: 創建影片記錄 (status: uploading)
+    API->>Frontend: 返回上傳 URL
+    Frontend->>MinIO: 上傳原始檔案
+    Frontend->>API: 確認上傳
+    API->>DB: 更新狀態 (status: processing)
+    Converter->>DB: 查詢待轉碼影片 (status: processing)
+    Converter->>DB: 更新狀態 (status: transcoding)
+    Converter->>MinIO: 下載原始檔案
+    Converter->>FFmpeg: 執行轉碼
+    FFmpeg->>Converter: 生成 HLS/MP4/縮圖
+    Converter->>MinIO: 上傳轉碼後檔案
+    Converter->>DB: 更新狀態 (status: ready)
+    Frontend->>API: 查詢影片狀態
+    API->>DB: 獲取影片資訊
+    API->>Frontend: 返回播放 URL
 ```
 
 ### 直播架構
@@ -115,7 +149,7 @@ graph LR
     subgraph "開發模式"
         A1[IDE 啟動前端] --> B1[localhost:5173]
         A2[IDE 啟動後端] --> B2[localhost:8080]
-        C1[Docker 周邊服務] --> D1[資料庫/Redis/MinIO]
+        C1[Docker 周邊服務] --> D1[資料庫/Redis/MinIO/Converter]
     end
     
     subgraph "生產模式"
@@ -175,7 +209,9 @@ stream-demo/
 │   │   ├── main.go           # 主程式
 │   │   ├── go.mod            # Go 模組配置
 │   │   └── Dockerfile        # 容器配置
-│   ├── converter/             # 媒體轉換服務 (FFmpeg)
+│   ├── converter/             # 媒體轉換服務 (Go + FFmpeg)
+│   │   ├── main.go           # Go 主程式
+│   │   ├── go.mod            # Go 模組配置
 │   │   ├── scripts/          # 轉碼腳本
 │   │   └── Dockerfile        # 容器配置
 │   └── gateway/               # 反向代理服務 (nginx)
@@ -215,9 +251,9 @@ stream-demo/
 ### 技術棧
 - **前端**: Vue 3.4.15, TypeScript 5.3, Element Plus 2.5.3, hls.js 1.6.7, Pinia 2.1.7
 - **後端**: Go 1.24.3, Gin 1.10.1, GORM 1.30.0, JWT 5.2.2, 依賴注入
+- **轉碼服務**: Go 1.21, FFmpeg 6.0.1, 資料庫驅動任務管理
 - **資料庫**: PostgreSQL 15, Redis 7, MySQL 8.0
 - **存儲**: MinIO (S3 兼容)
-- **轉碼**: FFmpeg 6.0.1
 - **直播**: nginx-rtmp (Receiver), stream-puller (Puller)
 - **容器**: Docker & Docker Compose
 - **開發工具**: Vite 5.0.11, ESLint, Prettier, Vue TSC
@@ -235,7 +271,7 @@ stream-demo/
 # 1. 執行預啟動任務 (🎯 智能啟動開發環境)
 #    - 檢查環境依賴 (Docker, Node.js, Go)
 #    - 安裝前端和後端依賴
-#    - 檢查並啟動周邊服務 (PostgreSQL, Redis, MinIO, Gateway)
+#    - 檢查並啟動周邊服務 (PostgreSQL, Redis, MinIO, Gateway, Converter)
 # 2. 啟動後端服務 (🚀 啟動後端 (本地環境))
 #    - 使用 services/api/.env 環境變數
 #    - 在 services/api 目錄中運行
@@ -397,10 +433,26 @@ closed (完全刪除)
 
 ## 🎬 影片管理
 
+### 轉碼流程
 1. **上傳影片**: 選擇檔案，系統自動轉碼
-2. **多品質播放**: 自動生成 720p, 480p, 360p HLS 串流
-3. **縮圖生成**: 自動提取影片縮圖
-4. **播放統計**: 記錄播放次數和時長
+2. **狀態管理**: 
+   - `uploading` → `processing` → `transcoding` → `ready`
+3. **多品質播放**: 自動生成 720p, 480p, 360p HLS 串流
+4. **縮圖生成**: 自動提取影片縮圖
+5. **播放統計**: 記錄播放次數和時長
+
+### 轉碼服務架構
+- **API 服務**: 專注於 HTTP API 和業務邏輯，不包含轉碼邏輯
+- **Converter 服務**: 獨立服務，專門處理影片轉碼
+  - 從資料庫查詢待轉碼影片 (`status = 'processing'`)
+  - 執行 FFmpeg 轉碼處理
+  - 更新影片狀態和 URL
+  - 支援多工作協程並發處理
+
+### 轉碼配置
+- **工作協程數**: 可通過 `WORKER_COUNT` 環境變數配置
+- **轉碼格式**: HLS (多品質) + MP4 (網頁播放) + 縮圖
+- **存儲分離**: 原始檔案與轉碼後檔案分別存儲在不同 MinIO 桶
 
 ## 🔧 開發調試
 
@@ -442,6 +494,9 @@ curl http://localhost:8083/[stream_key]/index.m3u8
 
 # 3. 檢查 puller 日誌
 docker-compose logs puller --tail=20
+
+# 4. 檢查 converter 服務狀態
+docker-compose logs converter --tail=20
 ```
 
 ## 📊 功能完成度
@@ -463,6 +518,7 @@ docker-compose logs puller --tail=20
 - [x] **數據清理機制**: 關閉直播間時自動清除 Redis 數據
 - [x] **公開直播系統**: 外部直播源自動拉取和轉換
 - [x] **微服務架構**: 服務重構為 converter, receiver, puller
+- [x] **獨立轉碼服務**: Converter 服務專門處理影片轉碼，API 服務專注業務邏輯
 
 ### 中優先級 ✅ 已完成
 - [x] **影片上傳**: 支援多格式上傳
@@ -480,10 +536,10 @@ docker-compose logs puller --tail=20
 - [ ] **多語言**: 國際化支援
 
 ### 📈 開發進度
-- **核心功能**: 100% 完成 (15/15)
+- **核心功能**: 100% 完成 (16/16)
 - **基礎功能**: 100% 完成 (6/6) ✅
 - **進階功能**: 0% 完成 (0/4)
-- **整體進度**: 88% 完成 (21/25)
+- **整體進度**: 88% 完成 (22/26)
 
 ## 🐛 已知問題
 
@@ -494,6 +550,7 @@ docker-compose logs puller --tail=20
 - **轉碼服務配置**: 已修復 converter 服務容器名稱配置錯誤問題
 - **前端代理配置**: 已修復 HLS 文件訪問路徑重複問題
 - **公開直播路徑**: 已修復前端硬編碼 HLS URL 路徑問題
+- **轉碼服務架構**: 已完成 API 服務轉碼邏輯移除，Converter 服務獨立處理轉碼
 
 ## 📚 文檔
 
@@ -536,3 +593,8 @@ docker-compose logs puller --tail=20
   - 修正了前端代理配置中的路徑重複問題 (`/stream-puller` → `/`)
   - 修正了公開直播前端硬編碼 HLS URL 路徑 (`/stream-puller/${streamName}/index.m3u8` → `/stream-puller/hls/${streamName}/index.m3u8`)
   - 影片上傳後自動轉碼功能現在可以正常工作
+- **架構優化**:
+  - 移除了 API 服務中的轉碼相關程式碼，專注於業務邏輯
+  - Converter 服務獨立處理所有轉碼任務，支援資料庫驅動的任務管理
+  - 改善了錯誤處理和狀態管理，提供更穩定的轉碼流程
+  - 支援多工作協程並發處理轉碼任務

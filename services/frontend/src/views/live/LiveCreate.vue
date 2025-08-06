@@ -195,141 +195,141 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import type { FormInstance, FormRules } from 'element-plus'
-import { createLive } from '@/api/live'
-import type { Live, CreateLiveRequest } from '@/types'
-import { getRtmpPushUrl } from '@/utils/stream-config'
+import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
+import { ElMessage } from "element-plus";
+import type { FormInstance, FormRules } from "element-plus";
+import { createLive } from "@/api/live";
+import type { Live, CreateLiveRequest } from "@/types";
+import { getRtmpPushUrl } from "@/utils/stream-config";
 
-const router = useRouter()
+const router = useRouter();
 
 // 響應式數據
-const formRef = ref<FormInstance>()
-const submitting = ref(false)
-const showSuccessDialog = ref(false)
-const createdLive = ref<Live | null>(null)
+const formRef = ref<FormInstance>();
+const submitting = ref(false);
+const showSuccessDialog = ref(false);
+const createdLive = ref<Live | null>(null);
 
 // 表單數據
 const formData = ref<CreateLiveRequest & { chat_enabled: boolean }>({
-  title: '',
-  description: '',
-  start_time: '',
+  title: "",
+  description: "",
+  start_time: "",
   chat_enabled: true,
-})
+});
 
 // 表單驗證規則
 const formRules: FormRules = {
   title: [
-    { required: true, message: '請輸入直播標題', trigger: 'blur' },
+    { required: true, message: "請輸入直播標題", trigger: "blur" },
     {
       min: 2,
       max: 100,
-      message: '標題長度在 2 到 100 個字符',
-      trigger: 'blur',
+      message: "標題長度在 2 到 100 個字符",
+      trigger: "blur",
     },
   ],
   start_time: [
-    { required: true, message: '請選擇開始時間', trigger: 'change' },
+    { required: true, message: "請選擇開始時間", trigger: "change" },
   ],
-}
+};
 
 // 計算屬性
 const rtmpUrl = computed(() => {
-  if (!createdLive.value) return ''
-  return getRtmpPushUrl(createdLive.value.stream_key)
-})
+  if (!createdLive.value) return "";
+  return getRtmpPushUrl(createdLive.value.stream_key);
+});
 
 const liveRoomUrl = computed(() => {
-  if (!createdLive.value) return ''
-  return `${window.location.origin}/lives/${createdLive.value.id}/stream`
-})
+  if (!createdLive.value) return "";
+  return `${window.location.origin}/lives/${createdLive.value.id}/stream`;
+});
 
 // 提交表單
 const handleSubmit = async () => {
-  if (!formRef.value) return
+  if (!formRef.value) return;
 
   try {
-    await formRef.value.validate()
+    await formRef.value.validate();
   } catch (error) {
-    return
+    return;
   }
 
-  submitting.value = true
+  submitting.value = true;
 
   try {
     const response = await createLive({
       title: formData.value.title,
       description: formData.value.description,
       start_time: formData.value.start_time,
-    })
+    });
 
-    createdLive.value = response
-    showSuccessDialog.value = true
-    ElMessage.success('直播創建成功！')
+    createdLive.value = response;
+    showSuccessDialog.value = true;
+    ElMessage.success("直播創建成功！");
   } catch (error: any) {
-    console.error('創建直播失敗:', error)
-    ElMessage.error(error.message || '創建直播失敗')
+    console.error("創建直播失敗:", error);
+    ElMessage.error(error.message || "創建直播失敗");
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
-}
+};
 
 // 重置表單
 const resetForm = () => {
   if (formRef.value) {
-    formRef.value.resetFields()
+    formRef.value.resetFields();
   }
   formData.value = {
-    title: '',
-    description: '',
-    start_time: '',
+    title: "",
+    description: "",
+    start_time: "",
     chat_enabled: true,
-  }
-}
+  };
+};
 
 // 複製功能
 const copyToClipboard = async (text: string, label: string) => {
   try {
-    await navigator.clipboard.writeText(text)
-    ElMessage.success(`${label} 已複製到剪貼簿`)
+    await navigator.clipboard.writeText(text);
+    ElMessage.success(`${label} 已複製到剪貼簿`);
   } catch (err) {
-    console.error('複製失敗:', err)
-    ElMessage.error('複製失敗')
+    console.error("複製失敗:", err);
+    ElMessage.error("複製失敗");
   }
-}
+};
 
 const copyStreamKey = () => {
   if (createdLive.value?.stream_key) {
-    copyToClipboard(createdLive.value.stream_key, '串流金鑰')
+    copyToClipboard(createdLive.value.stream_key, "串流金鑰");
   }
-}
+};
 
 const copyRtmpUrl = () => {
-  copyToClipboard(rtmpUrl.value, 'RTMP 推流地址')
-}
+  copyToClipboard(rtmpUrl.value, "RTMP 推流地址");
+};
 
 const copyLiveRoomUrl = () => {
-  copyToClipboard(liveRoomUrl.value, '直播間地址')
-}
+  copyToClipboard(liveRoomUrl.value, "直播間地址");
+};
 
 // 進入直播間
 const goToLiveRoom = () => {
   if (createdLive.value) {
-    router.push(`/lives/${createdLive.value.id}/stream`)
+    router.push(`/lives/${createdLive.value.id}/stream`);
   }
-}
+};
 
 // 日期限制
 const disabledDate = (time: Date) => {
-  return time.getTime() < Date.now() - 8.64e7 // 不能選擇過去的日期
-}
+  return time.getTime() < Date.now() - 8.64e7; // 不能選擇過去的日期
+};
 
 const disabledTime = (date: Date) => {
   if (date) {
-    const now = new Date()
-    const selectedDate = new Date(date)
+    const now = new Date();
+    const selectedDate = new Date(date);
 
     // 如果是今天，限制時間不能早於當前時間
     if (selectedDate.toDateString() === now.toDateString()) {
@@ -338,15 +338,15 @@ const disabledTime = (date: Date) => {
           Array.from({ length: now.getHours() }, (_, i) => i),
         disabledMinutes: (hour: number) => {
           if (hour === now.getHours()) {
-            return Array.from({ length: now.getMinutes() }, (_, i) => i)
+            return Array.from({ length: now.getMinutes() }, (_, i) => i);
           }
-          return []
+          return [];
         },
-      }
+      };
     }
   }
-  return {}
-}
+  return {};
+};
 </script>
 
 <style scoped>

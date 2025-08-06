@@ -78,77 +78,77 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { register } from '@/api/user'
-import type { RegisterRequest } from '@/types'
+import { ref, reactive } from "vue";
+import { useRouter } from "vue-router";
+import { ElMessage, type FormInstance, type FormRules } from "element-plus";
+import { register } from "@/api/user";
+import type { RegisterRequest } from "@/types";
 
-const router = useRouter()
+const router = useRouter();
 
-const registerFormRef = ref<FormInstance>()
-const loading = ref(false)
+const registerFormRef = ref<FormInstance>();
+const loading = ref(false);
 
 const registerForm = reactive<RegisterRequest & { confirmPassword: string }>({
-  username: '',
-  email: '',
-  password: '',
-  confirmPassword: '',
-})
+  username: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+});
 
 const validateConfirmPassword = (_rule: any, value: string, callback: any) => {
-  if (value === '') {
-    callback(new Error('請再次輸入密碼'))
+  if (value === "") {
+    callback(new Error("請再次輸入密碼"));
   } else if (value !== registerForm.password) {
-    callback(new Error('兩次輸入密碼不一致'))
+    callback(new Error("兩次輸入密碼不一致"));
   } else {
-    callback()
+    callback();
   }
-}
+};
 
 const registerRules: FormRules = {
   username: [
-    { required: true, message: '請輸入用戶名', trigger: 'blur' },
+    { required: true, message: "請輸入用戶名", trigger: "blur" },
     {
       min: 3,
       max: 32,
-      message: '用戶名長度在 3 到 32 個字符',
-      trigger: 'blur',
+      message: "用戶名長度在 3 到 32 個字符",
+      trigger: "blur",
     },
   ],
   email: [
-    { required: true, message: '請輸入郵箱', trigger: 'blur' },
-    { type: 'email', message: '請輸入正確的郵箱格式', trigger: 'blur' },
+    { required: true, message: "請輸入郵箱", trigger: "blur" },
+    { type: "email", message: "請輸入正確的郵箱格式", trigger: "blur" },
   ],
   password: [
-    { required: true, message: '請輸入密碼', trigger: 'blur' },
-    { min: 6, message: '密碼長度不能少於6位', trigger: 'blur' },
+    { required: true, message: "請輸入密碼", trigger: "blur" },
+    { min: 6, message: "密碼長度不能少於6位", trigger: "blur" },
   ],
   confirmPassword: [
-    { required: true, validator: validateConfirmPassword, trigger: 'blur' },
+    { required: true, validator: validateConfirmPassword, trigger: "blur" },
   ],
-}
+};
 
 const handleRegister = async () => {
-  if (!registerFormRef.value) return
+  if (!registerFormRef.value) return;
 
-  await registerFormRef.value.validate(async valid => {
+  await registerFormRef.value.validate(async (valid) => {
     if (valid) {
-      loading.value = true
+      loading.value = true;
       try {
         const { confirmPassword: _confirmPassword, ...registerData } =
-          registerForm
-        await register(registerData)
-        ElMessage.success('註冊成功！請登入')
-        router.push('/login')
+          registerForm;
+        await register(registerData);
+        ElMessage.success("註冊成功！請登入");
+        router.push("/login");
       } catch (error) {
-        console.error('註冊失敗:', error)
+        console.error("註冊失敗:", error);
       } finally {
-        loading.value = false
+        loading.value = false;
       }
     }
-  })
-}
+  });
+};
 </script>
 
 <style scoped>

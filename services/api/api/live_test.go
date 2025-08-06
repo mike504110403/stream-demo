@@ -70,7 +70,7 @@ func TestLiveHandler_ListLives(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// 為每個測試創建新的 mock
 			mockLiveService := &mocks.MockLiveService{}
-			
+
 			// 創建處理器
 			handler := &LiveHandler{
 				liveService: mockLiveService,
@@ -83,7 +83,7 @@ func TestLiveHandler_ListLives(t *testing.T) {
 
 			// 創建請求
 			req, _ := http.NewRequest("GET", "/api/live", nil)
-			
+
 			// 添加查詢參數
 			q := req.URL.Query()
 			for key, value := range tt.queryParams {
@@ -187,7 +187,7 @@ func TestLiveHandler_CreateLive(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// 為每個測試創建新的 mock
 			mockLiveService := &mocks.MockLiveService{}
-			
+
 			// 創建處理器
 			handler := &LiveHandler{
 				liveService: mockLiveService,
@@ -287,7 +287,7 @@ func TestLiveHandler_GetLive(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// 為每個測試創建新的 mock
 			mockLiveService := &mocks.MockLiveService{}
-			
+
 			// 創建處理器
 			handler := &LiveHandler{
 				liveService: mockLiveService,
@@ -372,7 +372,7 @@ func TestLiveHandler_StartLive(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// 為每個測試創建新的 mock
 			mockLiveService := &mocks.MockLiveService{}
-			
+
 			// 創建處理器
 			handler := &LiveHandler{
 				liveService: mockLiveService,
@@ -408,4 +408,4 @@ func TestLiveHandler_StartLive(t *testing.T) {
 			mockLiveService.AssertExpectations(t)
 		})
 	}
-} 
+}

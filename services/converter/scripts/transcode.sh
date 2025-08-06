@@ -110,7 +110,7 @@ for quality in "${QUALITIES[@]}"; do
     # FFmpeg 轉碼 - 根據是否有音頻調整參數
     if [ -n "$has_audio" ]; then
         # 有音頻軌道
-        ffmpeg -i "$INPUT_FILE" \
+        if ! ffmpeg -i "$INPUT_FILE" \
             -c:v libx264 -preset medium -profile:v high \
             -vf "scale=$width:-1" \
             -b:v "$bitrate" -maxrate "$bitrate" -bufsize "$bufsize" \
@@ -120,10 +120,13 @@ for quality in "${QUALITIES[@]}"; do
             -hls_list_size 0 \
             -hls_segment_filename "$HLS_DIR/$name/segment_%03d.ts" \
             "$HLS_DIR/$name/index.m3u8" \
-            -y
+            -y; then
+            echo "❌ $name 品質轉碼失敗"
+            exit 1
+        fi
     else
         # 沒有音頻軌道
-        ffmpeg -i "$INPUT_FILE" \
+        if ! ffmpeg -i "$INPUT_FILE" \
             -c:v libx264 -preset medium -profile:v high \
             -vf "scale=$width:-1" \
             -b:v "$bitrate" -maxrate "$bitrate" -bufsize "$bufsize" \
@@ -133,13 +136,28 @@ for quality in "${QUALITIES[@]}"; do
             -hls_list_size 0 \
             -hls_segment_filename "$HLS_DIR/$name/segment_%03d.ts" \
             "$HLS_DIR/$name/index.m3u8" \
-            -y
+            -y; then
+            echo "❌ $name 品質轉碼失敗"
+            exit 1
+        fi
+    fi
+    
+    # 檢查生成的檔案是否存在
+    if [ ! -f "$HLS_DIR/$name/index.m3u8" ]; then
+        echo "❌ $name 品質的 HLS 檔案未生成"
+        exit 1
     fi
     
     # 添加到主播放列表
     echo "#EXT-X-STREAM-INF:BANDWIDTH=$bandwidth,RESOLUTION=${width}x${height}" >> "$MASTER_PLAYLIST"
     echo "$name/index.m3u8" >> "$MASTER_PLAYLIST"
 done
+
+# 檢查主播放列表是否生成
+if [ ! -f "$MASTER_PLAYLIST" ]; then
+    echo "❌ HLS 主播放列表未生成"
+    exit 1
+fi
 
 echo "✅ HLS 串流生成完成"
 
@@ -150,15 +168,15 @@ echo "🖼️ 生成縮圖..."
 THUMB_TIME=$(echo "$DURATION / 2" | bc)
 
 # 生成多個縮圖
-ffmpeg -i "$INPUT_FILE" -ss "$THUMB_TIME" -vframes 1 -f image2 -s 320x240 "$THUMB_DIR/thumb_320x240.jpg" -y
-ffmpeg -i "$INPUT_FILE" -ss "$THUMB_TIME" -vframes 1 -f image2 -s 640x480 "$THUMB_DIR/thumb_640x480.jpg" -y
-ffmpeg -i "$INPUT_FILE" -ss "$THUMB_TIME" -vframes 1 -f image2 -s 1280x720 "$THUMB_DIR/thumb_1280x720.jpg" -y
+ffmpeg -i "$INPUT_FILE" -ss "$THUMB_TIME" -vframes 1 -s 320x240 "$THUMB_DIR/thumb_320x240.jpg" -y
+ffmpeg -i "$INPUT_FILE" -ss "$THUMB_TIME" -vframes 1 -s 640x480 "$THUMB_DIR/thumb_640x480.jpg" -y
+ffmpeg -i "$INPUT_FILE" -ss "$THUMB_TIME" -vframes 1 -s 1280x720 "$THUMB_DIR/thumb_1280x720.jpg" -y
 
 # 生成時間軸縮圖（每 10 秒一張）
 INTERVAL=10
 COUNT=0
 for ((i=0; i<$(echo "$DURATION" | cut -d. -f1); i+=INTERVAL)); do
-    ffmpeg -i "$INPUT_FILE" -ss "$i" -vframes 1 -f image2 -s 320x240 "$THUMB_DIR/timeline_${COUNT}.jpg" -y 2>/dev/null || true
+    ffmpeg -i "$INPUT_FILE" -ss "$i" -vframes 1 -s 320x240 "$THUMB_DIR/timeline_${COUNT}.jpg" -y 2>/dev/null || true
     COUNT=$((COUNT + 1))
 done
 
@@ -169,17 +187,41 @@ echo "📤 上傳處理後的文件到處理後桶..."
 echo "🔧 使用處理後桶: $MINIO_PROCESSED_BUCKET"
 echo "🔧 輸出前綴: $OUTPUT_PREFIX"
 
-# 上傳 MP4
-echo "📤 上傳 MP4..."
-mc cp "$MP4_DIR/video.mp4" "s3/$MINIO_PROCESSED_BUCKET/${OUTPUT_PREFIX}/video.mp4"
+# 檢查並上傳 MP4
+if [ -f "$MP4_DIR/video.mp4" ]; then
+    echo "📤 上傳 MP4..."
+    if ! mc cp "$MP4_DIR/video.mp4" "s3/$MINIO_PROCESSED_BUCKET/${OUTPUT_PREFIX}/video.mp4"; then
+        echo "❌ MP4 上傳失敗"
+        exit 1
+    fi
+else
+    echo "❌ MP4 檔案不存在: $MP4_DIR/video.mp4"
+    exit 1
+fi
 
-# 上傳 HLS 文件
-echo "📤 上傳 HLS 串流..."
-mc cp --recursive "$HLS_DIR/" "s3/$MINIO_PROCESSED_BUCKET/${OUTPUT_PREFIX}/hls/"
+# 檢查並上傳 HLS 文件
+if [ -d "$HLS_DIR" ] && [ -f "$HLS_DIR/index.m3u8" ]; then
+    echo "📤 上傳 HLS 串流..."
+    if ! mc cp --recursive "$HLS_DIR/" "s3/$MINIO_PROCESSED_BUCKET/${OUTPUT_PREFIX}/hls/"; then
+        echo "❌ HLS 上傳失敗"
+        exit 1
+    fi
+else
+    echo "❌ HLS 目錄或檔案不存在: $HLS_DIR"
+    exit 1
+fi
 
-# 上傳縮圖
-echo "📤 上傳縮圖..."
-mc cp --recursive "$THUMB_DIR/" "s3/$MINIO_PROCESSED_BUCKET/${OUTPUT_PREFIX}/thumbnails/"
+# 檢查並上傳縮圖
+if [ -d "$THUMB_DIR" ]; then
+    echo "📤 上傳縮圖..."
+    if ! mc cp --recursive "$THUMB_DIR/" "s3/$MINIO_PROCESSED_BUCKET/${OUTPUT_PREFIX}/thumbnails/"; then
+        echo "❌ 縮圖上傳失敗"
+        exit 1
+    fi
+else
+    echo "❌ 縮圖目錄不存在: $THUMB_DIR"
+    exit 1
+fi
 
 # 生成轉碼報告
 REPORT_FILE="$WORK_DIR/transcode_report.json"

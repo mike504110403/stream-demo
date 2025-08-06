@@ -59,4 +59,4 @@ func TestNewListResponse_IntSlice(t *testing.T) {
 	assert.Len(t, response.Items, 5)
 	assert.Equal(t, 1, response.Items[0])
 	assert.Equal(t, 5, response.Items[4])
-} 
+}
