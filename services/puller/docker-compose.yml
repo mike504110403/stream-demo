@@ -1,0 +1,47 @@
+services:
+  # 外部流拉取服務 (優化版)
+  stream-puller:
+    build:
+      context: .
+      dockerfile: Dockerfile.optimized
+    container_name: puller
+    restart: unless-stopped
+    ports:
+      - "8083:8081"  # HLS 播放服務端口
+    volumes:
+      - public_streams:/tmp/public_streams
+    networks:
+      - stream-demo-network
+    environment:
+      - OUTPUT_DIR=/tmp/public_streams
+      - HTTP_PORT=8081
+      - DB_HOST=postgresql
+      - DB_PORT=5432
+      - DB_USER=stream_user
+      - DB_PASS=stream_password
+      - DB_NAME=stream_demo
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET=stream-demo-videos
+      - MINIO_PROCESSED_BUCKET=stream-demo-processed
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# 資料卷定義
+volumes:
+  public_streams:
+    driver: local
+
+# 網路定義
+networks:
+  stream-demo-network:
+    external: true 

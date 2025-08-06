@@ -1,0 +1,68 @@
+node_modules
+
+# 環境變數檔案
+.env
+deploy/env/.env
+*.env
+
+# 編譯產物
+services/api/__debug_bin*
+services/api/stream-demo-backend
+services/api/cmd/stream_puller/stream-puller
+
+# 前端構建產物
+services/frontend/dist/
+services/frontend/node_modules/
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系統文件
+.DS_Store
+Thumbs.db
+
+# 日誌文件 (已禁用，只輸出到控制台)
+# logs/
+# *.log
+# *.pid
+
+# 測試覆蓋率文件
+coverage/
+coverage.out
+coverage.html
+
+# TypeScript 構建文件
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# 依賴鎖定文件 (可選，根據團隊需求)
+# yarn.lock
+# go.sum
+
+# 臨時文件
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# 系統文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE 文件
+.vscode/settings.json.bak
+.idea/
+*.sublime-*
+
+# 快取文件
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+dist/
+build/

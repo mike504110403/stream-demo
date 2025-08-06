@@ -1,0 +1,31 @@
+services:
+  # NGINX RTMP 服務器 (LL-HLS 版本) - 處理 RTMP 推流和 HLS 生成
+  rtmp:
+    image: tiangolo/nginx-rtmp
+    container_name: receiver
+    restart: unless-stopped
+    ports:
+      - "1935:1935"  # RTMP 推流端口 (對外開放，用於 OBS 等推流工具)
+    volumes:
+      - ./nginx-llhls.conf:/etc/nginx/nginx.conf:ro
+      - hls_streams:/tmp/hls
+      - hls_standard:/tmp/hls_standard
+    networks:
+      - stream-demo-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# 資料卷定義
+volumes:
+  hls_streams:
+    driver: local
+  hls_standard:
+    driver: local
+
+# 網路定義
+networks:
+  stream-demo-network:
+    external: true 

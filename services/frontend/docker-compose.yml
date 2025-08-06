@@ -1,0 +1,25 @@
+services:
+  # 前端應用服務
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"      # 前端應用端口
+    networks:
+      - stream-demo-network
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+# 網路定義
+networks:
+  stream-demo-network:
+    external: true 
