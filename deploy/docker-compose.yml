@@ -1,3 +1,5 @@
+name: stream-demo
+
 services:
   # 基礎設施服務
   postgresql:
@@ -248,6 +250,26 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  live-cdn:
+    build:
+      context: ../services/live-cdn
+      dockerfile: Dockerfile
+    container_name: stream-demo-live-cdn
+    restart: unless-stopped
+    ports:
+      - "8085:80"
+    volumes:
+      - hls_streams:/var/www/hls:ro
+    networks:
+      - stream-demo-network
+    depends_on:
+      - receiver
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   gateway:
     build:

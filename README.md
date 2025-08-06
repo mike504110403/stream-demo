@@ -29,7 +29,7 @@
 - ✅ **獨立轉碼服務**: Converter 服務專門處理影片轉碼，API 服務專注業務邏輯
 - ✅ **智能轉碼**: 背景服務自動生成多品質 HLS 和 MP4
 - ✅ **雙桶存儲**: 原始檔案與轉碼後檔案分離
-- ✅ **直播間系統**: RTMP 推流 + HLS 播放 + 低延遲 + 自動化轉換
+- ✅ **直播間系統**: RTMP 推流 + LL-HLS 播放 + 低延遲 + 靜態緩存 CDN
 - ✅ **公開直播**: 外部直播源自動拉取和轉換
 - ✅ **即時通信**: WebSocket + Redis Pub/Sub
 - ✅ **現代前端**: Vue 3 + TypeScript + Element Plus + hls.js
@@ -37,7 +37,7 @@
 - ✅ **模組化架構**: 依賴注入 + 統一路由管理
 - ✅ **自動化推流**: RTMP 推流自動觸發 HLS 轉換
 - ✅ **數據清理**: 關閉直播間時自動清除 Redis 數據
-- ✅ **微服務架構**: 服務分離為 converter, receiver, puller, gateway
+- ✅ **微服務架構**: 服務分離為 converter, receiver, puller, live-cdn, gateway
 - ✅ **自動轉碼**: 影片上傳後自動觸發 FFmpeg 轉碼處理
 
 ## 🏗️ 技術架構
@@ -77,8 +77,10 @@ graph TB
     end
     
     subgraph "直播層"
-        V[nginx-rtmp Receiver] --> W[RTMP 推流]
-        X[Stream Puller] --> Y[HLS 生成]
+        V[nginx-rtmp Receiver] --> W[RTMP 推流接收]
+        V --> X[LL-HLS 生成]
+        Y[Live-CDN] --> Z[HLS 靜態緩存]
+        AA[Stream Puller] --> BB[外部流處理]
     end
     
     A --> D
@@ -88,8 +90,9 @@ graph TB
     G --> H
     H --> L
     H --> S
-    V --> X
-    X --> H
+    V --> Y
+    Y --> Z
+    AA --> H
     H --> U
 ```
 
@@ -128,18 +131,22 @@ sequenceDiagram
 sequenceDiagram
     participant OBS as OBS/推流軟體
     participant Receiver as nginx-rtmp Receiver
-    participant Puller as Stream Puller
+    participant LiveCDN as Live-CDN
+    participant Frontend as 前端播放器
+    participant Puller as Stream Puller (外部流)
     participant Converter as FFmpeg Converter
-    participant HLS as HLS 文件
-    participant Player as 前端播放器
     
-    OBS->>Receiver: RTMP 推流
-    Receiver->>Receiver: on_publish 事件
-    Receiver->>Puller: 觸發轉換
-    Puller->>Converter: 啟動轉碼
-    Converter->>HLS: 生成 HLS 文件
-    Player->>HLS: 請求播放
-    HLS->>Player: 返回串流
+    Note over OBS,LiveCDN: RTMP 推流 → LL-HLS 直播流程
+    OBS->>Receiver: RTMP 推流 (rtmp://localhost:1935/live/stream_key)
+    Receiver->>Receiver: 即時轉換為 LL-HLS 
+    Receiver->>LiveCDN: 共享卷同步 HLS 檔案 (/tmp/hls → /var/www/hls)
+    Frontend->>LiveCDN: 請求 HLS 播放 (http://localhost:8085/live/hls/stream_key/index.m3u8)
+    LiveCDN->>Frontend: 返回 LL-HLS 串流 (低延遲)
+    
+    Note over Puller,Converter: 外部直播源處理流程
+    Puller->>Converter: 處理外部 HLS/RTMP/RTSP 流
+    Converter->>Puller: 轉換為標準 HLS 格式
+    Frontend->>Puller: 請求外部流播放 (http://localhost:8083/stream_name/index.m3u8)
 ```
 
 ### 開發/生產模式
@@ -214,6 +221,10 @@ stream-demo/
 │   │   ├── go.mod            # Go 模組配置
 │   │   ├── scripts/          # 轉碼腳本
 │   │   └── Dockerfile        # 容器配置
+│   ├── live-cdn/              # HLS 靜態緩存 CDN 服務 (nginx)
+│   │   ├── nginx.conf        # nginx 配置 (開發模式)
+│   │   ├── nginx-cdn-secure.conf # nginx 配置 (生產模式安全)
+│   │   └── Dockerfile        # 容器配置
 │   └── gateway/               # 反向代理服務 (nginx)
 │       ├── nginx-reverse-proxy-dev.conf    # 開發模式配置
 │       ├── nginx-reverse-proxy-prod.conf   # 生產模式配置
@@ -254,7 +265,7 @@ stream-demo/
 - **轉碼服務**: Go 1.21, FFmpeg 6.0.1, 資料庫驅動任務管理
 - **資料庫**: PostgreSQL 15, Redis 7, MySQL 8.0
 - **存儲**: MinIO (S3 兼容)
-- **直播**: nginx-rtmp (Receiver), stream-puller (Puller)
+- **直播**: nginx-rtmp (Receiver), nginx (Live-CDN), stream-puller (Puller)
 - **容器**: Docker & Docker Compose
 - **開發工具**: Vite 5.0.11, ESLint, Prettier, Vue TSC
 
@@ -301,8 +312,10 @@ cd deploy
 - **後端 (IDE)**: http://localhost:8080
 - **MinIO Console**: http://localhost:9001 (minioadmin/minioadmin)
 - **直播流服務**: http://localhost:8083
+- **HLS 靜態緩存**: http://localhost:8085
 - **RTMP 推流**: rtmp://localhost:1935/live
-- **HLS 播放**: http://localhost:8083/[stream_key]/index.m3u8
+- **HLS 播放 (直播間)**: http://localhost:8085/live/hls/[stream_key]/index.m3u8
+- **HLS 播放 (外部流)**: http://localhost:8083/[stream_name]/index.m3u8
 
 ### 生產模式 (完整容器化部署)
 
@@ -324,8 +337,10 @@ cd deploy
 - **後端 API**: http://localhost:8084/api
 - **MinIO Console**: http://localhost:9001 (minioadmin/minioadmin)
 - **直播流服務**: http://localhost:8083
+- **HLS 靜態緩存**: http://localhost:8085
 - **RTMP 推流**: rtmp://localhost:1935/live
-- **HLS 播放**: http://localhost:8083/[stream_key]/index.m3u8
+- **HLS 播放 (直播間)**: http://localhost:8085/live/hls/[stream_key]/index.m3u8
+- **HLS 播放 (外部流)**: http://localhost:8083/[stream_name]/index.m3u8
 
 > 💡 **開發模式優勢**: 前後端由 IDE 啟動，支援熱重載，適合本地開發。詳細說明請參考 [開發指南](./docs/DEVELOPMENT.md)
 
@@ -407,17 +422,46 @@ closed (完全刪除)
 1. 在 OBS 中點擊"開始串流"
 2. 回到前端直播間，點擊"開始直播"
 3. 系統會自動：
-   - Receiver (nginx-rtmp) 接收推流
-   - 觸發 `on_publish` 事件
-   - Puller 自動啟動 Converter (FFmpeg) 轉換
-   - 生成 HLS 文件
-   - 前端 `hls.js` 自動播放（支援自動重試）
+   - Receiver (nginx-rtmp) 接收 RTMP 推流
+   - 即時轉換為 LL-HLS (Low Latency HLS) 格式
+   - 通過共享卷同步到 Live-CDN 服務
+   - Live-CDN 提供靜態緩存和 CORS 支持
+   - 前端通過 `hls.js` 播放低延遲直播流
 4. 等待幾秒鐘，直播畫面應該會出現在前端播放器中
 
 ### 4. 其他推流軟體
 - **Streamlabs OBS**: 設置方式相同
 - **XSplit**: 設置方式相同
 - **手機 App**: 支援 RTMP 推流的 App 都可以使用
+
+## 🎯 Live-CDN 靜態緩存服務
+
+### 服務特色
+- **專用 HLS 服務**: 專門為直播間 HLS 流提供靜態緩存服務
+- **低延遲優化**: 支援 LL-HLS (Low Latency HLS) 超低延遲播放
+- **CORS 支持**: 完整的跨域請求支持，適配前端 hls.js 播放器
+- **性能優化**: nginx 靜態文件服務，緩存策略優化
+- **檔案同步**: 通過 Docker 共享卷即時同步 HLS 檔案
+
+### 架構設計
+```
+OBS 推流 (RTMP) → Receiver (nginx-rtmp) → HLS 檔案生成 → Live-CDN (nginx) → 前端播放
+                                          ↑                    ↓
+                                     共享卷同步          靜態緩存服務
+                                    /tmp/hls         /var/www/hls
+```
+
+### 訪問端點
+- **服務地址**: http://localhost:8085
+- **HLS 播放路徑**: `/live/hls/{stream_key}/index.m3u8`
+- **範例**: http://localhost:8085/live/hls/stream_57409a55-4cb/index.m3u8
+- **健康檢查**: http://localhost:8085/health
+
+### 配置特色
+- **開發模式**: 允許所有來源 CORS，便於本地開發
+- **生產模式**: 安全 CORS 配置，包含 Referer 檢查和速率限制
+- **文件類型**: 正確設置 `.m3u8` 和 `.ts` 檔案 MIME 類型
+- **緩存策略**: `no-cache` 策略確保直播流的即時性
 
 ## 🌐 公開直播
 
@@ -577,11 +621,11 @@ docker-compose logs converter --tail=20
 - 影片轉碼使用 Converter (FFmpeg) 背景服務處理
 - RTMP 推流通過 Receiver (nginx-rtmp) 接收，Puller 轉換為 HLS
 - 前端使用 hls.js 播放 HLS 流，支援自動重試和低延遲
-- 自動化流程：RTMP 推流 → on_publish 事件 → Converter (FFmpeg) 轉換 → HLS 生成 → 前端播放
+- 自動化流程：RTMP 推流 → Receiver 即時轉換 → LL-HLS 生成 → Live-CDN 緩存 → 前端播放
 - 關閉直播間時會清除所有相關的 Redis 數據，確保系統清潔
 - 專案採用微服務架構，前後端分離，支援獨立開發和部署
 - 完整的 Docker 容器化支援，一鍵啟動開發和生產環境
-- 服務命名規範：converter (轉碼), receiver (接收), puller (拉取)
+- 服務命名規範：converter (轉碼), receiver (接收), puller (拉取), live-cdn (靜態緩存)
 - **F5 一鍵啟動優化**: 
   - 修正了 `cmd` 資料夾路徑問題，改為使用 `deploy/scripts`
   - 修正了服務名稱檢查，正確識別 `stream-demo-gateway`
@@ -598,3 +642,10 @@ docker-compose logs converter --tail=20
   - Converter 服務獨立處理所有轉碼任務，支援資料庫驅動的任務管理
   - 改善了錯誤處理和狀態管理，提供更穩定的轉碼流程
   - 支援多工作協程並發處理轉碼任務
+- **Live-CDN 服務新增**:
+  - 新增專用的 HLS 靜態緩存服務，提供更好的直播流性能
+  - 支援 LL-HLS (Low Latency HLS) 超低延遲播放
+  - 完整的 CORS 配置支持前端 hls.js 播放器
+  - 修復了 HLS 片段命名從時間戳改為序列號 (sequential)
+  - 通過 Docker 共享卷實現 Receiver 與 Live-CDN 的檔案同步
+  - 分離直播間流 (Live-CDN) 和外部流 (Puller) 的訪問路徑

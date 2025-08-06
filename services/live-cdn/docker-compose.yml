@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  live-cdn:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: stream-demo-live-cdn
+    restart: unless-stopped
+    ports:
+      - "8085:80"
+    volumes:
+      - hls_streams:/var/www/hls:ro
+    networks:
+      - stream-demo-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  hls_streams:
+    external: true
+
+networks:
+  stream-demo-network:
+    external: true 
