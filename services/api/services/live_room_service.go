@@ -155,7 +155,7 @@ func (s *LiveRoomService) GetAllRooms(limit int) ([]*LiveRoomInfo, error) {
 		limit = 50
 	}
 
-	// 從 Redis 獲取所有房間ID（使用 pattern 匹配）
+	// 從 Redis 獲取所有房間ID（使用 pattern 匹配，只匹配房間主數據）
 	pattern := "live:room:room_*"
 	keys, err := utils.GetRedisClient().Keys(ctx, pattern).Result()
 	if err != nil {
@@ -165,9 +165,18 @@ func (s *LiveRoomService) GetAllRooms(limit int) ([]*LiveRoomInfo, error) {
 	var rooms []*LiveRoomInfo
 	count := 0
 
+	// 過濾出真正的房間主數據（排除 :roles, :users 等子鍵）
+	var roomKeys []string
+	for _, key := range keys {
+		// 只保留房間主數據，排除包含冒號的子鍵
+		if !strings.Contains(strings.TrimPrefix(key, "live:room:"), ":") {
+			roomKeys = append(roomKeys, key)
+		}
+	}
+
 	// 按創建時間排序（從新到舊）
-	for i := len(keys) - 1; i >= 0 && count < limit; i-- {
-		key := keys[i]
+	for i := len(roomKeys) - 1; i >= 0 && count < limit; i-- {
+		key := roomKeys[i]
 		roomID := strings.TrimPrefix(key, "live:room:")
 
 		room, err := s.GetRoomByID(roomID)
@@ -463,7 +472,31 @@ func (s *LiveRoomService) CloseRoom(roomID string, userID int) error {
 	creatorID, err := utils.GetRedisClient().HGet(ctx, fmt.Sprintf("live:room:%s", roomID), "creator_id").Result()
 	if err == nil {
 		if creatorIDInt, err := strconv.Atoi(creatorID); err == nil {
-			utils.GetRedisClient().Del(ctx, fmt.Sprintf("user:%d:current_room", creatorIDInt))
+			// 清除創建者的當前房間記錄
+			if err := utils.GetRedisClient().Del(ctx, fmt.Sprintf("user:%d:current_room", creatorIDInt)).Err(); err != nil {
+				utils.LogError("清除創建者當前房間記錄失敗: %v", err)
+			} else {
+				utils.LogInfo("成功清除創建者當前房間記錄: user:%d:current_room", creatorIDInt)
+			}
+		}
+	}
+	
+	// 清除房間內所有用戶的當前房間記錄
+	roomUsers, err := utils.GetRedisClient().SMembers(ctx, fmt.Sprintf("live:room:%s:users", roomID)).Result()
+	if err == nil {
+		for _, userIDStr := range roomUsers {
+			if userIDInt, err := strconv.Atoi(userIDStr); err == nil {
+				// 檢查該用戶的當前房間是否為此房間
+				currentRoom, err := utils.GetRedisClient().Get(ctx, fmt.Sprintf("user:%d:current_room", userIDInt)).Result()
+				if err == nil && currentRoom == roomID {
+					// 清除該用戶的當前房間記錄
+					if err := utils.GetRedisClient().Del(ctx, fmt.Sprintf("user:%d:current_room", userIDInt)).Err(); err != nil {
+						utils.LogError("清除用戶 %d 當前房間記錄失敗: %v", userIDInt, err)
+					} else {
+						utils.LogInfo("成功清除用戶 %d 當前房間記錄", userIDInt)
+					}
+				}
+			}
 		}
 	}
 
@@ -474,13 +507,51 @@ func (s *LiveRoomService) CloseRoom(roomID string, userID int) error {
 		fmt.Sprintf("live:room:%s:roles", roomID),
 		fmt.Sprintf("live:room:%s:chat", roomID), // 清除聊天記錄
 	}
+	
+	// 動態查找所有相關的鍵（使用 pattern 匹配）
+	pattern := fmt.Sprintf("live:room:%s*", roomID)
+	relatedKeys, err := utils.GetRedisClient().Keys(ctx, pattern).Result()
+	if err == nil {
+		// 將動態找到的鍵添加到刪除列表
+		for _, key := range relatedKeys {
+			// 避免重複添加
+			found := false
+			for _, existingKey := range keys {
+				if existingKey == key {
+					found = true
+					break
+				}
+			}
+			if !found {
+				keys = append(keys, key)
+			}
+		}
+	}
 
+	// 使用 pipeline 批量刪除，提高效率
+	pipe := utils.GetRedisClient().Pipeline()
 	for _, key := range keys {
-		utils.GetRedisClient().Del(ctx, key)
+		pipe.Del(ctx, key)
 	}
 
 	// 從活躍房間列表移除
-	utils.GetRedisClient().ZRem(ctx, "live:active_rooms", roomID)
+	pipe.ZRem(ctx, "live:active_rooms", roomID)
+
+	// 執行所有操作
+	cmds, err := pipe.Exec(ctx)
+	if err != nil {
+		utils.LogError("清除房間 Redis 數據失敗: %v", err)
+		return fmt.Errorf("清除房間數據失敗: %v", err)
+	}
+
+	// 檢查刪除結果
+	for i, cmd := range cmds {
+		if cmd.Err() != nil {
+			utils.LogError("刪除鍵 %s 失敗: %v", keys[i], cmd.Err())
+		} else {
+			utils.LogInfo("成功刪除鍵: %s", keys[i])
+		}
+	}
 
 	// 同步最終狀態到資料庫
 	go s.syncRoomToDatabase(roomID)

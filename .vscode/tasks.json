@@ -2,78 +2,28 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "npm-install-frontend",
+      "label": "🔍 快速健康檢查",
       "type": "shell",
-      "command": "npm",
-      "args": ["install"],
-      "options": {
-        "cwd": "${workspaceFolder}/services/frontend"
-      },
-      "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "silent",
-        "focus": false,
-        "panel": "shared"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "go-mod-tidy",
-      "type": "shell",
-      "command": "go",
-      "args": ["mod", "tidy"],
-      "options": {
-        "cwd": "${workspaceFolder}/services/api"
-      },
-      "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "silent",
-        "focus": false,
-        "panel": "shared"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "build-frontend",
-      "type": "shell",
-      "command": "npm",
-      "args": ["run", "build"],
-      "options": {
-        "cwd": "${workspaceFolder}/services/frontend"
-      },
-      "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "檢查開發環境",
-      "type": "shell",
-      "command": "./deploy/scripts/start.sh",
-      "args": ["status"],
+      "command": "./deploy/scripts/quick-health-check.sh",
       "options": {
         "cwd": "${workspaceFolder}"
       },
       "group": "build",
       "presentation": {
-        "echo": true,
+        "echo": false,
         "reveal": "always",
-        "focus": false,
-        "panel": "shared"
+        "focus": true,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
       },
       "problemMatcher": []
     },
     {
-      "label": "🎯 智能啟動開發環境",
+      "label": "🎯 啟動周邊服務",
       "type": "shell",
-      "command": "./deploy/scripts/start.sh",
-      "args": ["start"],
+      "command": "./deploy/scripts/docker-manage.sh",
+      "args": ["start-dev"],
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -85,6 +35,76 @@
         "panel": "shared",
         "showReuseMessage": true,
         "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🚀 完整開發環境設置",
+      "type": "shell",
+      "command": "./deploy/scripts/docker-manage.sh",
+      "args": ["dev"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🛑 停止所有服務",
+      "type": "shell",
+      "command": "./deploy/scripts/docker-manage.sh",
+      "args": ["stop"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "📊 查看服務狀態",
+      "type": "shell",
+      "command": "./deploy/scripts/docker-manage.sh",
+      "args": ["dev-status"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🔍 診斷問題",
+      "type": "shell",
+      "command": "./deploy/scripts/docker-manage.sh",
+      "args": ["diagnose"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
       },
       "problemMatcher": []
     }

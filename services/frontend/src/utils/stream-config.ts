@@ -15,7 +15,7 @@ export const getStreamConfig = () => {
       // RTMP 推流地址 (通過 ngrok 暴露的端口)
       rtmpPushUrl: `rtmp://${hostname}:1935/live`,
       // HLS 播放地址 (通過 nginx 反向代理)
-      hlsPlayUrl: `${protocol}//${hostname}/hls`,
+      hlsPlayUrl: `${protocol}//${hostname}/live/hls`,
       // WebSocket 地址
       wsUrl: `${protocol === "https:" ? "wss:" : "ws:"}//${hostname}/ws`,
     };
@@ -24,8 +24,8 @@ export const getStreamConfig = () => {
     return {
       // RTMP 推流地址 (直接連接到 nginx-rtmp)
       rtmpPushUrl: "rtmp://localhost:1935/live",
-      // HLS 播放地址 (通過 nginx 反向代理)
-      hlsPlayUrl: "/hls",
+      // HLS 播放地址 (直接訪問 live-cdn 服務)
+      hlsPlayUrl: "http://localhost:8085/live/hls",
       // WebSocket 地址
       wsUrl: "/ws",
     };

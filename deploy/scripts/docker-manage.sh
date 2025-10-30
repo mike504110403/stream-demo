@@ -44,10 +44,12 @@ show_help() {
     echo "命令:"
     echo "  start     啟動所有服務 (生產模式)"
     echo "  start-dev 啟動周邊服務 (開發模式，前後端由 IDE 啟動)"
+    echo "  dev       智能開發環境啟動 (整合依賴檢查、安裝、服務啟動)"
     echo "  stop      停止所有服務"
     echo "  restart   重啟所有服務"
     echo "  status    查看服務狀態"
     echo "  logs      查看服務日誌"
+    echo "  diagnose  診斷常見問題"
     echo "  build     重新構建服務"
     echo "  clean     清理容器和映像"
     echo "  init      初始化 MinIO 桶"
@@ -119,6 +121,161 @@ start_dev_services() {
     check_dev_services_status
 }
 
+# 智能開發環境啟動 (整合 start.sh 的功能)
+start_smart_dev() {
+    log_info "🎯 智能開發環境啟動器"
+    echo "=================================="
+    echo ""
+    
+    # 檢查基本依賴
+    check_dependencies
+    
+    # 安裝前後端依賴
+    install_dependencies
+    
+    # 啟動周邊服務
+    start_dev_services
+    
+    # 顯示啟動指南
+    show_dev_guide
+}
+
+# 檢查開發依賴
+check_dependencies() {
+    log_info "檢查開發環境依賴..."
+    
+    # 檢查 Node.js
+    if ! command -v node >/dev/null 2>&1; then
+        log_error "Node.js 未安裝，請先安裝 Node.js"
+        exit 1
+    fi
+    log_success "Node.js: $(node --version)"
+    
+    # 檢查 npm
+    if ! command -v npm >/dev/null 2>&1; then
+        log_error "npm 未安裝"
+        exit 1
+    fi
+    log_success "npm: $(npm --version)"
+    
+    # 檢查 Go
+    if ! command -v go >/dev/null 2>&1; then
+        log_error "Go 未安裝，請先安裝 Go"
+        exit 1
+    fi
+    log_success "Go: $(go version | cut -d' ' -f3)"
+    
+    echo ""
+}
+
+# 安裝依賴
+install_dependencies() {
+    log_info "安裝項目依賴..."
+    
+    # 安裝前端依賴
+    if [ -f "services/frontend/package.json" ]; then
+        log_info "安裝前端依賴..."
+        cd services/frontend
+        npm install
+        cd ../..
+        log_success "前端依賴安裝完成"
+    fi
+    
+    # 安裝後端依賴
+    if [ -f "services/api/go.mod" ]; then
+        log_info "安裝後端依賴..."
+        cd services/api
+        go mod tidy
+        cd ../..
+        log_success "後端依賴安裝完成"
+    fi
+    
+    echo ""
+}
+
+# 顯示開發指南
+show_dev_guide() {
+    echo ""
+    log_success "🎉 開發環境準備完成！"
+    echo ""
+    echo "🚀 接下來請："
+    echo "  1. 在 VSCode 中按 F5 啟動前後端"
+    echo "  2. 或者手動執行："
+    echo "     - 前端：cd services/frontend && npm run dev"
+    echo "     - 後端：cd services/api && go run main.go"
+    echo ""
+    echo "🌐 服務地址："
+    echo "  - 前端：http://localhost:5173"
+    echo "  - 後端：http://localhost:8080"
+    echo "  - 資料庫：localhost:5432 (PostgreSQL)"
+    echo "  - Redis：localhost:6379"
+    echo ""
+}
+
+# 快速診斷功能
+diagnose_issues() {
+    log_info "🔍 診斷系統問題..."
+    echo ""
+    
+    local issues=0
+    
+    # 檢查 Docker
+    log_info "檢查 Docker..."
+    if ! command -v docker >/dev/null 2>&1; then
+        log_error "Docker 未安裝"
+        ((issues++))
+    elif ! docker info >/dev/null 2>&1; then
+        log_error "Docker 未運行，請啟動 Docker Desktop"
+        ((issues++))
+    else
+        log_success "Docker 正常運行"
+    fi
+    
+    # 檢查開發依賴
+    log_info "檢查開發依賴..."
+    if ! command -v node >/dev/null 2>&1; then
+        log_error "Node.js 未安裝"
+        ((issues++))
+    else
+        log_success "Node.js: $(node --version)"
+    fi
+    
+    if ! command -v go >/dev/null 2>&1; then
+        log_error "Go 未安裝"
+        ((issues++))
+    else
+        log_success "Go: $(go version | cut -d' ' -f3)"
+    fi
+    
+    # 檢查端口衝突
+    log_info "檢查端口使用情況..."
+    local ports=(5173 8080 5432 6379 9000)
+    local port_issues=0
+    
+    for port in "${ports[@]}"; do
+        if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
+            local process=$(lsof -Pi :$port -sTCP:LISTEN | awk 'NR==2 {print $1}')
+            log_warning "端口 $port 被占用 (進程: $process)"
+            ((port_issues++))
+        fi
+    done
+    
+    if [ $port_issues -eq 0 ]; then
+        log_success "所有必要端口都可用"
+    fi
+    
+    # 檢查服務狀態
+    log_info "檢查 Docker 服務狀態..."
+    check_dev_services_status
+    
+    echo ""
+    if [ $issues -eq 0 ]; then
+        log_success "✨ 系統狀態良好！"
+    else
+        log_warning "發現 $issues 個問題，請檢查上述錯誤信息"
+    fi
+}
+
 # 檢查開發模式服務狀態
 check_dev_services_status() {
     log_info "檢查開發模式服務狀態..."
@@ -131,7 +288,7 @@ check_dev_services_status() {
     # 檢查健康狀態
     echo ""
     echo "🏥 健康檢查:"
-    for service in postgresql redis minio receiver puller gateway; do
+    for service in postgresql redis minio receiver puller live-cdn gateway; do
         if docker-compose -f deploy/docker-compose.dev.yml --project-name stream-demo ps | grep -q "$service.*Up"; then
             log_success "$service: 運行中"
         else
@@ -213,7 +370,7 @@ check_services_status() {
     # 檢查健康狀態
     echo ""
     echo "🏥 健康檢查:"
-    for service in postgresql redis minio receiver puller gateway; do
+    for service in postgresql redis minio receiver puller live-cdn gateway; do
         if docker-compose -f docker-compose.yml --project-name stream-demo ps | grep -q "$service.*Up"; then
             log_success "$service: 運行中"
         else
@@ -933,6 +1090,9 @@ main() {
         start-dev)
             start_dev_services
             ;;
+        dev)
+            start_smart_dev
+            ;;
         stop)
             stop_services
             ;;
@@ -950,6 +1110,9 @@ main() {
             ;;
         dev-logs)
             show_dev_logs "$2"
+            ;;
+        diagnose)
+            diagnose_issues
             ;;
         build)
             build_services

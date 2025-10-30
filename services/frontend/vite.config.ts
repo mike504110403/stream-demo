@@ -1,26 +1,28 @@
-import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import { resolve } from 'path'
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(async ({ mode }) => {
   // 載入環境變數
   const env = loadEnv(mode, process.cwd(), '')
+  
+  // 動態導入 vue plugin
+  const { default: vue } = await import('@vitejs/plugin-vue')
   
   return {
     plugins: [vue()],
     resolve: {
       alias: {
-        '@': fileURLToPath(new URL('./src', import.meta.url))
+        '@': resolve(__dirname, 'src')
       }
     },
     server: {
       host: '0.0.0.0',
       port: parseInt(env.VITE_DEV_SERVER_PORT) || 5173,
-      https: env.VITE_DEV_HTTPS === 'true',
+      https: env.VITE_DEV_HTTPS === 'true' ? {} : false,
       proxy: {
         '/api': {
-          target: 'http://localhost:8080',
+          target: 'http://localhost:8084',
           changeOrigin: true,
           secure: false,
           ws: true, // 支援 WebSocket
@@ -47,18 +49,9 @@ export default defineConfig(({ mode }) => {
             });
           },
         },
-        '/hls': {
-          target: env.VITE_HLS_BASE_URL || 'http://localhost:8082',
-          changeOrigin: true,
-          secure: false,
-          configure: (proxy, _options) => {
-            proxy.on('error', (err, _req, _res) => {
-              console.log('hls proxy error', err);
-            });
-          },
-        },
+        // 注意：HLS 代理已移除，現在直接訪問 live-cdn 服務
         '/ws': {
-          target: env.VITE_WS_BASE_URL || 'http://localhost:8080',
+          target: env.VITE_WS_BASE_URL || 'http://localhost:8084',
           changeOrigin: true,
           secure: false,
           ws: true, // 支援 WebSocket

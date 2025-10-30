@@ -15,7 +15,7 @@
 
 ## 📋 專案概述
 
-現代化全棧串流平台，提供影片上傳、自動轉碼、直播間管理和公開直播功能。採用 **PostgreSQL + Redis 混合架構**，整合 **MinIO 對象存儲** 和 **獨立 FFmpeg 轉碼服務**。
+現代化全棧串流平台，提供影片上傳、自動轉碼、直播間管理和公開直播功能。採用 **PostgreSQL + Redis 混合架構**，整合 **MinIO 對象存儲** 和 **獨立 FFmpeg 轉碼服務**。**正在開發 LINE 級別的即時通訊功能**，包括一對一聊天、群組聊天、音視訊通話和檔案分享。
 
 ### 📊 專案統計
 - **總檔案數**: 200+ 個核心檔案
@@ -29,68 +29,252 @@
 - ✅ **獨立轉碼服務**: Converter 服務專門處理影片轉碼，API 服務專注業務邏輯
 - ✅ **智能轉碼**: 背景服務自動生成多品質 HLS 和 MP4
 - ✅ **雙桶存儲**: 原始檔案與轉碼後檔案分離
-- ✅ **直播間系統**: RTMP 推流 + HLS 播放 + 低延遲 + 自動化轉換
+- ✅ **直播間系統**: RTMP 推流 + LL-HLS 播放 + 低延遲 + 靜態緩存 CDN
 - ✅ **公開直播**: 外部直播源自動拉取和轉換
 - ✅ **即時通信**: WebSocket + Redis Pub/Sub
+- 🔄 **全功能即時通訊 (開發中)**: 
+  - 一對一/群組聊天
+  - 音視訊通話 (WebRTC)
+  - 檔案分享 (圖片/影片/文件)
+  - 好友系統管理
+  - 訊息持久化 (NATS JetStream)
 - ✅ **現代前端**: Vue 3 + TypeScript + Element Plus + hls.js
 - ✅ **完整 Docker**: 一鍵啟動開發環境
 - ✅ **模組化架構**: 依賴注入 + 統一路由管理
 - ✅ **自動化推流**: RTMP 推流自動觸發 HLS 轉換
 - ✅ **數據清理**: 關閉直播間時自動清除 Redis 數據
-- ✅ **微服務架構**: 服務分離為 converter, receiver, puller, gateway
+- ✅ **微服務架構**: 服務分離為 converter, receiver, puller, live-cdn, gateway
 - ✅ **自動轉碼**: 影片上傳後自動觸發 FFmpeg 轉碼處理
 
 ## 🏗️ 技術架構
 
-### 整體架構
+### 現有服務架構
 
 ```mermaid
 graph TB
+    subgraph "用戶層"
+        WEB[Web瀏覽器]
+        MOBILE[移動設備]
+        OBS[OBS推流軟體]
+    end
+    
+    subgraph "接入層"
+        GATEWAY[Gateway<br/>nginx反向代理<br/>:8084]
+    end
+    
     subgraph "前端層"
-        A[Vue 3 前端] --> B[Element Plus UI]
-        A --> C[hls.js 播放器]
+        FRONTEND[Frontend<br/>Vue 3 + TypeScript<br/>:5173]
     end
     
-    subgraph "API 層"
-        D[Go/Gin 後端] --> E[JWT 認證]
-        D --> F[WebSocket 服務]
-        D --> G[影片管理 API]
+    subgraph "後端服務層"
+        API[API Service<br/>Go + Gin<br/>:8080]
+        CONVERTER[Converter<br/>影片轉碼<br/>Go]
+        RECEIVER[Receiver<br/>nginx-rtmp<br/>:1935]
+        PULLER[Puller<br/>外部流拉取<br/>Go]
+        LIVECDN[Live-CDN<br/>HLS分發<br/>:8085]
     end
     
-    subgraph "轉碼層"
-        H[Converter 服務] --> I[FFmpeg 轉碼]
-        H --> J[資料庫任務查詢]
-        H --> K[MinIO 檔案處理]
+    subgraph "WebSocket層"
+        WSHUB[WebSocket Hub<br/>聊天室管理]
+        WSHANDLER[WS Handler<br/>連接處理]
+        LIVEROOM[LiveRoom WS<br/>直播間聊天]
     end
     
     subgraph "資料層"
-        L[PostgreSQL] --> M[用戶數據]
-        L --> N[影片數據]
-        L --> O[直播數據]
-        P[Redis] --> Q[緩存]
-        P --> R[即時訊息]
+        POSTGRES[(PostgreSQL<br/>主要資料庫<br/>:5432)]
+        REDIS[(Redis<br/>快取/訊息<br/>:6379)]
+        MINIO[(MinIO<br/>檔案存儲<br/>:9000)]
     end
     
-    subgraph "存儲層"
-        S[MinIO] --> T[原始影片]
-        S --> U[轉碼後檔案]
+    subgraph "基礎設施"
+        MYSQL[(MySQL<br/>備用資料庫<br/>:3306)]
+    end
+
+    %% 用戶訪問路徑
+    WEB --> GATEWAY
+    MOBILE --> GATEWAY
+    GATEWAY --> FRONTEND
+    GATEWAY --> API
+    GATEWAY --> LIVECDN
+    
+    %% RTMP 推流路徑
+    OBS -->|RTMP推流| RECEIVER
+    
+    %% 前端到後端
+    FRONTEND --> API
+    
+    %% WebSocket 雙向連接
+    WEB -.->|WebSocket| WSHUB
+    MOBILE -.->|WebSocket| WSHUB
+    FRONTEND -.->|WebSocket聊天| WSHANDLER
+    FRONTEND -.->|WebSocket直播間| LIVEROOM
+    
+    %% 直播流處理鏈
+    RECEIVER -->|轉碼HLS| LIVECDN
+    PULLER -->|外部流| LIVECDN
+    
+    %% 服務間依賴
+    API --> CONVERTER
+    API --> PULLER
+    
+    %% WebSocket 服務連接
+    WSHUB --> WSHANDLER
+    WSHUB --> LIVEROOM
+    API --> WSHUB
+    
+    %% 資料庫連接
+    API --> POSTGRES
+    API --> REDIS
+    API --> MINIO
+    CONVERTER --> POSTGRES
+    CONVERTER --> MINIO
+    PULLER --> POSTGRES
+    
+    %% WebSocket 訊息系統
+    WSHUB --> REDIS
+    
+    %% HLS 播放
+    FRONTEND -->|播放HLS| LIVECDN
+    
+    style API fill:#e1f5fe
+    style WSHUB fill:#f3e5f5
+    style RECEIVER fill:#fff3e0
+    style LIVECDN fill:#e8f5e8
+    style POSTGRES fill:#e8f5e8
+    style REDIS fill:#fff3e0
+    style MINIO fill:#fce4ec
+```
+
+### 即時通訊升級架構
+
+```mermaid
+graph TB
+    subgraph "用戶層"
+        WEB[Web瀏覽器]
+        MOBILE[移動設備]
+        OBS[OBS推流軟體]
     end
     
-    subgraph "直播層"
-        V[nginx-rtmp Receiver] --> W[RTMP 推流]
-        X[Stream Puller] --> Y[HLS 生成]
+    subgraph "接入層"
+        GATEWAY[Gateway<br/>nginx反向代理<br/>:8084]
     end
     
-    A --> D
-    D --> L
-    D --> P
-    D --> S
-    G --> H
-    H --> L
-    H --> S
-    V --> X
-    X --> H
-    H --> U
+    subgraph "前端層"
+        FRONTEND[Enhanced Frontend<br/>Vue 3 + WebRTC<br/>:5173]
+    end
+    
+    subgraph "後端服務層"
+        API[Enhanced API Service<br/>Go + Gin + Chat APIs<br/>:8080]
+        CONVERTER[Converter<br/>影片轉碼<br/>Go]
+        RECEIVER[Receiver<br/>nginx-rtmp<br/>:1935]
+        PULLER[Puller<br/>外部流拉取<br/>Go]
+        LIVECDN[Live-CDN<br/>HLS分發<br/>:8085]
+    end
+    
+    subgraph "即時通訊層 (新增)"
+        COTURN[Coturn Server<br/>STUN/TURN<br/>:3478]
+        NATS[NATS JetStream<br/>訊息隊列<br/>:4222]
+    end
+    
+    subgraph "WebSocket層 (增強)"
+        CHATWS[Enhanced WebSocket Hub<br/>統一聊天路由器]
+        PRIVATECHAT[Private Chat Handler<br/>一對一聊天]
+        GROUPCHAT[Group Chat Handler<br/>群組聊天] 
+        LIVEROOM[LiveRoom WS Handler<br/>直播間聊天]
+        SIGNALING[WebRTC Signaling Handler<br/>通話信令]
+    end
+    
+    subgraph "資料層 (擴展)"
+        POSTGRES[(Enhanced PostgreSQL<br/>+聊天記錄+好友關係<br/>:5432)]
+        REDIS[(Redis<br/>用戶狀態/快取<br/>:6379)]
+        MINIO[(MinIO<br/>檔案+聊天檔案<br/>:9000)]
+    end
+    
+    subgraph "基礎設施"
+        MYSQL[(MySQL<br/>備用資料庫<br/>:3306)]
+    end
+
+    %% 用戶訪問路徑
+    WEB --> GATEWAY
+    MOBILE --> GATEWAY
+    GATEWAY --> FRONTEND
+    GATEWAY --> API
+    GATEWAY --> LIVECDN
+    
+    %% RTMP 推流路徑 (保持不變)
+    OBS -->|RTMP推流| RECEIVER
+    
+    %% 前端到後端
+    FRONTEND --> API
+    
+    %% WebSocket 雙向連接 (增強)
+    WEB -.->|WebSocket私聊| PRIVATECHAT
+    WEB -.->|WebSocket群聊| GROUPCHAT
+    WEB -.->|WebSocket直播間| LIVEROOM
+    WEB -.->|WebSocket通話信令| SIGNALING
+    
+    MOBILE -.->|WebSocket私聊| PRIVATECHAT
+    MOBILE -.->|WebSocket群聊| GROUPCHAT
+    MOBILE -.->|WebSocket直播間| LIVEROOM
+    MOBILE -.->|WebSocket通話信令| SIGNALING
+    
+    %% WebRTC P2P 連接 (新增)
+    WEB -.->|WebRTC P2P通話| WEB
+    MOBILE -.->|WebRTC P2P通話| MOBILE
+    WEB -.->|WebRTC P2P通話| MOBILE
+    
+    %% WebRTC STUN/TURN 支援 (新增)
+    WEB --> COTURN
+    MOBILE --> COTURN
+    
+    %% 直播流處理鏈 (保持不變)
+    RECEIVER -->|轉碼HLS| LIVECDN
+    PULLER -->|外部流| LIVECDN
+    
+    %% 服務間依賴
+    API --> CONVERTER
+    API --> PULLER
+    
+    %% WebSocket 統一管理 (新架構)
+    API --> CHATWS
+    CHATWS --> PRIVATECHAT
+    CHATWS --> GROUPCHAT
+    CHATWS --> LIVEROOM
+    CHATWS --> SIGNALING
+    
+    %% 訊息隊列整合 (新增)
+    CHATWS --> NATS
+    SIGNALING --> NATS
+    NATS --> POSTGRES
+    
+    %% 資料庫連接 (擴展)
+    API --> POSTGRES
+    API --> REDIS
+    API --> MINIO
+    CONVERTER --> POSTGRES
+    CONVERTER --> MINIO
+    PULLER --> POSTGRES
+    
+    %% WebSocket 快取
+    CHATWS --> REDIS
+    
+    %% HLS 播放 (保持不變)
+    FRONTEND -->|播放HLS| LIVECDN
+    
+    %% 檔案分享 (新增)
+    PRIVATECHAT -.->|檔案上傳| MINIO
+    GROUPCHAT -.->|檔案上傳| MINIO
+    
+    style API fill:#e1f5fe
+    style CHATWS fill:#f3e5f5
+    style SIGNALING fill:#fff9c4
+    style COTURN fill:#ffebee
+    style NATS fill:#e8f5e8
+    style RECEIVER fill:#fff3e0
+    style LIVECDN fill:#e8f5e8
+    style POSTGRES fill:#e8f5e8
+    style REDIS fill:#fff3e0
+    style MINIO fill:#fce4ec
 ```
 
 ### 影片轉碼架構
@@ -128,18 +312,22 @@ sequenceDiagram
 sequenceDiagram
     participant OBS as OBS/推流軟體
     participant Receiver as nginx-rtmp Receiver
-    participant Puller as Stream Puller
+    participant LiveCDN as Live-CDN
+    participant Frontend as 前端播放器
+    participant Puller as Stream Puller (外部流)
     participant Converter as FFmpeg Converter
-    participant HLS as HLS 文件
-    participant Player as 前端播放器
     
-    OBS->>Receiver: RTMP 推流
-    Receiver->>Receiver: on_publish 事件
-    Receiver->>Puller: 觸發轉換
-    Puller->>Converter: 啟動轉碼
-    Converter->>HLS: 生成 HLS 文件
-    Player->>HLS: 請求播放
-    HLS->>Player: 返回串流
+    Note over OBS,LiveCDN: RTMP 推流 → LL-HLS 直播流程
+    OBS->>Receiver: RTMP 推流 (rtmp://localhost:1935/live/stream_key)
+    Receiver->>Receiver: 即時轉換為 LL-HLS 
+    Receiver->>LiveCDN: 共享卷同步 HLS 檔案 (/tmp/hls → /var/www/hls)
+    Frontend->>LiveCDN: 請求 HLS 播放 (http://localhost:8085/live/hls/stream_key/index.m3u8)
+    LiveCDN->>Frontend: 返回 LL-HLS 串流 (低延遲)
+    
+    Note over Puller,Converter: 外部直播源處理流程
+    Puller->>Converter: 處理外部 HLS/RTMP/RTSP 流
+    Converter->>Puller: 轉換為標準 HLS 格式
+    Frontend->>Puller: 請求外部流播放 (http://localhost:8083/stream_name/index.m3u8)
 ```
 
 ### 開發/生產模式
@@ -178,27 +366,74 @@ stream-demo/
 │   │   ├── cmd/              # 命令行工具
 │   │   ├── config/           # 配置管理
 │   │   ├── database/         # 資料庫模型和遷移
+│   │   │   └── models/       # 資料模型
+│   │   │       ├── chat.go        # 聊天相關模型 (新增規劃)
+│   │   │       ├── friendship.go  # 好友關係模型 (新增規劃)
+│   │   │       └── ...
 │   │   ├── di/               # 依賴注入容器
 │   │   ├── dto/              # 數據傳輸對象
+│   │   │   ├── chat.go       # 聊天DTO (新增規劃)
+│   │   │   └── ...
 │   │   ├── middleware/       # 中間件
 │   │   ├── pkg/              # 共用套件
 │   │   ├── repositories/     # 資料庫操作層
+│   │   │   └── postgresql/   # PostgreSQL倉儲
+│   │   │       ├── chat.go        # 聊天記錄倉儲 (新增規劃)
+│   │   │       ├── friendship.go  # 好友關係倉儲 (新增規劃)
+│   │   │       └── ...
 │   │   ├── services/         # 業務邏輯層
+│   │   │   ├── chat.go       # 聊天服務 (新增規劃)
+│   │   │   ├── friendship.go # 好友服務 (新增規劃)
+│   │   │   ├── webrtc.go     # WebRTC信令服務 (新增規劃)
+│   │   │   └── ...
 │   │   ├── test/             # 測試檔案
 │   │   ├── utils/            # 工具函數
-│   │   ├── ws/               # WebSocket 處理
+│   │   ├── ws/               # WebSocket 處理 (增強規劃)
+│   │   │   ├── hub.go        # WebSocket Hub (擴展)
+│   │   │   ├── chat_handler.go     # 私聊處理器 (新增規劃)
+│   │   │   ├── group_handler.go    # 群聊處理器 (新增規劃)
+│   │   │   ├── call_handler.go     # 通話信令處理器 (新增規劃)
+│   │   │   └── ...
 │   │   ├── .env.example      # 環境變數範例
 │   │   ├── go.mod            # Go 模組配置
 │   │   └── main.go           # 主程式入口
-│   ├── frontend/              # 前端服務 (Vue 3/TypeScript)
+│   ├── frontend/              # 前端服務 (Vue 3/TypeScript) (增強規劃)
 │   │   ├── src/              # 源碼目錄
 │   │   │   ├── api/          # API 調用
-│   │   │   ├── components/   # Vue 組件
+│   │   │   │   ├── chat.ts        # 聊天API (新增規劃)
+│   │   │   │   ├── friendship.ts  # 好友API (新增規劃)
+│   │   │   │   └── ...
+│   │   │   ├── components/   # Vue 組件 (增強規劃)
+│   │   │   │   ├── chat/          # 聊天組件 (新增規劃)
+│   │   │   │   │   ├── ChatList.vue     # 聊天列表
+│   │   │   │   │   ├── ChatWindow.vue   # 聊天視窗
+│   │   │   │   │   ├── MessageInput.vue # 訊息輸入
+│   │   │   │   │   └── FileUpload.vue   # 檔案上傳
+│   │   │   │   ├── webrtc/        # WebRTC組件 (新增規劃)
+│   │   │   │   │   ├── VideoCall.vue    # 視訊通話
+│   │   │   │   │   ├── AudioCall.vue    # 語音通話
+│   │   │   │   │   └── CallControls.vue # 通話控制
+│   │   │   │   └── ...
 │   │   │   ├── router/       # 路由配置
-│   │   │   ├── store/        # 狀態管理
-│   │   │   ├── types/        # TypeScript 類型定義
-│   │   │   ├── utils/        # 工具函數
-│   │   │   └── views/        # 頁面組件
+│   │   │   ├── store/        # 狀態管理 (增強規劃)
+│   │   │   │   ├── chat.ts        # 聊天狀態 (新增規劃)
+│   │   │   │   ├── friends.ts     # 好友狀態 (新增規劃)
+│   │   │   │   ├── webrtc.ts      # 通話狀態 (新增規劃)
+│   │   │   │   └── ...
+│   │   │   ├── types/        # TypeScript 類型定義 (增強規劃)
+│   │   │   │   ├── chat.ts        # 聊天類型 (新增規劃)
+│   │   │   │   ├── webrtc.ts      # WebRTC類型 (新增規劃)
+│   │   │   │   └── ...
+│   │   │   ├── utils/        # 工具函數 (增強規劃)
+│   │   │   │   ├── webrtc.ts      # WebRTC工具 (新增規劃)
+│   │   │   │   ├── chat.ts        # 聊天工具 (新增規劃)
+│   │   │   │   └── ...
+│   │   │   └── views/        # 頁面組件 (增強規劃)
+│   │   │       ├── chat/          # 聊天頁面 (新增規劃)
+│   │   │       │   ├── ChatView.vue     # 聊天主頁
+│   │   │       │   ├── FriendsView.vue  # 好友列表
+│   │   │       │   └── CallView.vue     # 通話頁面
+│   │   │       └── ...
 │   │   ├── .env.example      # 環境變數範例
 │   │   ├── package.json      # 依賴配置
 │   │   └── vite.config.ts    # Vite 配置
@@ -214,22 +449,35 @@ stream-demo/
 │   │   ├── go.mod            # Go 模組配置
 │   │   ├── scripts/          # 轉碼腳本
 │   │   └── Dockerfile        # 容器配置
+│   ├── live-cdn/              # HLS 靜態緩存 CDN 服務 (nginx)
+│   │   ├── nginx.conf        # nginx 配置 (開發模式)
+│   │   ├── nginx-cdn-secure.conf # nginx 配置 (生產模式安全)
+│   │   └── Dockerfile        # 容器配置
 │   └── gateway/               # 反向代理服務 (nginx)
 │       ├── nginx-reverse-proxy-dev.conf    # 開發模式配置
 │       ├── nginx-reverse-proxy-prod.conf   # 生產模式配置
 │       └── Dockerfile.reverse-proxy-dev    # 開發模式容器
-├── infrastructure/            # 基礎設施配置
+├── infrastructure/            # 基礎設施配置 (增強規劃)
 │   ├── postgresql/           # PostgreSQL 配置
 │   │   ├── init/             # 初始化腳本
+│   │   │   ├── 04-chat-init.sql      # 聊天系統初始化 (新增規劃)
+│   │   │   ├── 05-friendship-init.sql # 好友系統初始化 (新增規劃)
+│   │   │   └── ...
 │   │   └── conf/             # 配置檔案
 │   ├── mysql/                # MySQL 配置
 │   │   ├── init/             # 初始化腳本
 │   │   └── conf/             # 配置檔案
 │   ├── redis/                # Redis 配置
 │   │   └── redis.conf        # Redis 配置檔案
-│   └── minio/                # MinIO 配置
-│       ├── cors.json         # CORS 配置
-│       └── init-bucket.sh    # 桶初始化腳本
+│   ├── minio/                # MinIO 配置
+│   │   ├── cors.json         # CORS 配置
+│   │   └── init-bucket.sh    # 桶初始化腳本
+│   ├── nats/                 # NATS 配置 (新增規劃)
+│   │   ├── nats.conf         # NATS 服務器配置
+│   │   └── jetstream.conf    # JetStream 配置
+│   └── coturn/               # Coturn 配置 (新增規劃)
+│       ├── turnserver.conf   # TURN 服務器配置
+│       └── users.txt         # 用戶配置
 ├── deploy/                   # 部署配置
 │   ├── docker-compose.yml    # 生產環境配置
 │   ├── docker-compose.dev.yml # 開發環境配置
@@ -254,7 +502,12 @@ stream-demo/
 - **轉碼服務**: Go 1.21, FFmpeg 6.0.1, 資料庫驅動任務管理
 - **資料庫**: PostgreSQL 15, Redis 7, MySQL 8.0
 - **存儲**: MinIO (S3 兼容)
-- **直播**: nginx-rtmp (Receiver), stream-puller (Puller)
+- **直播**: nginx-rtmp (Receiver), nginx (Live-CDN), stream-puller (Puller)
+- **即時通訊 (規劃中)**: 
+  - **訊息隊列**: NATS JetStream (訊息持久化)
+  - **音視訊**: WebRTC + Coturn (STUN/TURN)
+  - **信令**: WebSocket + Go 信令服務
+  - **檔案分享**: 整合現有 MinIO 系統
 - **容器**: Docker & Docker Compose
 - **開發工具**: Vite 5.0.11, ESLint, Prettier, Vue TSC
 
@@ -301,8 +554,10 @@ cd deploy
 - **後端 (IDE)**: http://localhost:8080
 - **MinIO Console**: http://localhost:9001 (minioadmin/minioadmin)
 - **直播流服務**: http://localhost:8083
+- **HLS 靜態緩存**: http://localhost:8085
 - **RTMP 推流**: rtmp://localhost:1935/live
-- **HLS 播放**: http://localhost:8083/[stream_key]/index.m3u8
+- **HLS 播放 (直播間)**: http://localhost:8085/live/hls/[stream_key]/index.m3u8
+- **HLS 播放 (外部流)**: http://localhost:8083/[stream_name]/index.m3u8
 
 ### 生產模式 (完整容器化部署)
 
@@ -324,8 +579,10 @@ cd deploy
 - **後端 API**: http://localhost:8084/api
 - **MinIO Console**: http://localhost:9001 (minioadmin/minioadmin)
 - **直播流服務**: http://localhost:8083
+- **HLS 靜態緩存**: http://localhost:8085
 - **RTMP 推流**: rtmp://localhost:1935/live
-- **HLS 播放**: http://localhost:8083/[stream_key]/index.m3u8
+- **HLS 播放 (直播間)**: http://localhost:8085/live/hls/[stream_key]/index.m3u8
+- **HLS 播放 (外部流)**: http://localhost:8083/[stream_name]/index.m3u8
 
 > 💡 **開發模式優勢**: 前後端由 IDE 啟動，支援熱重載，適合本地開發。詳細說明請參考 [開發指南](./docs/DEVELOPMENT.md)
 
@@ -407,17 +664,46 @@ closed (完全刪除)
 1. 在 OBS 中點擊"開始串流"
 2. 回到前端直播間，點擊"開始直播"
 3. 系統會自動：
-   - Receiver (nginx-rtmp) 接收推流
-   - 觸發 `on_publish` 事件
-   - Puller 自動啟動 Converter (FFmpeg) 轉換
-   - 生成 HLS 文件
-   - 前端 `hls.js` 自動播放（支援自動重試）
+   - Receiver (nginx-rtmp) 接收 RTMP 推流
+   - 即時轉換為 LL-HLS (Low Latency HLS) 格式
+   - 通過共享卷同步到 Live-CDN 服務
+   - Live-CDN 提供靜態緩存和 CORS 支持
+   - 前端通過 `hls.js` 播放低延遲直播流
 4. 等待幾秒鐘，直播畫面應該會出現在前端播放器中
 
 ### 4. 其他推流軟體
 - **Streamlabs OBS**: 設置方式相同
 - **XSplit**: 設置方式相同
 - **手機 App**: 支援 RTMP 推流的 App 都可以使用
+
+## 🎯 Live-CDN 靜態緩存服務
+
+### 服務特色
+- **專用 HLS 服務**: 專門為直播間 HLS 流提供靜態緩存服務
+- **低延遲優化**: 支援 LL-HLS (Low Latency HLS) 超低延遲播放
+- **CORS 支持**: 完整的跨域請求支持，適配前端 hls.js 播放器
+- **性能優化**: nginx 靜態文件服務，緩存策略優化
+- **檔案同步**: 通過 Docker 共享卷即時同步 HLS 檔案
+
+### 架構設計
+```
+OBS 推流 (RTMP) → Receiver (nginx-rtmp) → HLS 檔案生成 → Live-CDN (nginx) → 前端播放
+                                          ↑                    ↓
+                                     共享卷同步          靜態緩存服務
+                                    /tmp/hls         /var/www/hls
+```
+
+### 訪問端點
+- **服務地址**: http://localhost:8085
+- **HLS 播放路徑**: `/live/hls/{stream_key}/index.m3u8`
+- **範例**: http://localhost:8085/live/hls/stream_57409a55-4cb/index.m3u8
+- **健康檢查**: http://localhost:8085/health
+
+### 配置特色
+- **開發模式**: 允許所有來源 CORS，便於本地開發
+- **生產模式**: 安全 CORS 配置，包含 Referer 檢查和速率限制
+- **文件類型**: 正確設置 `.m3u8` 和 `.ts` 檔案 MIME 類型
+- **緩存策略**: `no-cache` 策略確保直播流的即時性
 
 ## 🌐 公開直播
 
@@ -529,17 +815,48 @@ docker-compose logs converter --tail=20
 - [x] **播放統計**: 觀看次數和時長統計 ✅
 - [ ] **搜尋功能**: 影片標題和標籤搜尋
 
-### 低優先級 🔄 待開發
+### 即時通訊功能開發路徑 🆕
+
+#### 階段一：基礎聊天功能 (2-3週)
+- [ ] **資料庫結構擴展**: 聊天記錄、好友關係、群組資料表
+- [ ] **後端API開發**: 聊天、好友管理相關API
+- [ ] **WebSocket系統增強**: 支援一對一、群組聊天路由
+- [ ] **NATS訊息隊列**: 訊息持久化和分發系統
+- [ ] **前端聊天界面**: 基本聊天列表和訊息視窗
+- [ ] **好友系統**: 好友申請、接受、管理功能
+
+#### 階段二：檔案分享功能 (1-2週)  
+- [ ] **檔案上傳整合**: 複用現有MinIO系統支援聊天檔案
+- [ ] **多媒體預覽**: 圖片、影片在聊天中的預覽功能
+- [ ] **檔案管理**: 聊天檔案的下載、刪除管理
+- [ ] **檔案安全**: 檔案存取權限和安全檢查
+
+#### 階段三：音視訊通話 (3-4週)
+- [ ] **Coturn服務部署**: STUN/TURN服務器配置
+- [ ] **WebRTC信令服務**: Go後端信令處理邏輯
+- [ ] **前端WebRTC整合**: 音視訊通話界面和控制
+- [ ] **通話記錄系統**: 通話歷史記錄和統計
+- [ ] **通話品質優化**: 網路適應和音視訊編碼優化
+
+#### 階段四：進階功能 (2-3週)
+- [ ] **訊息已讀狀態**: 訊息送達和已讀回條
+- [ ] **訊息搜尋**: 聊天記錄全文搜尋功能
+- [ ] **群組管理**: 群組建立、成員管理、權限控制
+- [ ] **推送通知**: 離線訊息推送到移動設備
+- [ ] **多端同步**: 確保多設備間訊息同步
+
+### 低優先級 🔄 原有待開發
 - [ ] **表情系統**: 聊天表情和禮物
 - [ ] **錄製功能**: 直播錄製和回放
 - [ ] **CDN 整合**: 外部 CDN 支援
 - [ ] **多語言**: 國際化支援
 
 ### 📈 開發進度
-- **核心功能**: 100% 完成 (16/16)
+- **核心功能**: 100% 完成 (16/16) ✅
 - **基礎功能**: 100% 完成 (6/6) ✅
+- **即時通訊功能**: 0% 完成 (0/16) 🆕
 - **進階功能**: 0% 完成 (0/4)
-- **整體進度**: 88% 完成 (22/26)
+- **整體進度**: 59% 完成 (22/42)
 
 ## 🐛 已知問題
 
@@ -568,33 +885,3 @@ docker-compose logs converter --tail=20
 ### 專案文檔
 - **[服務重命名總結](./docs/SERVICE_RENAME_SUMMARY.md)** - 服務重構和重命名記錄
 - **[開發環境 Gateway 設置](./docs/DEV_GATEWAY_SETUP.md)** - 開發環境反向代理配置
-
-## 📝 開發筆記
-
-- 使用 `docker-manage.sh` 統一管理所有服務
-- 直播間狀態通過 Redis 管理，確保實時性
-- WebSocket 用於實時通知和聊天功能
-- 影片轉碼使用 Converter (FFmpeg) 背景服務處理
-- RTMP 推流通過 Receiver (nginx-rtmp) 接收，Puller 轉換為 HLS
-- 前端使用 hls.js 播放 HLS 流，支援自動重試和低延遲
-- 自動化流程：RTMP 推流 → on_publish 事件 → Converter (FFmpeg) 轉換 → HLS 生成 → 前端播放
-- 關閉直播間時會清除所有相關的 Redis 數據，確保系統清潔
-- 專案採用微服務架構，前後端分離，支援獨立開發和部署
-- 完整的 Docker 容器化支援，一鍵啟動開發和生產環境
-- 服務命名規範：converter (轉碼), receiver (接收), puller (拉取)
-- **F5 一鍵啟動優化**: 
-  - 修正了 `cmd` 資料夾路徑問題，改為使用 `deploy/scripts`
-  - 修正了服務名稱檢查，正確識別 `stream-demo-gateway`
-  - 簡化了 VS Code 配置，移除重複配置
-  - 環境變數改為使用 `envFile` 管理，避免硬編碼
-  - 自動化檢查依賴、安裝依賴、啟動周邊服務
-- **最新修復**:
-  - 修正了 converter 服務容器名稱配置錯誤 (`stream-demo-transcoder` → `stream-demo-converter`)
-  - 修正了前端代理配置中的路徑重複問題 (`/stream-puller` → `/`)
-  - 修正了公開直播前端硬編碼 HLS URL 路徑 (`/stream-puller/${streamName}/index.m3u8` → `/stream-puller/hls/${streamName}/index.m3u8`)
-  - 影片上傳後自動轉碼功能現在可以正常工作
-- **架構優化**:
-  - 移除了 API 服務中的轉碼相關程式碼，專注於業務邏輯
-  - Converter 服務獨立處理所有轉碼任務，支援資料庫驅動的任務管理
-  - 改善了錯誤處理和狀態管理，提供更穩定的轉碼流程
-  - 支援多工作協程並發處理轉碼任務

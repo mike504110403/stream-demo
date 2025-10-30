@@ -3,15 +3,10 @@
   "configurations": [
     {
       "name": "🚀 啟動後端 (本地環境)",
-      "type": "go",
+      "type": "node-terminal",
       "request": "launch",
-      "mode": "auto",
-      "program": "${workspaceFolder}/services/api/main.go",
+      "command": "go run main.go -env local -db postgresql",
       "cwd": "${workspaceFolder}/services/api",
-      "envFile": "${workspaceFolder}/services/api/.env",
-      "args": ["-env", "local", "-db", "postgresql"],
-      "showLog": true,
-      "console": "integratedTerminal",
       "presentation": {
         "hidden": false,
         "group": "開發",
@@ -24,7 +19,6 @@
       "request": "launch",
       "command": "npm run dev -- --port 5173 --host 0.0.0.0",
       "cwd": "${workspaceFolder}/services/frontend",
-      "envFile": "${workspaceFolder}/services/frontend/.env",
       "presentation": {
         "hidden": false,
         "group": "開發",
@@ -32,20 +26,22 @@
       }
     },
     {
-      "name": "🧪 運行後端測試",
+      "name": "🔧 後端調試模式 (如果 Go 正常)",
       "type": "go",
       "request": "launch",
-      "mode": "test",
+      "mode": "debug",
       "program": "${workspaceFolder}/services/api",
       "cwd": "${workspaceFolder}/services/api",
-      "envFile": "${workspaceFolder}/services/api/.env",
-      "args": ["-v"],
-      "showLog": true,
+      "args": ["-env", "local", "-db", "postgresql"],
+      "showLog": false,
       "console": "integratedTerminal",
       "presentation": {
         "hidden": false,
-        "group": "測試",
-        "order": 1
+        "group": "開發",
+        "order": 3
+      },
+      "env": {
+        "CGO_ENABLED": "0"
       }
     }
   ],
@@ -57,7 +53,7 @@
         "🎨 啟動前端 (本地環境)"
       ],
       "stopAll": true,
-      "preLaunchTask": "🎯 智能啟動開發環境",
+      "preLaunchTask": "🔍 快速健康檢查",
       "presentation": {
         "hidden": false,
         "group": "開發",

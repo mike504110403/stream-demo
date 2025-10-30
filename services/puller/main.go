@@ -404,6 +404,29 @@ func (sp *StreamPuller) startHTTPServer() {
 		})
 	}
 
+	// RTMP 事件處理
+	r.GET("/rtmp/publish", func(c *gin.Context) {
+		// RTMP 推流開始事件
+		streamName := c.Query("name")
+		logInfo("RTMP 推流開始: %s", streamName)
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	r.GET("/rtmp/publish_done", func(c *gin.Context) {
+		// RTMP 推流結束事件
+		streamName := c.Query("name")
+		logInfo("RTMP 推流結束: %s", streamName)
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	r.GET("/rtmp/error", func(c *gin.Context) {
+		// RTMP 錯誤事件
+		streamName := c.Query("name")
+		errorMsg := c.Query("error")
+		logError("RTMP 錯誤: %s - %s", streamName, errorMsg)
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
 	// 靜態文件服務 - 提供 HLS 文件 (最後註冊)
 	r.GET("/hls/*filepath", func(c *gin.Context) {
 		filepath := c.Param("filepath")

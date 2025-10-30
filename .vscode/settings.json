@@ -1,74 +1,65 @@
 {
-  "go.toolsManagement.checkForUpdates": "local",
+  // ===== Go 語言設定 =====
+  "go.toolsManagement.checkForUpdates": "proxy",
   "go.useLanguageServer": true,
   "go.gopath": "",
   "go.goroot": "",
-  "go.lintOnSave": "package",
   "go.formatTool": "goimports",
   "go.lintTool": "golint",
+  "go.lintOnSave": "off",
+  "go.vetOnSave": "off",
   "go.buildOnSave": "off",
-  "go.coverOnSave": false,
   "go.testOnSave": false,
-  "go.vetOnSave": "package",
+  "go.coverOnSave": false,
+  "go.toolsEnvVars": {
+    "CGO_ENABLED": "0"
+  },
+  "go.delveConfig": {
+    "dlvLoadConfig": {
+      "followPointers": true,
+      "maxVariableRecurse": 1,
+      "maxStringLen": 64,
+      "maxArrayValues": 64,
+      "maxStructFields": -1
+    },
+    "apiVersion": 2,
+    "showGlobalVariables": false,
+    "debugAdapter": "legacy"
+  },
+
+  // ===== TypeScript 設定 =====
   "typescript.preferences.importModuleSpecifier": "relative",
+  "typescript.suggest.autoImports": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+
+  // ===== ESLint 設定 =====
   "eslint.workingDirectories": ["frontend"],
+
+  // ===== 檔案關聯設定 =====
   "files.associations": {
     "*.vue": "vue",
     "*.go": "go",
     "*.yaml": "yaml",
     "*.yml": "yaml"
   },
-  "search.exclude": {
-    "**/node_modules": true,
-    "**/vendor": true,
-    "**/dist": true,
-    "**/build": true,
-    "**/*.log": true
-  },
+
+  // ===== 檔案排除設定 =====
   "files.exclude": {
     "**/node_modules": true,
     "**/vendor": true,
     "**/dist": true,
-    "**/build": true
-  },
-  "emmet.includeLanguages": {
-    "vue-html": "html",
-    "vue": "html"
-  },
-  "terminal.integrated.env.osx": {
-    "APP_ENV": "local",
-    "SERVER_PORT": "8080",
-    "SERVER_HOST": "127.0.0.1"
-  },
-  "terminal.integrated.env.linux": {
-    "APP_ENV": "local",
-    "SERVER_PORT": "8080",
-    "SERVER_HOST": "127.0.0.1"
-  },
-  "terminal.integrated.env.windows": {
-    "APP_ENV": "local",
-    "SERVER_PORT": "8080",
-    "SERVER_HOST": "127.0.0.1"
-  },
-  
-  // 檔案監視器優化
-  "files.watcherExclude": {
-    "**/node_modules/**": true,
-    "**/vendor/**": true,
-    "**/dist/**": true,
-    "**/build/**": true,
-    "**/.git/**": true,
-    "**/logs/**": true,
-    "**/coverage/**": true,
+    "**/build": true,
+    "**/coverage": true,
     "**/coverage.out": true,
     "**/coverage.html": true,
     "**/tsconfig.tsbuildinfo": true,
     "**/yarn.lock": true,
     "**/package-lock.json": true,
-    "**/go.sum": true
+    "**/go.sum": true,
+    "**/.git": true
   },
-  
-  // 搜尋優化
+
+  // ===== 搜尋排除設定 =====
   "search.exclude": {
     "**/node_modules": true,
     "**/vendor": true,
@@ -84,64 +75,87 @@
     "**/go.sum": true,
     "**/.git": true
   },
-  
-  // 檔案排除優化
-  "files.exclude": {
-    "**/node_modules": true,
-    "**/vendor": true,
-    "**/dist": true,
-    "**/build": true,
-    "**/coverage": true,
+
+  // ===== 檔案監視器設定 =====
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/vendor/**": true,
+    "**/dist/**": true,
+    "**/build/**": true,
+    "**/.git/**": true,
+    "**/logs/**": true,
+    "**/coverage/**": true,
     "**/coverage.out": true,
     "**/coverage.html": true,
     "**/tsconfig.tsbuildinfo": true,
     "**/yarn.lock": true,
     "**/package-lock.json": true,
-    "**/go.sum": true,
-    "**/.git": true
+    "**/go.sum": true
   },
-  
-  // 自動儲存優化
+
+  // ===== 檔案系統設定 =====
   "files.autoSave": "afterDelay",
   "files.autoSaveDelay": 2000,
-  
-  // 檔案編碼和換行符
   "files.encoding": "utf8",
   "files.eol": "\n",
-  
-  // 檔案大小限制
   "files.maxMemoryForLargeFilesMB": 4096,
-  
-  // 索引優化
+  "files.hotExit": "onExitAndWindowClose",
+  "files.restoreUndoStack": false,
+
+  // ===== 搜尋設定 =====
   "search.followSymlinks": false,
   "search.useGlobalIgnoreFiles": true,
-  
-  // 語言伺服器優化
-  "typescript.suggest.autoImports": true,
-  "typescript.updateImportsOnFileMove.enabled": "always",
-  "go.useLanguageServer": true,
-  "go.lintOnSave": "off",
-  "go.vetOnSave": "off",
-  "go.buildOnSave": "off",
-  "go.testOnSave": false,
-  "go.coverOnSave": false,
-  
-  // 效能優化
+
+  // ===== 終端機設定 =====
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "terminal.integrated.shell.osx": "/bin/zsh",
+  "terminal.integrated.shell.linux": "/bin/bash",
+  "terminal.integrated.shell.windows": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+  "terminal.integrated.cwd": "${workspaceFolder}",
+  "terminal.integrated.fontFamily": "Menlo, Monaco, 'Courier New', monospace",
+  "terminal.integrated.fontSize": 14,
+  "terminal.integrated.lineHeight": 1.2,
+  "terminal.integrated.cursorBlinking": true,
+  "terminal.integrated.cursorStyle": "line",
+  "terminal.integrated.shellIntegration.enabled": true,
+  "terminal.integrated.persistentSessionReviveProcess": "never",
+  "terminal.integrated.enablePersistentSessions": false,
+
+  // ===== 終端機環境變數 =====
+  "terminal.integrated.env.osx": {
+    "APP_ENV": "local",
+    "SERVER_PORT": "8080",
+    "SERVER_HOST": "127.0.0.1"
+  },
+  "terminal.integrated.env.linux": {
+    "APP_ENV": "local",
+    "SERVER_PORT": "8080",
+    "SERVER_HOST": "127.0.0.1"
+  },
+  "terminal.integrated.env.windows": {
+    "APP_ENV": "local",
+    "SERVER_PORT": "8080",
+    "SERVER_HOST": "127.0.0.1"
+  },
+
+  // ===== 編輯器設定 =====
   "editor.minimap.enabled": false,
   "editor.renderWhitespace": "none",
   "editor.renderControlCharacters": false,
   "editor.renderLineHighlight": "none",
   "editor.smoothScrolling": false,
   "editor.cursorBlinking": "solid",
-  
-  // 自動完成優化
   "editor.quickSuggestions": {
     "other": true,
     "comments": false,
     "strings": false
   },
-  
-  // 檔案歷史優化
-  "files.hotExit": "onExitAndWindowClose",
-  "files.restoreUndoStack": false
+
+  // ===== Emmet 設定 =====
+  "emmet.includeLanguages": {
+    "vue-html": "html",
+    "vue": "html"
+  }
 } 
