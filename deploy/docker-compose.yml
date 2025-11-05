@@ -111,30 +111,27 @@ services:
     networks:
       - stream-demo-network
     environment:
-      - DATABASES__POSTGRESQL__MASTER__HOST=postgresql
-      - DATABASES__POSTGRESQL__MASTER__PORT=5432
-      - DATABASES__POSTGRESQL__MASTER__USERNAME=stream_user
-      - DATABASES__POSTGRESQL__MASTER__PASSWORD=stream_password
-      - DATABASES__POSTGRESQL__MASTER__DBNAME=stream_demo
-      - DATABASES__POSTGRESQL__SLAVE__HOST=postgresql
-      - DATABASES__POSTGRESQL__SLAVE__PORT=5432
-      - DATABASES__POSTGRESQL__SLAVE__USERNAME=stream_user
-      - DATABASES__POSTGRESQL__SLAVE__PASSWORD=stream_password
-      - DATABASES__POSTGRESQL__SLAVE__DBNAME=stream_demo
-      - REDIS__MASTER__HOST=redis
-      - REDIS__MASTER__PORT=6379
-      - REDIS__MASTER__PASSWORD=
-      - REDIS__MASTER__DB=0
-      - REDIS__SLAVE__HOST=redis
-      - REDIS__SLAVE__PORT=6379
-      - REDIS__SLAVE__PASSWORD=
-      - REDIS__SLAVE__DB=0
-      - STORAGE__S3__ENDPOINT=http://minio:9000
-      - STORAGE__S3__ACCESS_KEY=minioadmin
-      - STORAGE__S3__SECRET_KEY=minioadmin
-      - STORAGE__S3__BUCKET=stream-demo-videos
-      - GIN__HOST=0.0.0.0
-      - GIN__PORT=8080
+      # 資料庫配置 (使用 STREAM_DEMO_ 前綴)
+      - STREAM_DEMO_DB_HOST=postgresql
+      - STREAM_DEMO_DB_PORT=5432
+      - STREAM_DEMO_DB_USER=stream_user
+      - STREAM_DEMO_DB_PASSWORD=stream_password
+      - STREAM_DEMO_DB_NAME=stream_demo
+      - STREAM_DEMO_DB_SSL_MODE=disable
+      # Redis 配置
+      - STREAM_DEMO_REDIS_HOST=redis
+      - STREAM_DEMO_REDIS_PORT=6379
+      - STREAM_DEMO_REDIS_PASSWORD=
+      - STREAM_DEMO_REDIS_DB=0
+      # MinIO 配置
+      - STREAM_DEMO_STORAGE_S3_ENDPOINT=http://minio:9000
+      - STREAM_DEMO_STORAGE_S3_ACCESS_KEY=minioadmin
+      - STREAM_DEMO_STORAGE_S3_SECRET_KEY=minioadmin
+      - STREAM_DEMO_STORAGE_S3_BUCKET=stream-demo-videos
+      # 服務配置
+      - STREAM_DEMO_HOST=0.0.0.0
+      - STREAM_DEMO_PORT=8080
+      - STREAM_DEMO_MODE=release
     depends_on:
       postgresql:
         condition: service_healthy

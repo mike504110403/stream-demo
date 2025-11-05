@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"stream-demo/backend/utils"
@@ -267,13 +268,17 @@ func NewConfig(env string, dbType string) *Config {
 	setDefaultValues(&config)
 
 	// 從環境變數載入配置
+	utils.LogInfo("開始從環境變數載入配置...")
 	err := viper.Unmarshal(&config)
 	if err != nil {
 		utils.LogFatal("Unable to decode into struct: %v", err)
 	}
+	utils.LogInfo("環境變數載入完成")
 
 	// 處理環境變數覆蓋
+	utils.LogInfo("開始處理環境變數覆蓋...")
 	overrideWithEnvironmentVariables(&config)
+	utils.LogInfo("環境變數覆蓋處理完成")
 
 	var conf Config
 	conf.Configurations = &config
@@ -634,44 +639,64 @@ func setDefaultValues(config *Configurations) {
 
 // overrideWithEnvironmentVariables 用環境變數覆蓋配置
 func overrideWithEnvironmentVariables(config *Configurations) {
+	utils.LogInfo("進入環境變數覆蓋函數")
+	
+	// 列出所有 STREAM_DEMO_ 開頭的環境變數
+	for _, env := range os.Environ() {
+		if strings.HasPrefix(env, "STREAM_DEMO_") {
+			utils.LogInfo("發現環境變數: %s", env)
+		}
+	}
+	
 	// 資料庫配置覆蓋
 	if postgresqlConfig, exists := config.Databases["postgresql"]; exists {
-		if host := viper.GetString("STREAM_DEMO_DB_HOST"); host != "" {
-			if postgresqlConfig.Master.Host == "" {
-				postgresqlConfig.Master.Host = host
-			}
+		utils.LogInfo("找到 PostgreSQL 配置，當前主機: %s", postgresqlConfig.Master.Host)
+		
+		// 直接從環境變數讀取，不使用 viper 前綴
+		if host := os.Getenv("STREAM_DEMO_DB_HOST"); host != "" {
+			utils.LogInfo("覆蓋資料庫主機: %s", host)
+			postgresqlConfig.Master.Host = host
+			postgresqlConfig.Slave.Host = host // 同時更新 slave 配置
+		} else {
+			utils.LogInfo("未找到 STREAM_DEMO_DB_HOST 環境變數")
 		}
-		if port := viper.GetInt("STREAM_DEMO_DB_PORT"); port != 0 {
-			if postgresqlConfig.Master.Port == 0 {
+		if portStr := os.Getenv("STREAM_DEMO_DB_PORT"); portStr != "" {
+			if port := viper.GetInt("STREAM_DEMO_DB_PORT"); port != 0 {
 				postgresqlConfig.Master.Port = port
+				postgresqlConfig.Slave.Port = port
 			}
 		}
-		if username := viper.GetString("STREAM_DEMO_DB_USER"); username != "" {
-			if postgresqlConfig.Master.Username == "" {
-				postgresqlConfig.Master.Username = username
-			}
+		if username := os.Getenv("STREAM_DEMO_DB_USER"); username != "" {
+			utils.LogInfo("覆蓋資料庫用戶: %s", username)
+			postgresqlConfig.Master.Username = username
+			postgresqlConfig.Slave.Username = username
 		}
-		if password := viper.GetString("STREAM_DEMO_DB_PASSWORD"); password != "" {
+		if password := os.Getenv("STREAM_DEMO_DB_PASSWORD"); password != "" {
+			utils.LogInfo("覆蓋資料庫密碼: [已設置]")
 			postgresqlConfig.Master.Password = password
+			postgresqlConfig.Slave.Password = password
 		}
-		if dbname := viper.GetString("STREAM_DEMO_DB_NAME"); dbname != "" {
-			if postgresqlConfig.Master.DBName == "" {
-				postgresqlConfig.Master.DBName = dbname
-			}
+		if dbname := os.Getenv("STREAM_DEMO_DB_NAME"); dbname != "" {
+			utils.LogInfo("覆蓋資料庫名稱: %s", dbname)
+			postgresqlConfig.Master.DBName = dbname
+			postgresqlConfig.Slave.DBName = dbname
+		}
+		if sslmode := os.Getenv("STREAM_DEMO_DB_SSL_MODE"); sslmode != "" {
+			utils.LogInfo("覆蓋 SSL 模式: %s", sslmode)
+			postgresqlConfig.Master.SSLMode = sslmode
+			postgresqlConfig.Slave.SSLMode = sslmode
 		}
 		config.Databases["postgresql"] = postgresqlConfig
 	}
 
 	// Redis 配置覆蓋
 	if host := viper.GetString("STREAM_DEMO_REDIS_HOST"); host != "" {
-		if config.Redis.Master.Host == "" {
-			config.Redis.Master.Host = host
-		}
+		config.Redis.Master.Host = host
+		config.Redis.Slave.Host = host
 	}
 	if port := viper.GetInt("STREAM_DEMO_REDIS_PORT"); port != 0 {
-		if config.Redis.Master.Port == 0 {
-			config.Redis.Master.Port = port
-		}
+		config.Redis.Master.Port = port
+		config.Redis.Slave.Port = port
 	}
 	if password := viper.GetString("STREAM_DEMO_REDIS_PASSWORD"); password != "" {
 		config.Redis.Master.Password = password
